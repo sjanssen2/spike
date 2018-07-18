@@ -2,3 +2,6 @@ run: '180614_SN737_0438_BCC7MCACXX'
 
 dir_samplesheets: "/gpfs/project/jansses/Inputs/SampleSheets/"
 dir_demultiplexed: "/gpfs/project/jansses/Intermediate/05_demultiplexed/"
+dir_rawillumina: "/gpfs/project/jansses/Inputs/Raw_Illumina/"
+dir_logs: "/gpfs/project/jansses/Logs/"
+dir_benchmarks: "/gpfs/project/jansses/Benchmarks/"
