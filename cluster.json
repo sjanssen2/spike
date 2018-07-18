@@ -1,0 +1,11 @@
+{
+    "__default__" :
+    {
+      "account" : "ngsukdkohi"
+    },
+    "demultiplex" :
+    {
+      "time" : "08:00:00",
+      "mem" : "4GB",
+    }
+}
