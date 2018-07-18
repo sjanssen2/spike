@@ -9,11 +9,14 @@ if socket.gethostname().startswith("hpc-"):
 configfile: "config.yaml"
 
 rule demultiplex:
-    input:
-        s=os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])
     output:
-        "test.txt"
-    script:
-        print(input().__dict__)
-    #shell:
-    #    "echo 'Hallo Welt' > test.txt; bcl2fastq --version >> test.txt 2>&1"
+        # read expected fastq filenames from samplesheet and prefix with configured dir where to store them
+        expand(map(lambda x: os.path.join(config["dir_demultiplexed"], x), get_fastq_filenames(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"]))))
+    params:
+        fp_samplesheet=os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])
+    shell:
+        "bcl2fastq"
+        " --runfolder-dir {config[dir_rawillumina]}/{config[run]}/"
+        " --output-dir {config[dir_demultiplexed]}/{config[run]}/"
+        " --ignore-missing-bcls"
+        " --sample-sheet {params.fp_samplesheet}"
