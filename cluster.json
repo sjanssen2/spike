@@ -1,0 +1,14 @@
+{
+    "__default__" :
+    {
+      "account" : "ngsukdkohi",
+      "queue" : "Rendering",
+      "nodes" : 1,
+    },
+    "demultiplex" :
+    {
+      "time" : "00:59:59",
+      "mem" : "16GB",
+      "ppn" : "16",
+    }
+}
