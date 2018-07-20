@@ -61,8 +61,8 @@ rule aggregate_undetermined_filesizes:
 
 rule check_undetermined_filesizes:
     input:
-        rules.aggregate_undetermined_filesizes.sizes
+        rules.aggregate_undetermined_filesizes.output.sizes
     output:
         plot=expand("{dir}{run}/undetermined-filesizes.pdf", dir=config['dir_reports'], run=config["run"])
     run:
-        report_undertermined_filesizes(input[0], output.plot[0], "{config[dir_reports]}{config[run]}/error_undetermined-filesizes.pdf")
+        report_undertermined_filesizes(input[0], output.plot[0], os.path.join(config['dir_reports'], config['run'], 'error_undetermined-filesizes.pdf'))
