@@ -27,7 +27,8 @@ rule demultiplex:
         status=rules.check_complete.output
     output:
         # read expected fastq filenames from samplesheet and prefix with configured dir where to store them
-        expand(map(lambda x: os.path.join(config["dir_intermediate"], STEPNAME, config["run"], x), get_fastq_filenames(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])))),
+        fastqs=expand(map(lambda x: os.path.join(config["dir_intermediate"], STEPNAME, config["run"], x), get_fastq_filenames(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])))),
+        report=expand("{dir_i}{dir_d}/{run}/Reports/html/CC7MCACXX/all/all/all/laneBarcode.html", dir_i=config['dir_intermediate'], dir_d=STEPNAME, run=config['run'])
     params:
         fp_samplesheet=os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])
     log:
@@ -63,6 +64,16 @@ rule check_undetermined_filesizes:
     input:
         rules.aggregate_undetermined_filesizes.output.sizes
     output:
-        plot=expand("{dir}{run}/undetermined-filesizes.pdf", dir=config['dir_reports'], run=config["run"])
+        plot=expand("{dir}{run}/{run}.undetermined-filesizes.pdf", dir=config['dir_reports'], run=config["run"])
     run:
         report_undertermined_filesizes(input[0], output.plot[0], os.path.join(config['dir_reports'], config['run'], 'error_undetermined-filesizes.pdf'))
+
+
+rule convert_illumina_report:
+    input:
+        rules.demultiplex.output.report
+    output:
+        expand("{dir}{run}/{run}.yield_report.pdf", dir=config['dir_reports'], run=config["run"])
+    shell:
+        "wkhtmltopdf --orientation Landscape {input} {output}; "
+        "echo 'Hi there,\n\nthis is an automated message from spike.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report and some statistics about the file sizes of undetermined reads.\n\nHave a nice day!' | mail -s '[spike] demultiplex report {config[run]}' -a {output} -a {rules.check_undetermined_filesizes.output.plot} {config[emails_demultiplexreport]}"
