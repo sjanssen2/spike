@@ -10,3 +10,5 @@ dir_aggregation: "/gpfs/project/jansses/Aggregation/"
 dir_reports: "/gpfs/project/jansses/Reports/"
 
 emails_demultiplexreport: "stefan.m.janssen@gmail.com"
+
+name_program: "spike"

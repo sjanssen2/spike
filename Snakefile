@@ -76,4 +76,4 @@ rule convert_illumina_report:
         expand("{dir}{run}/{run}.yield_report.pdf", dir=config['dir_reports'], run=config["run"])
     shell:
         "wkhtmltopdf --orientation Landscape {input} {output}; "
-        "echo 'Hi there,\n\nthis is an automated message from spike.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report and some statistics about the file sizes of undetermined reads.\n\nHave a nice day!' | mail -s '[spike] demultiplex report {config[run]}' -a {output} -a {rules.check_undetermined_filesizes.output.plot} {config[emails_demultiplexreport]}"
+        "echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report and some statistics about the file sizes of undetermined reads.\n\nHave a nice day!' | mail -s '[{config[name_program]}] demultiplex report {config[run]}' -a {output} -a {rules.check_undetermined_filesizes.output.plot} {config[emails_demultiplexreport]}"
