@@ -32,7 +32,7 @@ def check_illuminarun_complete(fp_status_file, fp_output):
     if run_complete is True:
         makedirs(dirname(fp_output), exist_ok=True)
         with open(fp_output, 'w') as f:
-            f.write("Raw Illumina data from run are complete.")
+            f.write("Raw Illumina data from run are complete.\n")
     else:
         raise ValueError(
             ("According to file '%s' the raw Illumina data are not yet "
