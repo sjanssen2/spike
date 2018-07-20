@@ -2,6 +2,8 @@ import socket
 import os
 from scripts.parse_samplesheet import get_fastq_filenames
 from scripts.checks import check_illuminarun_complete
+from scripts.reports import report_undertermined_filesizes
+
 
 if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith("murks"):
     # this loads a highly parallelized version of bcl2fastq compiled by HHU-HPC's guys
@@ -44,3 +46,23 @@ rule demultiplex:
         " --processing-threads {threads}"
         " --writing-threads {threads}"
         " 2>> {log}"
+
+
+rule aggregate_undetermined_filesizes:
+    input:
+        dir_demux=expand("{dir_i}{dir_d}/{run}", dir_i=config['dir_intermediate'], dir_d=STEPNAME, run=config['run'])
+    output:
+        sizes=expand("{dir}UndeterminedFilesizes/{run}.txt", dir=config['dir_aggregation'], stepname=STEPNAME, run=config['run']),
+        fp_check=expand("{dir}{stepname}-{run}-aggregate_undetermined_filesizes.txt", dir=config['dir_checks'], stepname=STEPNAME, run=config["run"])
+    shell:
+        "stat -c '%s\t%n\tunknown' {input.dir_demux}/Undetermined_S0_L*_R*_001.fastq.gz > {output.sizes} && "
+        "echo 'done.' > {output.fp_check}"
+
+
+rule check_undetermined_filesizes:
+    input:
+        rules.aggregate_undetermined_filesizes.sizes
+    output:
+        plot=expand("{dir}{run}/undetermined-filesizes.pdf", dir=config['dir_reports'], run=config["run"])
+    run:
+        report_undertermined_filesizes(input[0], output.plot[0], "{config[dir_reports]}{config[run]}/error_undetermined-filesizes.pdf")
