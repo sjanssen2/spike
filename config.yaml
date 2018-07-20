@@ -8,3 +8,5 @@ dir_logs: "/gpfs/project/jansses/Logs/"
 dir_benchmarks: "/gpfs/project/jansses/Benchmarks/"
 dir_aggregation: "/gpfs/project/jansses/Aggregation/"
 dir_reports: "/gpfs/project/jansses/Reports/"
+
+emails_demultiplexreport: "stefan.m.janssen@gmail.com"
