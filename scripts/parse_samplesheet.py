@@ -57,7 +57,7 @@ def get_fastq_filenames(fp_samplesheet):
         fp_fastq = row['fastq-prefix']
         for direction in DIRECTIONS:
             fp_fastqs.append(
-                '_L%s%03i_%s_001.fastq.gz' % (
+                '%s_L%03i_%s_001.fastq.gz' % (
                     fp_fastq,
                     int(row['Lane']),
                     direction))

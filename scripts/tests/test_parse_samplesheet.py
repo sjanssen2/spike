@@ -5,6 +5,8 @@ from unittest import TestCase, main
 from scripts.parse_samplesheet import *
 
 class ParseSamplesheetTests(TestCase):
+    fp_samplesheet = 'tests/data/180614_SN737_0438_BCC7MCACXX_ukd.csv'
+
     def test_get_fastq_filenames(self):
         exp = ["Undetermined_S0_L001_R1_001.fastq.gz",
                "Undetermined_S0_L001_R2_001.fastq.gz",
@@ -91,8 +93,78 @@ class ParseSamplesheetTests(TestCase):
                'Maus_Hauer/291T_S16_L004_R1_001.fastq.gz',
                'Maus_Hauer/291T_S16_L004_R2_001.fastq.gz']
 
-        obs = get_fastq_filenames('tests/data/180614_SN737_0438_BCC7MCACXX_ukd.csv')
-        self.assertTrue(set(exp) ^ set(obs) == set())
+        obs = get_fastq_filenames(self.fp_samplesheet)
+        self.assertEqual(sorted(exp), sorted(obs))
+
+    def test_get_sample_fastqprefixes(self):
+        exp = [
+            'AG_Remke/CLIS_1/263_S26',
+            'Alps/ALPS_66_S17',
+            'Maus_Hauer/291T_S16',
+            'Maus_Hauer/286T_S10',
+            'AG_Remke/CLIS_13_b/280_S8',
+            'Alps/ALPS_66_a_S18',
+            'AG_Remke/CLIS_21/272_S22',
+            'Maus_Hauer/288T_S14',
+            'Fischer_Geron/F49_S20',
+            'AG_Remke/CLIS_5/265_S28',
+            'Maus_Hauer/287C_S11',
+            'AG_Remke/Chri_3/297_S1',
+            'AG_Remke/CLIS_22/273_S23',
+            'AG_Remke/CLIS_8_b/279_S7',
+            'AG_Remke/CLIS_17/278_S6',
+            'Maus_Hauer/288C_S13',
+            'Fischer_Geron/42_S21',
+            'AG_Remke/CLIS_10/277_S5',
+            'AG_Remke/Chri_4/298_S2',
+            'AG_Remke/NPTH_1/281_S25',
+            'AG_Remke/CLIS_23/274_S24',
+            'AG_Remke/CLIS_2/264_S27',
+            'Alps/ALPS_66_b_S19',
+            'AG_Remke/NPTH_18/300_S4',
+            'Maus_Hauer/287T_S12',
+            'AG_Remke/CLIS_24/275_S29',
+            'AG_Remke/NPTH_17/299_S3',
+            'Maus_Hauer/291C_S15',
+            'Maus_Hauer/286C_S9']
+        obs = get_sample_fastqprefixes(self.fp_samplesheet)
+        self.assertEqual(sorted(exp), sorted(obs))
+
+    def test_get_lanes_for_sampleID(self):
+        data = [
+            ('Chri_3', '297', '1', [1]),
+            ('Chri_4', '298', '2', [1]),
+            ('NPTH_17', '299', '3', [1]),
+            ('NPTH_18', '300', '4', [1]),
+            ('CLIS_10', '277', '5', [2]),
+            ('CLIS_17', '278', '6', [2]),
+            ('CLIS_8_b', '279', '7', [2]),
+            ('CLIS_13_b', '280', '8', [2]),
+            ('286C', '', '9', [3]),
+            ('286T', '', '10', [3]),
+            ('287C', '', '11', [3]),
+            ('287T', '', '12', [3]),
+            ('288C', '', '13', [4]),
+            ('288T', '', '14', [4]),
+            ('291C', '', '15', [4]),
+            ('291T', '', '16', [4]),
+            ('ALPS_66', '', '17', [5, 6]),
+            ('ALPS_66_a', '', '18', [5, 6]),
+            ('ALPS_66_b', '', '19', [5, 6]),
+            ('F49', '', '20', [5, 6]),
+            ('42', '', '21', [5, 6]),
+            ('CLIS_21', '272', '22', [7]),
+            ('CLIS_22', '273', '23', [7]),
+            ('CLIS_23', '274', '24', [7]),
+            ('NPTH_1', '281', '25', [7]),
+            ('CLIS_1', '263', '26', [8]),
+            ('CLIS_2', '264', '27', [8]),
+            ('CLIS_5', '265', '28', [8]),
+            ('CLIS_24', '275', '29', [8])]
+
+        for (sampleName, sampleID, sidx, exp) in data:
+            obs = get_lanes_for_sampleID(self.fp_samplesheet, sampleName + ('/' if sampleID != '' else ''), sampleID, sidx)
+            self.assertEqual(sorted(exp), sorted(obs))
 
 
 if __name__ == '__main__':
