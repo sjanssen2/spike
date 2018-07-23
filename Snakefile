@@ -1,79 +1,75 @@
-import socket
 import os
-from scripts.parse_samplesheet import get_fastq_filenames
-from scripts.checks import check_illuminarun_complete
-from scripts.reports import report_undertermined_filesizes
-
-
-if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith("murks"):
-    # this loads a highly parallelized version of bcl2fastq compiled by HHU-HPC's guys
-    shell.prefix("module load bcl2fastq;")
+from scripts.parse_samplesheet import get_lanes_for_sampleID
+from glob import glob
 
 configfile: "config.yaml"
-STEPNAME="05_demultiplex"
+STEPNAME="10_rejoin_samples"
 
-
-rule check_complete:
+rule rejoin_samples:
     input:
-        fp_status=expand("{a}{b}/ImageAnalysis_Netcopy_complete.txt", a=config["dir_rawillumina"], b=config["run"])
-    output:
-        fp_check=expand("{dir}{stepname}-{run}-illuminarun_complete.txt", dir=config['dir_checks'], stepname=STEPNAME, run=config["run"])
-    run:
-        check_illuminarun_complete(input.fp_status[0], output.fp_check[0])
+        "~/gpfs/Intermediate/10_rejoin_samples/180614_SN737_0438_BCC7MCACXX/AG_Remke/Chri_3/297_S1_R1.fastq.gz /gpfs/project/jansses/Intermediate/10_rejoin_samples/180614_SN737_0438_BCC7MCACXX/Alps/ALPS_66_a_S18_R1.fastq.gz"
 
 
-rule demultiplex:
+rule test:
     input:
-        status=rules.check_complete.output
-    output:
-        # read expected fastq filenames from samplesheet and prefix with configured dir where to store them
-        fastqs=expand(map(lambda x: os.path.join(config["dir_intermediate"], STEPNAME, config["run"], x), get_fastq_filenames(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])))),
-        report=expand("{dir_i}{dir_d}/{run}/Reports/html/CC7MCACXX/all/all/all/laneBarcode.html", dir_i=config['dir_intermediate'], dir_d=STEPNAME, run=config['run'])
-    params:
-        fp_samplesheet=os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])
-    log:
-        os.path.join(config["dir_logs"], config["run"], "%s.log" % STEPNAME)
+        lambda wildcards: ["%s%s%s/%s/%s/%s%s_S%s_L%03i_R%s_001.fastq.gz" % (
+            wildcards.prefix,
+            config['dirs']['intermediate'],
+            config['stepnames']['demultiplex'],
+            wildcards.run,
+            wildcards.project,
+            wildcards.samplegrp,
+            wildcards.sample,
+            wildcards.sidx,
+            lane,
+            wildcards.direction) for lane in get_lanes_for_sampleID(
+                os.path.join(
+                    wildcards.prefix,
+                    config["dirs"]["inputs"],
+                    config["dirs"]["samplesheets"],
+                    "%s_ukd.csv" % config["run"]),
+                wildcards.samplegrp, wildcards.sample, wildcards.sidx)]
     benchmark:
-        os.path.join(config["dir_benchmarks"], config["run"], "%s.txt" % STEPNAME)
-    threads: 100
-    shell:
-        "uname -a > {log} 2>&1; "
-        "bcl2fastq"
-        " --runfolder-dir {config[dir_rawillumina]}/{config[run]}/"
-        " --output-dir {config[dir_intermediate]}/{STEPNAME}/{config[run]}/"
-        " --ignore-missing-bcls"
-        " --sample-sheet {params.fp_samplesheet}"
-        " --loading-threads {threads}"
-        " --processing-threads {threads}"
-        " --writing-threads {threads}"
-        " 2>> {log}"
-
-
-rule aggregate_undetermined_filesizes:
-    input:
-        dir_demux=expand("{dir_i}{dir_d}/{run}", dir_i=config['dir_intermediate'], dir_d=STEPNAME, run=config['run'])
+        "{prefix}%s{run}/{project}_`echo '{samplegrp}' | tr '/' '_'`{sample}_S{sidx}_R{direction}.benchmark" % config['dirs']['benchmarks']
+    log:
+        "{prefix}%s{run}/{project}_`echo '{samplegrp}' | tr '/' '_'`{sample}_S{sidx}_R{direction}.log" % config['dirs']['logs']
     output:
-        sizes=expand("{dir}UndeterminedFilesizes/{run}.txt", dir=config['dir_aggregation'], stepname=STEPNAME, run=config['run']),
-        fp_check=expand("{dir}{stepname}-{run}-aggregate_undetermined_filesizes.txt", dir=config['dir_checks'], stepname=STEPNAME, run=config["run"])
+        "{prefix}%s%s/{run,[^/]*}/{project,[^/]*}/{samplegrp,.*?/{0,1}}{sample,[^/]+}_S{sidx,\d*}_R{direction,[1|2]}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
     shell:
-        "stat -c '%s\t%n\tunknown' {input.dir_demux}/Undetermined_S0_L*_R*_001.fastq.gz > {output.sizes} && "
-        "echo 'done.' > {output.fp_check}"
+        "if [[ `echo '{input}' | wc -w` -gt 1 ]]; then "
+        "zcat {input} | gzip > {output} 2> {log};"
+        "else "
+        "ln -v -s {input} {output} > {log} 2>&1; "
+        "fi; "
 
+# snakemake -np ~/gpfs/Intermediate/10_rejoin_samples/180614_SN737_0438_BCC7MCACXX/AG_Remke/Chri_3/297_S1_R1.fastq.gz
+# ~/gpfs/Intermediate/10_rejoin_samples/180614_SN737_0438_BCC7MCACXX/Alps/ALPS_66_a_S18_R{1,2}.fastq.gz
 
-rule check_undetermined_filesizes:
-    input:
-        rules.aggregate_undetermined_filesizes.output.sizes
-    output:
-        plot=expand("{dir}{run}/{run}.undetermined-filesizes.pdf", dir=config['dir_reports'], run=config["run"])
-    run:
-        report_undertermined_filesizes(input[0], output.plot[0], os.path.join(config['dir_reports'], config['run'], 'error_undetermined-filesizes.pdf'))
+# rule rejoin_sample:
+#     input:
+#         glob("{dir}/Intermediate/05_demultiplex/{run}/{project}/{sample}_L*_R{direction}_001.fastq.gz")
+#     output:
+#         "{dir}/Intermediate/10_rejoin_samples/{run}/{project}/{sample}_R{direction,[1|2]}.fastq.gz"
+#         #fastqs=expand(["%s_%s.fastq.gz" % (prefix, direction) for prefix in get_sample_fastqprefixes(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])) for direction in ['R1', 'R2']])  # map(lambda x: os.path.join(config["dir_intermediate"], "05_demultiplex", config["run"], x), get_fastq_filenames(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])))),
+#         #fastqs=expand([os.path.join(config['dir_intermediate'], STEPNAME, config['run'], "%s_%s.fastq.gz" % (prefix, direction)) for prefix in get_sample_fastqprefixes(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])) for direction in ['R1', 'R2']])  # map(lambda x: os.path.join(config["dir_intermediate"], "05_demultiplex", config["run"], x), get_fastq_filenames(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])))),
+#         #"kurt.txt"
+#     shell:
+#         "echo {input} > {output}"
+#~/gpfs/Intermediate/10_rejoin_samples/180614_SN737_0438_BCC7MCACXX/AG_Remke/Chri_3/297_S1_R1.fastq.gz
 
+# rule test:
+#     input:
+#         x=glob(expand('tes{word}_a*.txt', word=word))
+#     output:
+#         "tes{word}_b.txt"
+#     shell:
+#         "echo '{input.x}' > {output}"
 
-rule convert_illumina_report:
-    input:
-        rules.demultiplex.output.report
-    output:
-        expand("{dir}{run}/{run}.yield_report.pdf", dir=config['dir_reports'], run=config["run"])
-    shell:
-        "wkhtmltopdf --orientation Landscape {input} {output}; "
-        "echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report and some statistics about the file sizes of undetermined reads.\n\nHave a nice day!' | mail -s '[{config[name_program]}] demultiplex report {config[run]}' -a {output} -a {rules.check_undetermined_filesizes.output.plot} {config[emails_demultiplexreport]}"
+# rule all:
+#     input: dynamic("test_a{clusterid}.txt")
+#
+# rule plot:
+#     input: "test_a{clusterid}.txt"
+#     output: "test_b.txt"
+#     shell:
+#         "echo {input} > {output}"
