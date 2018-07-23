@@ -1,5 +1,6 @@
 import os
-from scripts.parse_samplesheet import get_sample_fastqprefixes, get_laneSplitInputs
+from scripts.parse_samplesheet import get_sample_fastqprefixes
+import glob
 #from scripts.utils import load_modules
 configfile: "config.yaml"
 
@@ -18,24 +19,21 @@ rule rejoin_samples:
 
 rule rejoin_sample:
     input:
-        lambda wildcards: get_laneSplitInputs(
-            wildcards,
-            os.path.join(config["dirs"]["inputs"], config["dirs"]["samplesheets"]),
-            os.path.join(config["dirs"]["intermediate"], config["stepnames"]["demultiplex"]))
+        lambda wildcards: glob.glob('%s%s%s/%s/%s*%s_001.fastq.gz' % (wildcards.prefix, config["dirs"]["intermediate"], config["stepnames"]["demultiplex"], wildcards.run, wildcards.sample, wildcards.direction))
     benchmark:
         "{prefix}%s{run}/{sample}_R{direction}.benchmark" % config['dirs']['benchmarks']
-    # log:
-    #     "{prefix}%s{run}/{sample}_R{direction}.log" % config['dirs']['logs']
+    log:
+        "{prefix}%s{run}/{sample}_R{direction}.log" % config['dirs']['logs']
     output:
-        "{prefix}%s%s/{run,[^\/]+}/{sample}_{direction,R[1|2]}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
+        "{prefix}%s%s/{run,[^\/]+XX}/{sample, .*?}_{direction,R[1|2]}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
     threads:
         1
     shell:
         'if [[ $(echo "{input}" | wc -w) -gt 1 ]]; then '
         # you can just concatenate multiple *.gz files into one, while
         # content when decompressed remains the same!
-        'cat {input} > {output};'
+        'cat {input} > {output} 2> {log};'
         'else '
-        'cp -l -v {input} {output}; '
-        'chmod u+w {output}; '
+        'cp -l -v {input} {output} 2> {log}; '
+        'chmod u+w {output} 2>> {log}; '
         'fi; '
