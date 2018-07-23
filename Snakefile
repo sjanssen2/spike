@@ -1,16 +1,24 @@
 import os
-from scripts.parse_samplesheet import get_lanes_for_sampleID
+from scripts.parse_samplesheet import get_lanes_for_sampleID, get_sample_fastqprefixes
 from glob import glob
 
 configfile: "config.yaml"
-STEPNAME="10_rejoin_samples"
+
+
+# DNA material of a sample might be split and loaded into several lanes to
+# increase coverage. We here use information from SampleSheet and merge fastq.gz
+# files from demultiplexing if necessary, otherwise we just use soft links
 
 rule rejoin_samples:
     input:
-        "~/gpfs/Intermediate/10_rejoin_samples/180614_SN737_0438_BCC7MCACXX/AG_Remke/Chri_3/297_S1_R1.fastq.gz /gpfs/project/jansses/Intermediate/10_rejoin_samples/180614_SN737_0438_BCC7MCACXX/Alps/ALPS_66_a_S18_R1.fastq.gz"
+        ['%s%s%s/%s/%s_%s.fastq.gz' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['rejoin_samples'], config['run'], s, direction) for s in get_sample_fastqprefixes(os.path.join(
+            config['dirs']['prefix'],
+            config['dirs']['inputs'],
+            config['dirs']['samplesheets'],
+            "%s_ukd.csv" % config['run'])) for direction in config['directions']]
 
 
-rule test:
+rule rejoin_sample:
     input:
         lambda wildcards: ["%s%s%s/%s/%s/%s%s_S%s_L%03i_R%s_001.fastq.gz" % (
             wildcards.prefix,
@@ -41,35 +49,3 @@ rule test:
         "else "
         "ln -v -s {input} {output} > {log} 2>&1; "
         "fi; "
-
-# snakemake -np ~/gpfs/Intermediate/10_rejoin_samples/180614_SN737_0438_BCC7MCACXX/AG_Remke/Chri_3/297_S1_R1.fastq.gz
-# ~/gpfs/Intermediate/10_rejoin_samples/180614_SN737_0438_BCC7MCACXX/Alps/ALPS_66_a_S18_R{1,2}.fastq.gz
-
-# rule rejoin_sample:
-#     input:
-#         glob("{dir}/Intermediate/05_demultiplex/{run}/{project}/{sample}_L*_R{direction}_001.fastq.gz")
-#     output:
-#         "{dir}/Intermediate/10_rejoin_samples/{run}/{project}/{sample}_R{direction,[1|2]}.fastq.gz"
-#         #fastqs=expand(["%s_%s.fastq.gz" % (prefix, direction) for prefix in get_sample_fastqprefixes(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])) for direction in ['R1', 'R2']])  # map(lambda x: os.path.join(config["dir_intermediate"], "05_demultiplex", config["run"], x), get_fastq_filenames(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])))),
-#         #fastqs=expand([os.path.join(config['dir_intermediate'], STEPNAME, config['run'], "%s_%s.fastq.gz" % (prefix, direction)) for prefix in get_sample_fastqprefixes(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])) for direction in ['R1', 'R2']])  # map(lambda x: os.path.join(config["dir_intermediate"], "05_demultiplex", config["run"], x), get_fastq_filenames(os.path.join(config["dir_samplesheets"], "%s_ukd.csv" % config["run"])))),
-#         #"kurt.txt"
-#     shell:
-#         "echo {input} > {output}"
-#~/gpfs/Intermediate/10_rejoin_samples/180614_SN737_0438_BCC7MCACXX/AG_Remke/Chri_3/297_S1_R1.fastq.gz
-
-# rule test:
-#     input:
-#         x=glob(expand('tes{word}_a*.txt', word=word))
-#     output:
-#         "tes{word}_b.txt"
-#     shell:
-#         "echo '{input.x}' > {output}"
-
-# rule all:
-#     input: dynamic("test_a{clusterid}.txt")
-#
-# rule plot:
-#     input: "test_a{clusterid}.txt"
-#     output: "test_b.txt"
-#     shell:
-#         "echo {input} > {output}"
