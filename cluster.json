@@ -4,11 +4,17 @@
       "account" : "ngsukdkohi",
       "queue" : "Rendering",
       "nodes" : 1,
+      "time" : "00:59:59",
     },
+
     "demultiplex" :
     {
-      "time" : "00:59:59",
       "mem" : "16GB",
       "ppn" : "16",
+    },
+
+    "rejoin_sample":
+    { "mem" : "2GB",
+      "ppn" : "1",
     }
 }
