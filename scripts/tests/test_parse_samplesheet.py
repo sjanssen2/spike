@@ -130,41 +130,41 @@ class ParseSamplesheetTests(TestCase):
         obs = get_sample_fastqprefixes(self.fp_samplesheet)
         self.assertEqual(sorted(exp), sorted(obs))
 
-    def test_get_lanes_for_sampleID(self):
-        data = [
-            ('Chri_3', '297', '1', [1]),
-            ('Chri_4', '298', '2', [1]),
-            ('NPTH_17', '299', '3', [1]),
-            ('NPTH_18', '300', '4', [1]),
-            ('CLIS_10', '277', '5', [2]),
-            ('CLIS_17', '278', '6', [2]),
-            ('CLIS_8_b', '279', '7', [2]),
-            ('CLIS_13_b', '280', '8', [2]),
-            ('286C', '', '9', [3]),
-            ('286T', '', '10', [3]),
-            ('287C', '', '11', [3]),
-            ('287T', '', '12', [3]),
-            ('288C', '', '13', [4]),
-            ('288T', '', '14', [4]),
-            ('291C', '', '15', [4]),
-            ('291T', '', '16', [4]),
-            ('ALPS_66', '', '17', [5, 6]),
-            ('ALPS_66_a', '', '18', [5, 6]),
-            ('ALPS_66_b', '', '19', [5, 6]),
-            ('F49', '', '20', [5, 6]),
-            ('42', '', '21', [5, 6]),
-            ('CLIS_21', '272', '22', [7]),
-            ('CLIS_22', '273', '23', [7]),
-            ('CLIS_23', '274', '24', [7]),
-            ('NPTH_1', '281', '25', [7]),
-            ('CLIS_1', '263', '26', [8]),
-            ('CLIS_2', '264', '27', [8]),
-            ('CLIS_5', '265', '28', [8]),
-            ('CLIS_24', '275', '29', [8])]
-
-        for (sampleName, sampleID, sidx, exp) in data:
-            obs = get_lanes_for_sampleID(self.fp_samplesheet, sampleName + ('/' if sampleID != '' else ''), sampleID, sidx)
-            self.assertEqual(sorted(exp), sorted(obs))
+    # def test_get_lanes_for_sampleID(self):
+    #     data = [
+    #         ('Chri_3', '297', '1', [1]),
+    #         ('Chri_4', '298', '2', [1]),
+    #         ('NPTH_17', '299', '3', [1]),
+    #         ('NPTH_18', '300', '4', [1]),
+    #         ('CLIS_10', '277', '5', [2]),
+    #         ('CLIS_17', '278', '6', [2]),
+    #         ('CLIS_8_b', '279', '7', [2]),
+    #         ('CLIS_13_b', '280', '8', [2]),
+    #         ('286C', '', '9', [3]),
+    #         ('286T', '', '10', [3]),
+    #         ('287C', '', '11', [3]),
+    #         ('287T', '', '12', [3]),
+    #         ('288C', '', '13', [4]),
+    #         ('288T', '', '14', [4]),
+    #         ('291C', '', '15', [4]),
+    #         ('291T', '', '16', [4]),
+    #         ('ALPS_66', '', '17', [5, 6]),
+    #         ('ALPS_66_a', '', '18', [5, 6]),
+    #         ('ALPS_66_b', '', '19', [5, 6]),
+    #         ('F49', '', '20', [5, 6]),
+    #         ('42', '', '21', [5, 6]),
+    #         ('CLIS_21', '272', '22', [7]),
+    #         ('CLIS_22', '273', '23', [7]),
+    #         ('CLIS_23', '274', '24', [7]),
+    #         ('NPTH_1', '281', '25', [7]),
+    #         ('CLIS_1', '263', '26', [8]),
+    #         ('CLIS_2', '264', '27', [8]),
+    #         ('CLIS_5', '265', '28', [8]),
+    #         ('CLIS_24', '275', '29', [8])]
+    #
+    #     for (sampleName, sampleID, sidx, exp) in data:
+    #         obs = get_lanes_for_sampleID(self.fp_samplesheet, sampleName + ('/' if sampleID != '' else ''), sampleID, sidx)
+    #         self.assertEqual(sorted(exp), sorted(obs))
 
 
 if __name__ == '__main__':
