@@ -71,11 +71,28 @@ def get_fastq_filenames(fp_samplesheet):
     return fp_fastqs
 
 
-# def get_sample_fastqprefixes(fp_samplesheet):
-#     ss = parse_samplesheet(fp_samplesheet)
-#
-#     return list(ss['fastq-prefix'].unique())
+def get_sample_fastqprefixes(fp_samplesheet):
+    ss = parse_samplesheet(fp_samplesheet)
+    return list(ss['fastq-prefix'].unique())
+
 def get_lanes_for_sampleID(fp_samplesheet, sampleName, sampleID, sidx):
+    """Return lanes a given sample is spread across.
+
+    Parameters
+    ----------
+    fp_samplesheet : str
+        Filepath to Sample Sheet
+    sampleName : str
+        The name of the sample for which lanes should be looked up.
+    sampleID : str
+        The ID of the sample for which lanes should be looked up.
+    sidx : str
+        The running index of the sample for which lanes should be looked up.
+
+    Returns
+    -------
+    [str] : Lane numbers on which to find the given sample.
+    """
     ss = parse_samplesheet(fp_samplesheet)
 
     ss['tmp-id'] = ['%s%s%s' % (row['Sample_ID'], '/'+row['Sample_Name'] if pd.notnull(row['Sample_Name']) else "", row['s-idx']) for _, row in ss.iterrows()]
