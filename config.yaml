@@ -1,10 +1,16 @@
 run: '180614_SN737_0438_BCC7MCACXX'
 
+directions:
+  - 'R1'
+  - 'R2'
+
 emails_demultiplexreport: "stefan.m.janssen@gmail.com"
 
 name_program: "spike"
 
 dirs:
+  prefix: "/gpfs/project/jansses/"
+
   intermediate: "Intermediate/"
   inputs: "Inputs/"
   aggregation: "Aggregation/"
