@@ -23,19 +23,19 @@ rule rejoin_sample:
             os.path.join(config["dirs"]["inputs"], config["dirs"]["samplesheets"]),
             os.path.join(config["dirs"]["intermediate"], config["stepnames"]["demultiplex"]))
     benchmark:
-        "{prefix}%s{run}/{project}/{samplegrp}{sample}_S{sidx}_R{direction}.benchmark" % config['dirs']['benchmarks']
-    log:
-        "{prefix}%s{run}/{project}/{samplegrp}{sample}_S{sidx}_R{direction}.log" % config['dirs']['logs']
+        "{prefix}%s{run}/{sample}_R{direction}.benchmark" % config['dirs']['benchmarks']
+    # log:
+    #     "{prefix}%s{run}/{sample}_R{direction}.log" % config['dirs']['logs']
     output:
-        "{prefix}%s%s/{run,[^/]*}/{project,[^/]*}/{samplegrp,.*?/{0,1}}{sample,[^/]+}_S{sidx,\d*}_R{direction,[1|2]}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
+        "{prefix}%s%s/{run,[^\/]+}/{sample}_{direction,R[1|2]}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
     threads:
         1
     shell:
         'if [[ $(echo "{input}" | wc -w) -gt 1 ]]; then '
         # you can just concatenate multiple *.gz files into one, while
         # content when decompressed remains the same!
-        'cat {input} > {output} 2> {log};'
+        'cat {input} > {output};'
         'else '
-        'cp -l -v {input} {output} > {log} 2>&1; '
-        'chmod u+w {output} >> {log} 2>&1; '
+        'cp -l -v {input} {output}; '
+        'chmod u+w {output}; '
         'fi; '

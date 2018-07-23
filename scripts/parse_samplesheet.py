@@ -102,19 +102,20 @@ def get_sample_fastqprefixes(fp_samplesheet):
 
 def get_laneSplitInputs(wildcards, dir_input_samplesheets, dir_intermediate_demultiplex):
     """Given targeted joined output fastq.gz file, obtain fastq.gz files eventually split across lanes."""
-    #params must contain at least {'prefix': '/home/jansses/gpfs/', 'run': '180614_SN737_0438_BCC7MCACXX', 'project': 'AG_Remke', 'samplegrp': 'CLIS_23', 'sample': '274', 'sidx': '24', 'direction': '1'}
+    #params must contain at least
+    #{'prefix': '/home/jansses/gpfs/', 'run': '180614_SN737_0438_BCC7MCACXX', 'sample': 'Alps/ALPS_66_a_S18', 'direction': 'R1'}
     params = dict(wildcards)
+    fp_samplesheet = join(params['prefix'], dir_input_samplesheets, params['run']) + '_ukd.csv'
+    print("params", params)
+    print("fp_samplesheet", fp_samplesheet)
+    ss = parse_samplesheet(fp_samplesheet)
+    ss['tmp-id'] = ['%s/%s%s_S%s' % (row['Sample_Project'], row['Sample_ID'], '/'+row['Sample_Name'] if pd.notnull(row['Sample_Name']) else "", row['s-idx']) for _, row in ss.iterrows()]
 
-    ss = parse_samplesheet(join(params['prefix'], dir_input_samplesheets, params['run'] + '_ukd.csv'))
-    ss['tmp-id'] = ['%s%s%s' % (row['Sample_ID'], '/'+row['Sample_Name'] if pd.notnull(row['Sample_Name']) else "", row['s-idx']) for _, row in ss.iterrows()]
+    lanes = ss[ss['tmp-id'] == params['sample']]['Lane'].unique()
 
-    lanes = ss[ss['tmp-id'] == '%s%s%s' % (params['samplegrp'], params['sample'], params['sidx'])]['Lane'].unique()
-
-    res = ["%s/%s%s_S%s_L%03i_R%s_001.fastq.gz" % (
-        join(params['prefix'], dir_intermediate_demultiplex, params['run'], params['project']),
-        params['samplegrp'],
-        params['sample'],
-        params['sidx'],
+    res = ["%s_L%03i_%s_001.fastq.gz" % (
+        join(params['prefix'], dir_intermediate_demultiplex, params['run'], params['sample']),
         int(lane),
         params['direction']) for lane in lanes]
+    # print(params, res, ss['tmp-id'])
     return res
