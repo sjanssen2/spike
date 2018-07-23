@@ -1,14 +1,27 @@
 run: '180614_SN737_0438_BCC7MCACXX'
 
-dir_samplesheets: "/gpfs/project/jansses/Inputs/SampleSheets/"
-dir_intermediate: "/gpfs/project/jansses/Intermediate/"
-dir_checks: "/gpfs/project/jansses/Checks/"
-dir_rawillumina: "/gpfs/project/jansses/Inputs/Raw_Illumina/"
-dir_logs: "/gpfs/project/jansses/Logs/"
-dir_benchmarks: "/gpfs/project/jansses/Benchmarks/"
-dir_aggregation: "/gpfs/project/jansses/Aggregation/"
-dir_reports: "/gpfs/project/jansses/Reports/"
+directions:
+  - 'R1'
+  - 'R2'
 
 emails_demultiplexreport: "stefan.m.janssen@gmail.com"
 
 name_program: "spike"
+
+dirs:
+  prefix: "/gpfs/project/jansses/"
+
+  intermediate: "Intermediate/"
+  inputs: "Inputs/"
+  aggregation: "Aggregation/"
+  reports: "Reports/"
+  checks: "Checks/"
+
+  samplesheets: "SampleSheets/"
+  rawillumina: "Raw_Illumina/"
+  benchmarks: "Benchmarks/"
+  logs: "Logs/"
+
+stepnames:
+  demultiplex: "05_demultiplex"
+  rejoin_samples: "10_rejoin_samples"

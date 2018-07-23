@@ -1,1 +1,1 @@
-snakemake --cluster-config cluster.json --cluster "qsub -A {cluster.account} -q {cluster.queue} -l mem={cluster.mem} -l walltime={cluster.time},nodes={cluster.nodes}:ppn={cluster.ppn}" -j 1 
+snakemake --cluster-config cluster.json --cluster "qsub -A {cluster.account} -q {cluster.queue} -l mem={cluster.mem} -l walltime={cluster.time},nodes={cluster.nodes}:ppn={cluster.ppn}" -j 1 --latency-wait 60 
