@@ -1,5 +1,6 @@
 from scripts.checks import check_illuminarun_complete
 from scripts.parse_samplesheet import get_fastq_filenames
+from scripts.reports import report_undertermined_filesizes
 import glob
 
 
@@ -70,7 +71,7 @@ rule check_undetermined_filesizes:
     output:
         "{prefix}%s{run}/{run}.undetermined-filesizes.pdf" % (config['dirs']['reports'])
     run:
-        report_undertermined_filesizes(input, output, os.path.join(config['dirs']['prefix'], config['dirs']['reports'], config['run'], 'error_undetermined-filesizes.pdf'))
+        report_undertermined_filesizes(input[0], output[0], os.path.join(config['dirs']['prefix'], config['dirs']['reports'], config['run'], 'error_undetermined-filesizes.pdf'))
 
 
 rule convert_illumina_report:
@@ -79,6 +80,8 @@ rule convert_illumina_report:
         undetermined=rules.check_undetermined_filesizes.output
     output:
         "{prefix}%s{run}/{run}.yield_report.pdf" % (config['dirs']['reports'])
+    conda:
+        "envs/spike_report.yaml"
     shell:
         "wkhtmltopdf --orientation Landscape {input.demux} {output}; "
-        "echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report and some statistics about the file sizes of undetermined reads.\n\nHave a nice day!' | mail -s '[{config[name_program]}] demultiplex report {config[run]}' -a {output} -a {input.undetermined} {config[emails_demultiplexreport]}"
+        "echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report and some statistics about the file sizes of undetermined reads.\n\nHave a nice day!' | mail -s '[{config[name_program]}] demultiplex report {config[run]}' -A {output} -A {input.undetermined} {config[emails_demultiplexreport]}"
