@@ -13,10 +13,7 @@ configfile: "config.yaml"
 include: "rules/demultiplex/Snakefile"
 include: "rules/rejoin_samples/Snakefile"
 include: "rules/trim/Snakefile"
-
-# DNA material of a sample might be split and loaded into several lanes to
-# increase coverage. We here use information from SampleSheet and merge fastq.gz
-# files from demultiplexing if necessary, otherwise we just use soft links
+include: "rules/map/Snakefile"
 
 rule all_trim:
     input:
