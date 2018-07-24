@@ -1,0 +1,84 @@
+from scripts.checks import check_illuminarun_complete
+from scripts.parse_samplesheet import get_fastq_filenames
+import glob
+
+
+# rule all_demultiplex:
+#     input:
+#         lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, fastq)
+#                            for fastq in get_fastq_filenames("%s%s%s%s_ukd.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run))]
+#     output:
+#         "{prefix}{run,\d{6}.+?XX}.done"
+#     shell:
+#         "touch {output}"
+#         "echo '{output}' >> {output}"
+
+
+rule check_complete:
+    input:
+        fp_status="{prefix}%s%s{run}/ImageAnalysis_Netcopy_complete.txt" % (config['dirs']['inputs'], config['dirs']['rawillumina'])
+    output:
+        fp_check="{prefix}%s%s-{run}-illuminarun_complete.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])
+    run:
+        check_illuminarun_complete(input.fp_status, output.fp_check)
+
+
+rule demultiplex:
+    input:
+        status="%s%s%s-%s-illuminarun_complete.txt" % (config['dirs']['prefix'], config['dirs']['checks'], config['stepnames']['demultiplex'], config['run'])
+    output:
+        fastqs = ["%s%s%s/%s/%s" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], fastq)
+                  for fastq in get_fastq_filenames("%s%s%s%s_ukd.csv" % (config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], config['run']))],
+        report="%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], config['run'].split('_')[-1][1:])
+    log:
+        "%s%s%s-%s.log" % (config['dirs']['prefix'], config['dirs']['logs'], config['run'], config['stepnames']['demultiplex'])
+    benchmark:
+        "%s%s%s-%s.benchmark" % (config['dirs']['prefix'], config['dirs']['benchmarks'], config['run'], config['stepnames']['demultiplex'])
+    threads:
+        100
+    params:
+        fp_samplesheet="%s%s%s%s_ukd.csv" % (config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], config['run'])
+    shell:
+        "uname -a > {log} 2>&1; "
+        "bcl2fastq"
+        " --runfolder-dir {config[dirs][prefix]}{config[dirs][inputs]}{config[dirs][rawillumina]}/{config[run]}/"
+        " --output-dir {config[dirs][prefix]}{config[dirs][intermediate]}/{config[stepnames][demultiplex]}/{config[run]}/"
+        " --ignore-missing-bcls"
+        " --sample-sheet {params.fp_samplesheet}"
+        " --loading-threads {threads}"
+        " --processing-threads {threads}"
+        " --writing-threads {threads}"
+        " 2>> {log}"
+
+
+rule aggregate_undetermined_filesizes:
+    input:
+        lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, fastq)
+                           for fastq in get_fastq_filenames("%s%s%s%s_ukd.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run)) if 'Undetermined_S0_L' in fastq]
+    output:
+        sizes="{prefix}%sUndeterminedFilesizes/{run}.txt" % (config['dirs']['aggregation']),
+        fp_check="{prefix}%s%s-{run}-aggregate_undetermined_filesizes.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])
+    shell:
+        "stat -c '%s\t%n\tunknown' {input} > {output.sizes} && "
+        "echo 'done.' > {output.fp_check}"
+
+
+rule check_undetermined_filesizes:
+    input:
+        #rules.aggregate_undetermined_filesizes.output.sizes
+        "{prefix}%sUndeterminedFilesizes/{run}.txt" % (config['dirs']['aggregation'])
+    output:
+        "{prefix}%s{run}/{run}.undetermined-filesizes.pdf" % (config['dirs']['reports'])
+    run:
+        report_undertermined_filesizes(input, output, os.path.join(config['dirs']['prefix'], config['dirs']['reports'], config['run'], 'error_undetermined-filesizes.pdf'))
+
+
+rule convert_illumina_report:
+    input:
+        demux=rules.demultiplex.output.report,
+        undetermined=rules.check_undetermined_filesizes.output
+    output:
+        "{prefix}%s{run}/{run}.yield_report.pdf" % (config['dirs']['reports'])
+    shell:
+        "wkhtmltopdf --orientation Landscape {input.demux} {output}; "
+        "echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report and some statistics about the file sizes of undetermined reads.\n\nHave a nice day!' | mail -s '[{config[name_program]}] demultiplex report {config[run]}' -a {output} -a {input.undetermined} {config[emails_demultiplexreport]}"
