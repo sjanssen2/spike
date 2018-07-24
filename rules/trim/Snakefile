@@ -21,7 +21,6 @@ rule trim:
         " -XX:ParallelGCThreads={threads}"
         " -jar ${{CONDA_PREFIX}}/share/trimmomatic-0.33-1/trimmomatic.jar"
         " PE -threads {threads} -phred33"
-        " -trimlog {log}.trimlog"
         " {input.forward}"
         " {input.reverse}"
         " {output.pairedforward}"
