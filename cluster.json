@@ -16,5 +16,10 @@
     "rejoin_sample":
     { "mem" : "2GB",
       "ppn" : "1",
+    },
+
+    "trim":
+    { "mem" : "4GB",
+      "ppn" : "16",
     }
 }
