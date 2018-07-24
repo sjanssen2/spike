@@ -8,7 +8,18 @@ configfile: "config.yaml"
 # increase coverage. We here use information from SampleSheet and merge fastq.gz
 # files from demultiplexing if necessary, otherwise we just use soft links
 
-rule rejoin_samples:
+rule all_trim:
+    input:
+        [ '%s%s%s/%s/%s/%s_%s.fastq.gz' % (
+            config['dirs']['prefix'],
+            config['dirs']['intermediate'],
+            config['stepnames']['trim'],
+            config['run'],
+            pair,
+            sample,
+            direction) for sample in get_sample_fastqprefixes('~/gpfs/Inputs/SampleSheets/180614_SN737_0438_BCC7MCACXX_ukd.csv') for direction in ["R1", "R2"] for pair in ['Paired', 'Unpaired']]
+
+rule all_rejoin_samples:
     input:
         ['%s%s%s/%s/%s_%s.fastq.gz' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['rejoin_samples'], config['run'], s, direction) for s in get_sample_fastqprefixes(os.path.join(
             config['dirs']['prefix'],
@@ -37,3 +48,36 @@ rule rejoin_sample:
         'cp -l -v {input} {output} 2> {log}; '
         'chmod u+w {output} 2>> {log}; '
         'fi; '
+
+rule trim:
+    input:
+        forward="{prefix}%s%s/{run,[^\/]+XX}/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
+        reverse="{prefix}%s%s/{run,[^\/]+XX}/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
+    output:
+        pairedforward="{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
+        unpairedforward="{prefix}%s%s/{run,[^\/]+XX}/Unpaired/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
+        pairedreverse="{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
+        unpairedreverse="{prefix}%s%s/{run,[^\/]+XX}/Unpaired/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim'])
+    log:
+        "{prefix}%s{run}/{sample}_trimmomatic.log" % config['dirs']['logs']
+    benchmark:
+        "{prefix}%s{run}/{sample}_trimmomatic.benchmark" % config['dirs']['logs']
+    conda:
+      "envs/spike_trim.yaml"
+    threads:
+        16
+    shell:
+        "java"
+        " -Xmx4g"
+        " -XX:ParallelGCThreads={threads}"
+        " -jar ${{CONDA_PREFIX}}/share/trimmomatic-0.33-1/trimmomatic.jar"
+        " PE -threads {threads} -phred33"
+        " -trimlog {log}.trimlog"
+        " {input.forward}"
+        " {input.reverse}"
+        " {output.pairedforward}"
+        " {output.unpairedforward}"
+        " {output.pairedreverse}"
+        " {output.unpairedreverse}"
+        " ILLUMINACLIP:${{CONDA_PREFIX}}/share/trimmomatic-0.33-1/adapters/TruSeq3-PE.fa:2:30:10 CROP:99 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36"
+        " > {log} 2>&1"
