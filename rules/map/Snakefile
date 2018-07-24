@@ -1,0 +1,31 @@
+bwa:
+    input:
+        forward="{prefix}%s%s/{run}/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepname']['trim'])
+        reverse="{prefix}%s%s/{run}/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepname']['trim'])
+        reference="{prefix}%shGRC37.fa" % (config['dirs']['references'])
+    output:
+        "{prefix}%s%s/{run}/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepname']['map'])
+    benchmark:
+        "{prefix}%s{run}/{sample}.srt.bam.benchmark" % config['dirs']['benchmarks']
+    log:
+        "{prefix}%s{run}/{sample}srt.bam.log" % config['dirs']['logs']
+    conda:
+        "envs/spike_map.yaml"
+    threads:
+        2
+    params:
+        run=config['run']
+        flowcell=config['run'].split('_')[-1]
+        date='%04i/%02i/%02i' % (int(config['run'].split('_')[0][:2])+2000, int(config['run'].split('_')[0][3:4], int(config['run'].split('_')[0][5:6])
+    shell:
+        'bwa mem -t {threads} -v 2 -M'
+        ' -R "@RG\tID:{params.run}\tCN:Department_of_Pediatric_Oncology_Dusseldorf\tPU:{params.flowcell}\tDT:{params.date}\tPL:ILLUMINA\tLB:SureSelectXTV5plusUTRautomated\tSM:readgroups.info"'
+        #"@RG\tID:180614_SN737_0438_BCC7MCACXX\tCN:Department_of_Pediatric_Oncology_Dusseldorf\tPU:BCC7MCACXX\tDT:2018/06/14\tPL:ILLUMINA\tLB:SureSelectXTV5plusUTRautomated\tSM:readgroups.info"
+        ' {input.reference}'
+        ' {input.forward} {input.reverse}'
+        ' | samtools view -bSu -F 0x04'
+        ' | samtools sort -m 1G -@ {threads} -o > {output} 2> {log}'
+        #bwa mem -t $(NT_MINUS_ONE) -v 1 -M $(shell getReadGroupStringFromFilename_2015.pl $*) $(REF) $*_R1.fastq.gz $*_R2.fastq.gz |
+        #$(SAMTOOLS_PATH_2k15)/samtools view -bSu -F 0x04 - |
+        #$(SAMTOOLS_PATH_2k15)/samtools sort -m 1G -@ 1 - $@.tmp     $(STDERR_TO_LOG) \
+	#&& mv $@.tmp.bam $@
