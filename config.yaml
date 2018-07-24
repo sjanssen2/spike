@@ -25,3 +25,4 @@ dirs:
 stepnames:
   demultiplex: "05_demultiplex"
   rejoin_samples: "10_rejoin_samples"
+  trim: "15_trim"
