@@ -1,6 +1,10 @@
 from scripts.parse_samplesheet import get_lanes_for_sampleID
 
 
+# DNA material of a sample might be split and loaded into several lanes to
+# increase coverage. We here use information from SampleSheet and merge fastq.gz
+# files from demultiplexing if necessary, otherwise we just use soft links
+
 rule rejoin_sample:
     input:
         lambda wildcards: ["%s%s%s/%s/%s_L%03i_%s_001.fastq.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, wildcards.sample, int(lane), wildcards.direction)
