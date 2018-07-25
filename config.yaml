@@ -28,3 +28,11 @@ stepnames:
   rejoin_samples: "10_rejoin_samples"
   trim: "15_trim"
   map: "25_map"
+  nodup: "30_remove_pcr_duplicates"
+  gatk_intervals: "35_gatk_intervals"
+  gatk_realignment: "40_gatk_realign"
+  gatk_recalibration: "45_gatk_recalibration"
+  gatk_calling: "50_gatk_calling"
+
+gatk:
+  HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
