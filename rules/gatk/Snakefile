@@ -1,6 +1,7 @@
 rule gatk_1intervals:
     # Preprocessing to do a realignment of the reads with GATK
     input:
+        rules.remove_pcr_duplicates.output.bam,
         bai=rules.remove_pcr_duplicates.output.bai,
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
@@ -39,6 +40,11 @@ rule gatk_1intervals:
 
 rule gatk_2realignment:
     # Realign the the reads
+    input:
+        rules.gatk_1intervals.input.gatkpackage,
+        rules.remove_pcr_duplicates.output.bam,
+        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
+        rules.gatk_1intervals.output
     output:
         bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment']),
         bai="{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment'])
@@ -73,6 +79,12 @@ rule gatk_2realignment:
 rule gatk_3recalibration_stats:
     # Preprocessing to do a base quality score recalibration with GATK
     input:
+        rules.gatk_1intervals.input.gatkpackage,
+        rules.gatk_1intervals.input.exometrack,
+        rules.gatk_2realignment.output.bam,
+        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
+        rules.gatk_1intervals.input.knownsA,
+        rules.gatk_1intervals.input.knownsB,
         knownsDBSNP="%s%sdbSNP135_GRCh37.3.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
         knownsDBSNPindex="%s%sdbSNP135_GRCh37.3.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
         knownsDBSNP138="%s%sdbsnp_138.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
@@ -112,6 +124,11 @@ rule gatk_3recalibration_stats:
 
 rule gatk_4recalibration:
     # Preprocessing to do a base quality score recalibration with GATK
+    input:
+        rules.gatk_1intervals.input.gatkpackage,
+        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
+        rules.gatk_3recalibration_stats.output,
+        rules.gatk_2realignment.output.bam
     output:
         bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration']),
         bai="{prefix}%s%s/{run,[^/]+XX}/{sample}.reCal.reAl.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration'])
@@ -150,6 +167,10 @@ rule gatk_4recalibration:
 rule gatk_1calling_snpindels:
     # Call SNPs and Indels (using --genotype_likelihoods_model BOTH )
     input:
+        rules.gatk_1intervals.input.gatkpackage,
+        rules.gatk_4recalibration.output.bam,
+        rules.gatk_1intervals.input.exometrack,
+        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
         bai=rules.gatk_4recalibration.output.bai
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
@@ -192,6 +213,10 @@ rule gatk_1calling_snpindels:
 
 rule gatk_2calling_sep_snpindels:
     # Separate SNPs and Indels from
+    input:
+        rules.gatk_1intervals.input.gatkpackage,
+        rules.gatk_1calling_snpindels.output.vcf,
+        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.snps.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
         idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.snps.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
@@ -228,6 +253,11 @@ rule gatk_3calling_vsqlodScore:
     # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
     input:
+        rules.gatk_1intervals.input.gatkpackage,
+        rules.gatk_2calling_sep_snpindels.output.vcf,
+        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
+        rules.gatk_3recalibration_stats.input.knownsDBSNP138,
+        rules.gatk_1intervals.input.knownsA,
         hapmap="%s%shapmap_3.3.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
         hapmapidx="%s%shapmap_3.3.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
         g1000p1="%s%s1000G_phase1.snps.high_confidence.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
