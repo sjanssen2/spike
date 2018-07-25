@@ -14,6 +14,7 @@ include: "rules/demultiplex/Snakefile"
 include: "rules/rejoin_samples/Snakefile"
 include: "rules/trim/Snakefile"
 include: "rules/map/Snakefile"
+include: "rules/gatk/Snakefile"
 
 rule all_trim:
     input:

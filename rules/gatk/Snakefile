@@ -1,0 +1,71 @@
+rule gatk_intervals:
+    # Preprocessing to do a realignment of the reads with GATK
+    input:
+        bam="{prefix}%s%s/{run}/{sample}.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['nodup'])
+        bai="{prefix}%s%s/{run}/{sample}.nodup.srt.bam.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+        gatkpackage="%s%s/gatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack="%s%s/Agilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
+        knownsA="%s%s/Mills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        knownsB="%s%s/1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references'])
+    output:
+        "{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam.intervals" % (config['dirs']['intermediate'], config['stepnames']['gatk_intervals']),
+    benchmark:
+        "{prefix}%s{run}/{sample}.gatk_intervals.benchmark" % config['dirs']['benchmarks']
+    log:
+        "{prefix}%s{run}/{sample}.gatk_intervals.log" % config['dirs']['logs']
+    conda:
+        "envs/spike_map.yaml"
+    threads:
+        3
+    shell:
+        "gatk-register {input.gatkpackage}; "
+        "java"
+        " -Xmx6g -XX:ParallelGCThreads={threads}"
+        " -jar GenomeAnalysisTK.jar"
+        " -T RealignerTargetCreator"
+        " -nt {threads}"
+        " -L {input.exometrack}"
+        " -I {input.bam}"
+        " -R {input.reference}"
+        " -known {input.knownsA}"
+        " -known {input.knownsB}"
+        " --out {output}"
+        " 2> {log}"
+
+        #gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(REF) -known $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -known $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --out $@.tmp  $(OUTPUT_TO_LOG) \
+
+rule gatk_realignment:
+    # Realign the the reads
+    input:
+        intervals="{prefix}%s%s/{run}/{sample}.nodup.srt.bam.intervals" % (config['dirs']['intermediate'], config['stepnames']['gatk_intervals']),
+        gatkpackage="%s%s/gatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references'])
+    output:
+        "{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment'])
+    benchmark:
+        "{prefix}%s{run}/{sample}.gatk_realignment.benchmark" % config['dirs']['benchmarks']
+    log:
+        "{prefix}%s{run}/{sample}.gatk_realignment.log" % config['dirs']['logs']
+    conda:
+        "envs/spike_map.yaml"
+    threads:
+        3
+    shell:
+        "gatk-register {input.gatkpackage}; "
+        "java"
+        " -Xmx6g -XX:ParallelGCThreads={threads}"
+        " -jar GenomeAnalysisTK.jar"
+        " -T IndelRealigner"
+        " -I {xxx}"
+        " -R {input.reference}"
+        " -targetIntervals {input.intervals}"
+        " --out {output}"
+        " 2> {log}"
+
+        # %.reAl.nodup.srt.bam: %.nodup.srt.bam.intervals
+        # 	@echo "$(DATE) ######### Alignment: Realigning BAM file to $@ #########"
+        # 	gatk_2015.sh GenomeAnalysisTK.jar -T IndelRealigner -I $(<:.intervals=) -R $(REF) -targetIntervals $< --out $@.tmp  $(OUTPUT_TO_LOG) \
+        # 	&& mv $@.tmp $@
+        # # GATK creates an index, but in this rule with the wrong name *.bam.tmp.bai; to fix this:
+        # 	-mv $@.tmp.bai $@.bai
