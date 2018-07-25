@@ -27,7 +27,7 @@ rule bwa:
         ' {input.reference}'
         ' {input.forward} {input.reverse} 2> {log}'
         ' | samtools view -bSu -F 0x04 - 2>> {log}'
-        ' | samtools sort -m 1G -@ {threads} - {output} 2>> {log}'
+        ' | samtools sort -m 1G -@ {threads} -o {output} 2>> {log}'
 
         #"@RG\tID:180614_SN737_0438_BCC7MCACXX\tCN:Department_of_Pediatric_Oncology_Dusseldorf\tPU:BCC7MCACXX\tDT:2018/06/14\tPL:ILLUMINA\tLB:SureSelectXTV5plusUTRautomated\tSM:readgroups.info"
         #bwa mem -t $(NT_MINUS_ONE) -v 1 -M $(shell getReadGroupStringFromFilename_2015.pl $*) $(REF) $*_R1.fastq.gz $*_R2.fastq.gz |
@@ -38,12 +38,12 @@ rule bwa:
 # rule remove_pcr_duplicates:
 #     # Remove PCR duplicates from the reads
 #     input:
-#
+#         "{prefix}%s%s/{run}/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
 #     output:
-#         bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['nodup'])
+#         bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
 #         bai="{prefix}%s%s/{run,[^/]+XX}/{sample}.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup'])
 #     shell:
-
+#         "echo '{input} {output}'"
 # %.nodup.srt.bam: %.srt.bam
 # 	@echo "$(DATE) ######### Alignment: Removing PCR duplicates in '$<'"
 # 	picardtools_2015.sh picard.jar MarkDuplicates INPUT=$< METRICS_FILE=$@.metrics REMOVE_DUPLICATES=true ASSUME_SORTED=true  VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=true OUTPUT=$@.tmp  $(BOTH_TO_LOG) \
