@@ -2,12 +2,14 @@ rule gatk_intervals:
     # Preprocessing to do a realignment of the reads with GATK
     input:
         bam="{prefix}%s%s/{run}/{sample}.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
-        bai="{prefix}%s%s/{run}/{sample}.nodup.srt.bam.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
-        gatkpackage="%s%s/gatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
-        exometrack="%s%s/Agilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        bai="{prefix}%s%s/{run}/{sample}.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
         reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsA="%s%s/Mills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsB="%s%s/1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references'])
+        reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference_dict="%s%shGRC37.dict" % (config['dirs']['prefix'], config['dirs']['references']),
+        knownsA="%s%sMills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        knownsB="%s%s1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references'])
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam.intervals" % (config['dirs']['intermediate'], config['stepnames']['gatk_intervals'])
     benchmark:
@@ -15,14 +17,14 @@ rule gatk_intervals:
     log:
         "{prefix}%s{run}/{sample}.gatk_intervals.log" % config['dirs']['logs']
     conda:
-        "envs/spike_map.yaml"
+        "envs/spike_gatk.yaml"
     threads:
         3
     shell:
-        "gatk-register {input.gatkpackage}; "
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
-        " -jar GenomeAnalysisTK.jar"
+        " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T RealignerTargetCreator"
         " -nt {threads}"
         " -L {input.exometrack}"
@@ -31,37 +33,40 @@ rule gatk_intervals:
         " -known {input.knownsA}"
         " -known {input.knownsB}"
         " --out {output}"
-        " 2> {log}"
+        " 2>> {log}"
 
         #gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(REF) -known $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -known $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --out $@.tmp  $(OUTPUT_TO_LOG) \
+
 
 rule gatk_realignment:
     # Realign the the reads
     input:
         intervals="{prefix}%s%s/{run}/{sample}.nodup.srt.bam.intervals" % (config['dirs']['intermediate'], config['stepnames']['gatk_intervals']),
-        gatkpackage="%s%s/gatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        bam="{prefix}%s%s/{run}/{sample}.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references'])
     output:
-        "{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment'])
+        bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment']),
+        bai="{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment'])
     benchmark:
         "{prefix}%s{run}/{sample}.gatk_realignment.benchmark" % config['dirs']['benchmarks']
     log:
         "{prefix}%s{run}/{sample}.gatk_realignment.log" % config['dirs']['logs']
     conda:
-        "envs/spike_map.yaml"
+        "envs/spike_gatk.yaml"
     threads:
         3
     shell:
-        "gatk-register {input.gatkpackage}; "
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
-        " -jar GenomeAnalysisTK.jar"
+        " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T IndelRealigner"
-        " -I {xxx}"
+        " -I {input.bam}"
         " -R {input.reference}"
         " -targetIntervals {input.intervals}"
-        " --out {output}"
-        " 2> {log}"
+        " --out {output.bam}"
+        " 2>> {log}"
 
         # %.reAl.nodup.srt.bam: %.nodup.srt.bam.intervals
         # 	@echo "$(DATE) ######### Alignment: Realigning BAM file to $@ #########"
@@ -69,3 +74,94 @@ rule gatk_realignment:
         # 	&& mv $@.tmp $@
         # # GATK creates an index, but in this rule with the wrong name *.bam.tmp.bai; to fix this:
         # 	-mv $@.tmp.bai $@.bai
+
+
+rule gatk_recalibration_stats:
+    # Preprocessing to do a base quality score recalibration with GATK
+    input:
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        bam="{prefix}%s%s/{run}/{sample}.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment']),
+        reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference_dict="%s%shGRC37.dict" % (config['dirs']['prefix'], config['dirs']['references']),
+        knownsA="%s%sMills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        knownsB="%s%s1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        knownsDBSNP="%s%sdbSNP135_GRCh37.3.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        knownsDBSNPindex="%s%sdbSNP135_GRCh37.3.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+        knownsDBSNP138="%s%sdbsnp_138.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        knownsDBSNP138index="%s%sdbsnp_138.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references'])
+    output:
+        "{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bam.recal_data.csv" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration']),
+    benchmark:
+        "{prefix}%s{run}/{sample}.gatk_recalibration_stats.benchmark" % config['dirs']['benchmarks']
+    log:
+        "{prefix}%s{run}/{sample}.gatk_recalibration_stats.log" % config['dirs']['logs']
+    conda:
+        "envs/spike_gatk.yaml"
+    threads:
+        3
+    shell:
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {input.gatkpackage}; 2>> {log}; fi; '
+        "java"
+        " -Xmx6g -XX:ParallelGCThreads={threads}"
+        " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
+        " -T BaseRecalibrator"
+        " -nct {threads}"
+        " -L {input.exometrack}"
+        " -I {input.bam}"
+        " -R {input.reference}"
+        " -knownSites {input.knownsDBSNP}"
+        " -knownSites {input.knownsA}"
+        " -knownSites {input.knownsDBSNP138}"
+        " -knownSites {input.knownsB}"
+        " -o {output}"
+        " 2>> {log}"
+
+        # %.reAl.nodup.srt.bam.recal_data.csv: %.reAl.nodup.srt.bam
+        # 	@echo "$(DATE) ######### Alignment: Count covariates. First step of base quality score recalibration for '$<' #########"
+        # 	gatk_2015.sh GenomeAnalysisTK.jar -T BaseRecalibrator -nct $(NT_MINUS_ONE) -L $(EXOME_TRACK) -I $< -R $(REF) -knownSites $(DBSNP) -knownSites $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -knownSites $(GATKRES_PATH_2k15)/dbsnp_138.b37.vcf -knownSites $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf -o $@.tmp  $(OUTPUT_TO_LOG) \
+        # 	&& mv $@.tmp $@
+
+
+rule gatk_recalibration:
+    # Preprocessing to do a base quality score recalibration with GATK
+    input:
+        csv="{prefix}%s%s/{run}/{sample}.reAl.nodup.srt.bam.recal_data.csv" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration']),
+        bam="{prefix}%s%s/{run}/{sample}.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment']),
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference_dict="%s%shGRC37.dict" % (config['dirs']['prefix'], config['dirs']['references']),
+    output:
+        "{prefix}%s%s/{run,[^/]+XX}/{sample}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration']),
+    benchmark:
+        "{prefix}%s{run}/{sample}.gatk_recalibration.benchmark" % config['dirs']['benchmarks']
+    log:
+        "{prefix}%s{run}/{sample}.gatk_recalibration.log" % config['dirs']['logs']
+    conda:
+        "envs/spike_gatk.yaml"
+    threads:
+        3
+    shell:
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {input.gatkpackage}; 2>> {log}; fi; '
+        "java"
+        " -Xmx6g -XX:ParallelGCThreads={threads}"
+        " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
+        " -T PrintReads"
+        " -nct {threads}"
+        " --disable_indel_quals"
+        " -R {input.reference}"
+        " -BQSR {input.csv}"
+        " -I {input.bam}"
+        " -o {output}"
+        " 2>> {log}"
+
+        # # Do the quality score recalibration
+        # # added disable_indel_quals for better file sizes according to GATK recommendations
+        # %.reCal.reAl.nodup.srt.bam: %.reAl.nodup.srt.bam.recal_data.csv
+        # 	@echo "$(DATE) ######### Alignment: Base quality score recalibration to $@ #########"
+        # 	gatk_2015.sh GenomeAnalysisTK.jar -T PrintReads -nct $(NT_MINUS_ONE) --disable_indel_quals -R $(REF) -BQSR $< -I $(<:.recal_data.csv=) -o $@.tmp \
+        # 	&& mv $@.tmp $@
+        # 	-mv $@.tmp.bai $@.bai
+        # 	-exome_coverage.sh $@ $(EXOME_TRACK)
