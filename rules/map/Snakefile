@@ -13,7 +13,7 @@ rule bwa:
     conda:
         "envs/spike_map.yaml"
     threads:
-        16
+        4
     params:
         run=config['run'],
         flowcell=config['run'].split('_')[-1],
