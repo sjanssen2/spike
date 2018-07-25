@@ -16,6 +16,7 @@ dirs:
   aggregation: "Aggregation/"
   reports: "Reports/"
   checks: "Checks/"
+  references: "References/"
 
   samplesheets: "SampleSheets/"
   rawillumina: "Raw_Illumina/"
@@ -26,3 +27,4 @@ stepnames:
   demultiplex: "05_demultiplex"
   rejoin_samples: "10_rejoin_samples"
   trim: "15_trim"
+  map: "25_map"
