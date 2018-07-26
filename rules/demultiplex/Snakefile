@@ -36,7 +36,7 @@ rule demultiplex:
     benchmark:
         "%s%s%s-%s.benchmark" % (config['dirs']['prefix'], config['dirs']['benchmarks'], config['run'], config['stepnames']['demultiplex'])
     threads:
-        100
+        16
     params:
         fp_samplesheet="%s%s%s%s_ukd.csv" % (config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], config['run'])
     shell:

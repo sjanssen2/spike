@@ -7,13 +7,13 @@ rule bwa:
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
     benchmark:
-        "{prefix}%s{run}/{sample}.srt.bam.benchmark" % config['dirs']['benchmarks']
+        "{prefix}%s{run}/{sample}.bwa.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{run}/{sample}.srt.bam.log" % config['dirs']['logs']
+        "{prefix}%s{run}/{sample}.bwa.log" % config['dirs']['logs']
     conda:
         "envs/spike_map.yaml"
     threads:
-        16
+        4
     params:
         run=config['run'],
         flowcell=config['run'].split('_')[-1],
@@ -25,9 +25,11 @@ rule bwa:
         'bwa mem -t {threads} -v 2 -M'
         ' -R "@RG\\tID:{params.run}\\tCN:Department_of_Pediatric_Oncology_Dusseldorf\\tPU:{params.flowcell}\\tDT:{params.date}\\tPL:ILLUMINA\\tLB:SureSelectXTV5plusUTRautomated\\tSM:readgroups.info"'
         ' {input.reference}'
-        ' {input.forward} {input.reverse} 2> {log}'
-        ' | samtools view -bSu -F 0x04 - 2>> {log}'
-        ' | samtools sort -m 1G -@ {threads} - {output} 2>> {log}'
+        ' {input.forward} {input.reverse} 2> {log}.bwa_mem'
+        ' | samtools view -bSu -F 0x04 - 2> {log}.samtools_view'
+        ' | samtools sort -m 1G -@ {threads} - {output} 2> {log}.samtools_sort'
+        # samtools appends .bam to given filename, which is different from snakemakes assumption and thus must be fixed here manually
+        '; mv {output}.bam {output}'
 
         #"@RG\tID:180614_SN737_0438_BCC7MCACXX\tCN:Department_of_Pediatric_Oncology_Dusseldorf\tPU:BCC7MCACXX\tDT:2018/06/14\tPL:ILLUMINA\tLB:SureSelectXTV5plusUTRautomated\tSM:readgroups.info"
         #bwa mem -t $(NT_MINUS_ONE) -v 1 -M $(shell getReadGroupStringFromFilename_2015.pl $*) $(REF) $*_R1.fastq.gz $*_R2.fastq.gz |
@@ -35,18 +37,40 @@ rule bwa:
         #$(SAMTOOLS_PATH_2k15)/samtools sort -m 1G -@ 1 - $@.tmp     $(STDERR_TO_LOG) \
 	    #&& mv $@.tmp.bam $@
 
-# rule remove_pcr_duplicates:
-#     # Remove PCR duplicates from the reads
-#     input:
-#
-#     output:
-#         bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['nodup'])
-#         bai="{prefix}%s%s/{run,[^/]+XX}/{sample}.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup'])
-#     shell:
+rule remove_pcr_duplicates:
+    # Remove PCR duplicates from the reads
+    input:
+        "{prefix}%s%s/{run}/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
+    output:
+        bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+        bai="{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+        metric="{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam.metrics" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+    benchmark:
+        "{prefix}%s{run}/{sample}.remove_pcr_duplicates.benchmark" % config['dirs']['benchmarks']
+    log:
+        "{prefix}%s{run}/{sample}.remove_pcr_duplicates.log" % config['dirs']['logs']
+    conda:
+        "envs/spike_map.yaml"
+    threads:
+        1
+    shell:
+        "java"
+        " -Xmx4g"
+        " -XX:ParallelGCThreads={threads}"
+        " -jar ${{CONDA_PREFIX}}/share/picard-2.0.1-1/picard.jar"
+        " MarkDuplicates"
+        " INPUT={input}"
+        " METRICS_FILE={output.metric}"
+        " REMOVE_DUPLICATES=true"
+        " ASSUME_SORTED=true"
+        " VALIDATION_STRINGENCY=LENIENT"
+        " CREATE_INDEX=true"
+        " OUTPUT={output.bam}"
+        " > {log} 2>&1"
 
-# %.nodup.srt.bam: %.srt.bam
-# 	@echo "$(DATE) ######### Alignment: Removing PCR duplicates in '$<'"
-# 	picardtools_2015.sh picard.jar MarkDuplicates INPUT=$< METRICS_FILE=$@.metrics REMOVE_DUPLICATES=true ASSUME_SORTED=true  VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=true OUTPUT=$@.tmp  $(BOTH_TO_LOG) \
-# 	&& mv $@.tmp $@
-# 	-mv $@.tmp.bai $@.bai
-# #  The $@.metrics file contains how many reads were processed / duplicate
+        # %.nodup.srt.bam: %.srt.bam
+        # 	@echo "$(DATE) ######### Alignment: Removing PCR duplicates in '$<'"
+        #  	picardtools_2015.sh picard.jar MarkDuplicates INPUT=$< METRICS_FILE=$@.metrics REMOVE_DUPLICATES=true ASSUME_SORTED=true  VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=true OUTPUT=$@.tmp  $(BOTH_TO_LOG) \
+        # 	&& mv $@.tmp $@
+        # 	-mv $@.tmp.bai $@.bai
+        #     # The $@.metrics file contains how many reads were processed / duplicate

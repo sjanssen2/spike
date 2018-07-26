@@ -1,0 +1,6 @@
+name: spike_gatk
+
+channels:
+  - bioconda
+dependencies:
+  - gatk =3.5
