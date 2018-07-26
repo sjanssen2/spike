@@ -1,4 +1,4 @@
-rule gatk_1intervals:
+rule gatk_RealignerTargetCreator:
     # Preprocessing to do a realignment of the reads with GATK
     input:
         bam=rules.remove_pcr_duplicates.output.bam,
@@ -13,9 +13,9 @@ rule gatk_1intervals:
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam.intervals" % (config['dirs']['intermediate'], config['stepnames']['gatk_intervals'])
     benchmark:
-        "{prefix}%s{run}/{sample}.gatk_intervals.benchmark" % config['dirs']['benchmarks']
+        "{prefix}%s{run}/{sample}.gatk_RealignerTargetCreator.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{run}/{sample}.gatk_intervals.log" % config['dirs']['logs']
+        "{prefix}%s{run}/{sample}.gatk_RealignerTargetCreator.log" % config['dirs']['logs']
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -38,32 +38,32 @@ rule gatk_1intervals:
         #gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(REF) -known $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -known $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --out $@.tmp  $(OUTPUT_TO_LOG) \
 
 
-rule gatk_2realignment:
+rule gatk_IndelRealigner:
     # Realign the the reads
     input:
-        rules.gatk_1intervals.input.gatkpackage,
-        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
+        rules.gatk_RealignerTargetCreator.input.gatkpackage,
+        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
         bam=rules.remove_pcr_duplicates.output.bam,
-        intervals=rules.gatk_1intervals.output
+        intervals=rules.gatk_RealignerTargetCreator.output
     output:
         bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment']),
         bai="{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment'])
     benchmark:
-        "{prefix}%s{run}/{sample}.gatk_realignment.benchmark" % config['dirs']['benchmarks']
+        "{prefix}%s{run}/{sample}.gatk_IndelRealigner.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{run}/{sample}.gatk_realignment.log" % config['dirs']['logs']
+        "{prefix}%s{run}/{sample}.gatk_IndelRealigner.log" % config['dirs']['logs']
     conda:
         "envs/spike_gatk.yaml"
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T IndelRealigner"
         " -I {input.bam}"
-        " -R {rules.gatk_1intervals.input.reference}"
+        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
         " -targetIntervals {input.intervals}"
         " --out {output.bam}"
         " 2>> {log}"
@@ -76,16 +76,16 @@ rule gatk_2realignment:
         # 	-mv $@.tmp.bai $@.bai
 
 
-rule gatk_3recalibration_stats:
+rule gatk_BaseRecalibrator:
     # Preprocessing to do a base quality score recalibration with GATK
     input:
-        rules.gatk_1intervals.input.gatkpackage,
-        rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
-        rules.gatk_1intervals.input.knownsA,
-        rules.gatk_1intervals.input.knownsB,
-        rules.gatk_1intervals.input.exometrack,
-        rules.gatk_1intervals.input.reference,
-        bam=rules.gatk_2realignment.output.bam,
+        rules.gatk_RealignerTargetCreator.input.gatkpackage,
+        rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        rules.gatk_RealignerTargetCreator.input.knownsA,
+        rules.gatk_RealignerTargetCreator.input.knownsB,
+        rules.gatk_RealignerTargetCreator.input.exometrack,
+        rules.gatk_RealignerTargetCreator.input.reference,
+        bam=rules.gatk_IndelRealigner.output.bam,
         knownsDBSNP="%s%sdbSNP135_GRCh37.3.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
         knownsDBSNPindex="%s%sdbSNP135_GRCh37.3.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
         knownsDBSNP138="%s%sdbsnp_138.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
@@ -93,27 +93,27 @@ rule gatk_3recalibration_stats:
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bam.recal_data.csv" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration']),
     benchmark:
-        "{prefix}%s{run}/{sample}.gatk_recalibration_stats.benchmark" % config['dirs']['benchmarks']
+        "{prefix}%s{run}/{sample}.gatk_BaseRecalibrator.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{run}/{sample}.gatk_recalibration_stats.log" % config['dirs']['logs']
+        "{prefix}%s{run}/{sample}.gatk_BaseRecalibrator.log" % config['dirs']['logs']
     conda:
         "envs/spike_gatk.yaml"
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T BaseRecalibrator"
         " -nct {threads}"
-        " -L {rules.gatk_1intervals.input.exometrack}"
+        " -L {rules.gatk_RealignerTargetCreator.input.exometrack}"
         " -I {input.bam}"
-        " -R {rules.gatk_1intervals.input.reference}"
+        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
         " -knownSites {input.knownsDBSNP}"
-        " -knownSites {rules.gatk_1intervals.input.knownsA}"
+        " -knownSites {rules.gatk_RealignerTargetCreator.input.knownsA}"
         " -knownSites {input.knownsDBSNP138}"
-        " -knownSites {rules.gatk_1intervals.input.knownsB}"
+        " -knownSites {rules.gatk_RealignerTargetCreator.input.knownsB}"
         " -o {output}"
         " 2>> {log}"
 
@@ -123,35 +123,35 @@ rule gatk_3recalibration_stats:
         # 	&& mv $@.tmp $@
 
 
-rule gatk_4recalibration:
+rule gatk_PrintReads:
     # Preprocessing to do a base quality score recalibration with GATK
     input:
-        rules.gatk_1intervals.input.gatkpackage,
-        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
-        rules.gatk_3recalibration_stats.output,
-        rules.gatk_2realignment.output.bam
+        rules.gatk_RealignerTargetCreator.input.gatkpackage,
+        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        csv=rules.gatk_BaseRecalibrator.output,
+        bam=rules.gatk_IndelRealigner.output.bam
     output:
         bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration']),
         bai="{prefix}%s%s/{run,[^/]+XX}/{sample}.reCal.reAl.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration'])
     benchmark:
-        "{prefix}%s{run}/{sample}.gatk_recalibration.benchmark" % config['dirs']['benchmarks']
+        "{prefix}%s{run}/{sample}.gatk_PrintReads.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{run}/{sample}.gatk_recalibration.log" % config['dirs']['logs']
+        "{prefix}%s{run}/{sample}.gatk_PrintReads.log" % config['dirs']['logs']
     conda:
         "envs/spike_gatk.yaml"
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T PrintReads"
         " -nct {threads}"
         " --disable_indel_quals"
-        " -R {rules.gatk_1intervals.input.reference}"
-        " -BQSR {rules.gatk_3recalibration_stats.output}"
-        " -I {rules.gatk_2realignment.output.bam}"
+        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -BQSR {input.csv}"
+        " -I {input.bam}"
         " -o {output.bam}"
         " 2>> {log}"
 
@@ -165,36 +165,36 @@ rule gatk_4recalibration:
         # 	-exome_coverage.sh $@ $(EXOME_TRACK)
 
 
-rule gatk_1calling_snpindels:
+rule gatk_HaplotypeCaller:
     # Call SNPs and Indels (using --genotype_likelihoods_model BOTH )
     input:
-        rules.gatk_1intervals.input.gatkpackage,
-        rules.gatk_4recalibration.output.bam,
-        rules.gatk_1intervals.input.exometrack,
-        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
-        bai=rules.gatk_4recalibration.output.bai
+        rules.gatk_RealignerTargetCreator.input.gatkpackage,
+        rules.gatk_RealignerTargetCreator.input.exometrack,
+        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        bam=rules.gatk_PrintReads.output.bam,
+        bai=rules.gatk_PrintReads.output.bai
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
         idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling'])
     benchmark:
-        "{prefix}%s{run}/{sample}.gatk_1calling_snpindels.benchmark" % config['dirs']['benchmarks']
+        "{prefix}%s{run}/{sample}.gatk_HaplotypeCaller.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{run}/{sample}.gatk_1calling_snpindels.log" % config['dirs']['logs']
+        "{prefix}%s{run}/{sample}.gatk_HaplotypeCaller.log" % config['dirs']['logs']
     conda:
         "envs/spike_gatk.yaml"
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T HaplotypeCaller"
-        " -I {rules.gatk_4recalibration.output.bam}"
+        " -I {input.bam}"
         " --genotyping_mode DISCOVERY"
-        " -L {rules.gatk_1intervals.input.exometrack}"
+        " -L {rules.gatk_RealignerTargetCreator.input.exometrack}"
         " -nct {threads}"
-        " -R {rules.gatk_1intervals.input.reference}"
+        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
         " {config[gatk][HaplotypeCallerQualityArguments]}"
         " --out {output.vcf}"
         " 2>> {log}"
@@ -212,53 +212,59 @@ rule gatk_1calling_snpindels:
         # 	-mv $@.tmp.idx $@.idx
 
 
-rule gatk_2calling_sep_snpindels:
+rule gatk_SelectVariants:
     # Separate SNPs and Indels from
     input:
-        rules.gatk_1intervals.input.gatkpackage,
-        rules.gatk_1calling_snpindels.output.vcf,
-        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict
+        rules.gatk_RealignerTargetCreator.input.gatkpackage,
+        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        vcf=rules.gatk_HaplotypeCaller.output.vcf
     output:
-        vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.snps.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
-        idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.snps.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
+        vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,snps|indels}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
+        idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,snps|indels}.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
     benchmark:
-        "{prefix}%s{run}/{sample}.gatk_2calling_sep_snpindels.benchmark" % config['dirs']['benchmarks']
+        "{prefix}%s{run}/{sample}.{program}.raw.{snvtype}.gatk_SelectVariants.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{run}/{sample}.gatk_2calling_sep_snpindels.log" % config['dirs']['logs']
+        "{prefix}%s{run}/{sample}.{program}.raw.{snvtype}.gatk_SelectVariants.log" % config['dirs']['logs']
     conda:
         "envs/spike_gatk.yaml"
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T SelectVariants"
         " -nt {threads}"
-        " --selectTypeToInclude SNP "
-        " --variant {rules.gatk_1calling_snpindels.output.vcf}"
-        " -R {rules.gatk_1intervals.input.reference}"
+        ' --selectTypeToInclude $(echo "{wildcards.snvtype}" | tr "[:lower:]" "[:upper:]" | rev | cut -b 2- | rev) '
+        " --variant {input.vcf}"
+        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
         " --out {output.vcf}"
         " 2>> {log}"
 
-        # #### 1 raw.snps.vcf <- Select(raw.vcf, SNP)
         # %.gatk.raw.snps.vcf : %.gatk.raw_calls.vcf
         # 	@echo "$(DATE) ######### Separate SNPs and Indels from '$<'. #########"
         # 	gatk_2015.sh GenomeAnalysisTK.jar -T SelectVariants -nt $(NT_HALF) --selectTypeToInclude SNP --variant $< -R $(REF) --out $@.tmp  $(OUTPUT_TO_LOG) \
-        # 	&& mv $@.tmp $@
-        # 	-mv $@.tmp.idx $@.idx
+        #
+        # %.gatk.raw.indels.vcf : %.gatk.raw_calls.vcf
+        # 	@echo "$(DATE) ######### Separate SNPs and Indels from '$<'. #########"
+        # 	gatk_2015.sh GenomeAnalysisTK.jar -T SelectVariants -nt $(NT_HALF) --selectTypeToInclude INDEL --variant $< -R $(REF) --out $@.tmp  $(OUTPUT_TO_LOG) \
+        #
+        # %.ptp.raw.indels.vcf : %.ptp.raw.vcf
+        # 	@echo "$(DATE) ######### Extract Platypus Indels from raw file '$<'. #########"
+        # 	gatk_2015.sh GenomeAnalysisTK.jar -T SelectVariants -nt $(NUM_THREADS) --selectTypeToInclude INDEL --variant $< -R $(REF) --out $@.tmp  $(OUTPUT_TO_LOG) \
 
 
-rule gatk_3calling_vsqlodScore:
+rule gatk_VariantRecalibrator_SNP:
     # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
     input:
-        rules.gatk_1intervals.input.gatkpackage,
-        rules.gatk_2calling_sep_snpindels.output.vcf,
-        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
-        rules.gatk_3recalibration_stats.input.knownsDBSNP138,
-        rules.gatk_1intervals.input.knownsA,
+        rules.gatk_RealignerTargetCreator.input.gatkpackage,
+        rules.gatk_SelectVariants.output.vcf,
+        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        rules.gatk_BaseRecalibrator.input.knownsDBSNP138,
+        rules.gatk_RealignerTargetCreator.input.knownsA,
+        vcf=rules.gatk_SelectVariants.output.vcf,
         hapmap="%s%shapmap_3.3.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
         hapmapidx="%s%shapmap_3.3.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
         g1000p1="%s%s1000G_phase1.snps.high_confidence.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
@@ -266,30 +272,30 @@ rule gatk_3calling_vsqlodScore:
         g1000omni="%s%s1000G_omni2.5.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
         g1000omniidx="%s%s1000G_omni2.5.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
     output:
-        recal="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.snps.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
+        recal="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,snps}.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
     benchmark:
-        "{prefix}%s{run}/{sample}.gatk_3calling_vsqlodScore.benchmark" % config['dirs']['benchmarks']
+        "{prefix}%s{run}/{sample}.{program}.{snvtype}.gatk_VariantRecalibrator_SNP.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{run}/{sample}.gatk_3calling_vsqlodScore.log" % config['dirs']['logs']
+        "{prefix}%s{run}/{sample}.{program}.{snvtype}.gatk_VariantRecalibrator_SNP.log" % config['dirs']['logs']
     conda:
         "envs/spike_gatk.yaml"
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T VariantRecalibrator"
         " -nt {threads}"
-        " --input {rules.gatk_2calling_sep_snpindels.output.vcf}"
-        " -R {rules.gatk_1intervals.input.reference}"
+        " --input {input.vcf}"
+        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
         " -mode SNP"
         " --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 {input.hapmap}"
         " --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 {input.g1000p1}"
         " --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 {input.g1000omni}"
-        " --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 {rules.gatk_3recalibration_stats.input.knownsDBSNP138}"
-        " --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 {rules.gatk_1intervals.input.knownsA}"
+        " --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 {rules.gatk_BaseRecalibrator.input.knownsDBSNP138}"
+        " --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 {rules.gatk_RealignerTargetCreator.input.knownsA}"
         " -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum"
         " --recal_file {output.recal}.xxx.tmp"
         " --tranches_file {output.recal}.xxx.tranches.tmp"
@@ -297,16 +303,70 @@ rule gatk_3calling_vsqlodScore:
         " --maxGaussians 6"
         " 2>> {log}"
 
+        # %.gatk.raw.snps.recal: %.gatk.raw.snps.vcf
+        # 	@echo "$(DATE) ######### Create variant recalibration files for '$<'. This is step 1 of 2 for SNP variant recalibration #########"
+        # 	gatk_2015.sh GenomeAnalysisTK.jar -T VariantRecalibrator -nt $(NT_HALF) --input $< -R $(REF) --mode SNP --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/hapmap_3.3.b37.vcf --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 $(GATKRES_PATH_2k15)/1000G_phase1.snps.high_confidence.b37.vcf --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 $(GATKRES_PATH_2k15)/1000G_omni2.5.b37.vcf --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 $(GATKRES_PATH_2k15)/dbsnp_138.b37.vcf --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum --recal_file $@.tmp --tranches_file $@.tranches.tmp --rscript_file $@.plots.R.tmp --maxGaussians 6 $(OUTPUT_TO_LOG) \
+        # 	&& (mv $@.tmp $@ ; mv $@.tranches.tmp $@.tranches ; mv $@.plots.R.tmp $@.plots.R)
+        # 	-mv $@.plots.R.tmp.pdf $@.plots.R.pdf
+        # 	-mv $@.tranches.tmp.pdf $@.tranches.pdf
 
-
-#         # # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
-#         # # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
-#         # %.gatk.raw.snps.recal: %.gatk.raw.snps.vcf
-#         # 	@echo "$(DATE) ######### Create variant recalibration files for '$<'. This is step 1 of 2 for SNP variant recalibration #########"
-#         # 	gatk_2015.sh GenomeAnalysisTK.jar -T VariantRecalibrator -nt $(NT_HALF) --input $< -R $(REF) --mode SNP --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/hapmap_3.3.b37.vcf --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 $(GATKRES_PATH_2k15)/1000G_phase1.snps.high_confidence.b37.vcf --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 $(GATKRES_PATH_2k15)/1000G_omni2.5.b37.vcf --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 $(GATKRES_PATH_2k15)/dbsnp_138.b37.vcf --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum --recal_file $@.tmp --tranches_file $@.tranches.tmp --rscript_file $@.plots.R.tmp --maxGaussians 6 $(OUTPUT_TO_LOG) \
+#
+# rule gatk_VariantRecalibrator_INDEL:
+#     # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
+#     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
+#     input:
+#         vcf=rules.gatk_SelectVariants.output.vcf,
+#         # rules.gatk_RealignerTargetCreator.input.gatkpackage,
+#         # rules.gatk_SelectVariants.output.vcf,
+#         # rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+#         # rules.gatk_BaseRecalibrator.input.knownsDBSNP138,
+#         # rules.gatk_RealignerTargetCreator.input.knownsA,
+#         # hapmap="%s%shapmap_3.3.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # hapmapidx="%s%shapmap_3.3.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # g1000p1="%s%s1000G_phase1.snps.high_confidence.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # g1000p1idx="%s%s1000G_phase1.snps.high_confidence.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # g1000omni="%s%s1000G_omni2.5.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # g1000omniidx="%s%s1000G_omni2.5.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+#     output:
+#         recal="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.indels.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
+#     benchmark:
+#         "{prefix}%s{run}/{sample}.gatk_VariantRecalibrator_INDEL.benchmark" % config['dirs']['benchmarks']
+#     log:
+#         "{prefix}%s{run}/{sample}.gatk_VariantRecalibrator_INDEL.log" % config['dirs']['logs']
+#     conda:
+#         "envs/spike_gatk.yaml"
+#     threads:
+#         3
+#     shell:
+#         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+#         "java"
+#         " -Xmx6g -XX:ParallelGCThreads={threads}"
+#         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
+#         " -T VariantRecalibrator"
+#         " -nt {threads}"
+#         " --input {rules.gatk_SelectVariants.output.vcf}"
+#         " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+#         " -mode SNP"
+#         " --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 {input.hapmap}"
+#         " --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 {input.g1000p1}"
+#         " --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 {input.g1000omni}"
+#         " --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 {rules.gatk_BaseRecalibrator.input.knownsDBSNP138}"
+#         " --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 {rules.gatk_RealignerTargetCreator.input.knownsA}"
+#         " -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum"
+#         " --recal_file {output.recal}.xxx.tmp"
+#         " --tranches_file {output.recal}.xxx.tranches.tmp"
+#         " --rscript_file {output.recal}.xxx.plots.R.tmp"
+#         " --maxGaussians 6"
+#         " 2>> {log}"
+#
+#         # %.gatk.raw.indels.recal: %.gatk.raw.indels.vcf
+#         # 	@echo "$(DATE) ######### Create recalibration files for '$<'. This is step 1 of 2 for indel recalibration #########"
+#         # 	gatk_2015.sh GenomeAnalysisTK.jar -T VariantRecalibrator -nt $(NT_HALF) --input $< -R $(REF) --mode INDEL -resource:mills,known=true,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -resource:1000G,known=false,training=true,truth=false,prior=10.0 $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --maxGaussians 2 -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an QD -an DP -an FS -an SOR -an MQRankSum -an ReadPosRankSum --recal_file $@.tmp --tranches_file $@.tranches.tmp --rscript_file $@.plots.R.tmp $(OUTPUT_TO_LOG) \
 #         # 	&& (mv $@.tmp $@ ; mv $@.tranches.tmp $@.tranches ; mv $@.plots.R.tmp $@.plots.R)
 #         # 	-mv $@.plots.R.tmp.pdf $@.plots.R.pdf
 #         # 	-mv $@.tranches.tmp.pdf $@.tranches.pdf
+
+
 
 #&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&  STEFAN  &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
@@ -376,14 +436,7 @@ rule gatk_3calling_vsqlodScore:
 # 	-mv $@.plots.R.tmp.pdf $@.plots.R.pdf
 # 	-mv $@.tranches.tmp.pdf $@.tranches.pdf
 #
-# #### 2 raw.indels.vcf <- Select(raw.vcf, INDEL)
-# %.gatk.raw.indels.vcf : %.gatk.raw_calls.vcf
-# 	@echo "$(DATE) ######### Separate SNPs and Indels from '$<'. #########"
-# 	gatk_2015.sh GenomeAnalysisTK.jar -T SelectVariants -nt $(NT_HALF) --selectTypeToInclude INDEL --variant $< -R $(REF) --out $@.tmp  $(OUTPUT_TO_LOG) \
-# 	&& mv $@.tmp $@
-# 	-mv $@.tmp.idx $@.idx
-# #this perl snippet could be used to flag all indels with the tag INDEL
-# #	&& perl -pi -e 's/(AC=\d+;)/INDEL;\1/' $@.tmp  \
+
 #
 # #### 4 recalibratedSNPs.vcf <- ApplyRecalibration(raw.snps.vcf, snp.model)
 # # Apply SNP Variant recalibration Step 2 of 2
