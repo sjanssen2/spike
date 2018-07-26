@@ -1,7 +1,7 @@
 rule gatk_1intervals:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        rules.remove_pcr_duplicates.output.bam,
+        bam=rules.remove_pcr_duplicates.output.bam,
         bai=rules.remove_pcr_duplicates.output.bai,
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
@@ -21,14 +21,14 @@ rule gatk_1intervals:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T RealignerTargetCreator"
         " -nt {threads}"
         " -L {input.exometrack}"
-        " -I {rules.remove_pcr_duplicates.output.bam}"
+        " -I {input.bam}"
         " -R {input.reference}"
         " -known {input.knownsA}"
         " -known {input.knownsB}"
@@ -42,9 +42,9 @@ rule gatk_2realignment:
     # Realign the the reads
     input:
         rules.gatk_1intervals.input.gatkpackage,
-        rules.remove_pcr_duplicates.output.bam,
         rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
-        rules.gatk_1intervals.output
+        bam=rules.remove_pcr_duplicates.output.bam,
+        intervals=rules.gatk_1intervals.output
     output:
         bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment']),
         bai="{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['gatk_realignment'])
@@ -57,14 +57,14 @@ rule gatk_2realignment:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T IndelRealigner"
-        " -I {rules.remove_pcr_duplicates.output.bam}"
+        " -I {input.bam}"
         " -R {rules.gatk_1intervals.input.reference}"
-        " -targetIntervals {rules.gatk_1intervals.output}"
+        " -targetIntervals {input.intervals}"
         " --out {output.bam}"
         " 2>> {log}"
 
@@ -80,11 +80,12 @@ rule gatk_3recalibration_stats:
     # Preprocessing to do a base quality score recalibration with GATK
     input:
         rules.gatk_1intervals.input.gatkpackage,
-        rules.gatk_1intervals.input.exometrack,
-        rules.gatk_2realignment.output.bam,
-        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
+        rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
         rules.gatk_1intervals.input.knownsA,
         rules.gatk_1intervals.input.knownsB,
+        rules.gatk_1intervals.input.exometrack,
+        rules.gatk_1intervals.input.reference,
+        bam=rules.gatk_2realignment.output.bam,
         knownsDBSNP="%s%sdbSNP135_GRCh37.3.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
         knownsDBSNPindex="%s%sdbSNP135_GRCh37.3.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
         knownsDBSNP138="%s%sdbsnp_138.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
@@ -100,14 +101,14 @@ rule gatk_3recalibration_stats:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T BaseRecalibrator"
         " -nct {threads}"
         " -L {rules.gatk_1intervals.input.exometrack}"
-        " -I {rules.gatk_2realignment.output.bam}"
+        " -I {input.bam}"
         " -R {rules.gatk_1intervals.input.reference}"
         " -knownSites {input.knownsDBSNP}"
         " -knownSites {rules.gatk_1intervals.input.knownsA}"
@@ -141,7 +142,7 @@ rule gatk_4recalibration:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -184,7 +185,7 @@ rule gatk_1calling_snpindels:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -229,7 +230,7 @@ rule gatk_2calling_sep_snpindels:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -275,7 +276,7 @@ rule gatk_3calling_vsqlodScore:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
