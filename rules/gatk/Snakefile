@@ -128,8 +128,8 @@ rule gatk_4recalibration:
     input:
         rules.gatk_1intervals.input.gatkpackage,
         rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
-        rules.gatk_3recalibration_stats.output,
-        rules.gatk_2realignment.output.bam
+        stats=rules.gatk_3recalibration_stats.output,
+        bam=rules.gatk_2realignment.output.bam
     output:
         bam="{prefix}%s%s/{run,[^/]+XX}/{sample}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration']),
         bai="{prefix}%s%s/{run,[^/]+XX}/{sample}.reCal.reAl.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration'])
@@ -150,8 +150,8 @@ rule gatk_4recalibration:
         " -nct {threads}"
         " --disable_indel_quals"
         " -R {rules.gatk_1intervals.input.reference}"
-        " -BQSR {rules.gatk_3recalibration_stats.output}"
-        " -I {rules.gatk_2realignment.output.bam}"
+        " -BQSR {input.stats}"
+        " -I {input.bam}"
         " -o {output.bam}"
         " 2>> {log}"
 
@@ -169,9 +169,9 @@ rule gatk_1calling_snpindels:
     # Call SNPs and Indels (using --genotype_likelihoods_model BOTH )
     input:
         rules.gatk_1intervals.input.gatkpackage,
-        rules.gatk_4recalibration.output.bam,
         rules.gatk_1intervals.input.exometrack,
         rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
+        bam=rules.gatk_4recalibration.output.bam,
         bai=rules.gatk_4recalibration.output.bai
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
@@ -190,7 +190,7 @@ rule gatk_1calling_snpindels:
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T HaplotypeCaller"
-        " -I {rules.gatk_4recalibration.output.bam}"
+        " -I {input.bam}"
         " --genotyping_mode DISCOVERY"
         " -L {rules.gatk_1intervals.input.exometrack}"
         " -nct {threads}"
@@ -216,11 +216,11 @@ rule gatk_2calling_sep_snpindels:
     # Separate SNPs and Indels from
     input:
         rules.gatk_1intervals.input.gatkpackage,
-        rules.gatk_1calling_snpindels.output.vcf,
-        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict
+        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
+        vcf=rules.gatk_1calling_snpindels.output.vcf
     output:
-        vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.snps.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
-        idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.snps.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
+        vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.{mtype, [snps|indel]}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
+        idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.{mtype, [snps|indel]}.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
     benchmark:
         "{prefix}%s{run}/{sample}.gatk_2calling_sep_snpindels.benchmark" % config['dirs']['benchmarks']
     log:
@@ -236,8 +236,8 @@ rule gatk_2calling_sep_snpindels:
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T SelectVariants"
         " -nt {threads}"
-        " --selectTypeToInclude SNP "
-        " --variant {rules.gatk_1calling_snpindels.output.vcf}"
+        " --selectTypeToInclude $(echo {mtype} | tr '[:lower:]' '[:upper:]')"
+        " --variant {input.vcf}"
         " -R {rules.gatk_1intervals.input.reference}"
         " --out {output.vcf}"
         " 2>> {log}"
@@ -249,16 +249,23 @@ rule gatk_2calling_sep_snpindels:
         # 	&& mv $@.tmp $@
         # 	-mv $@.tmp.idx $@.idx
 
+        # #### 2 raw.indels.vcf <- Select(raw.vcf, INDEL)
+        # %.gatk.raw.indels.vcf : %.gatk.raw_calls.vcf
+        # 	@echo "$(DATE) ######### Separate SNPs and Indels from '$<'. #########"
+        # 	gatk_2015.sh GenomeAnalysisTK.jar -T SelectVariants -nt $(NT_HALF) --selectTypeToInclude INDEL --variant $< -R $(REF) --out $@.tmp  $(OUTPUT_TO_LOG) \
+        # 	&& mv $@.tmp $@
+        # 	-mv $@.tmp.idx $@.idx
+
 
 rule gatk_3calling_vsqlodScore:
     # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
     input:
         rules.gatk_1intervals.input.gatkpackage,
-        rules.gatk_2calling_sep_snpindels.output.vcf,
         rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
         rules.gatk_3recalibration_stats.input.knownsDBSNP138,
         rules.gatk_1intervals.input.knownsA,
+        vcf=rules.gatk_2calling_sep_snpindels.output.vcf,
         hapmap="%s%shapmap_3.3.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
         hapmapidx="%s%shapmap_3.3.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
         g1000p1="%s%s1000G_phase1.snps.high_confidence.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
@@ -282,7 +289,7 @@ rule gatk_3calling_vsqlodScore:
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T VariantRecalibrator"
         " -nt {threads}"
-        " --input {rules.gatk_2calling_sep_snpindels.output.vcf}"
+        " --input {input.vcf}"
         " -R {rules.gatk_1intervals.input.reference}"
         " -mode SNP"
         " --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 {input.hapmap}"
@@ -297,93 +304,134 @@ rule gatk_3calling_vsqlodScore:
         " --maxGaussians 6"
         " 2>> {log}"
 
+        # # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
+        # # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
+        # %.gatk.raw.snps.recal: %.gatk.raw.snps.vcf
+        # 	@echo "$(DATE) ######### Create variant recalibration files for '$<'. This is step 1 of 2 for SNP variant recalibration #########"
+        # 	gatk_2015.sh GenomeAnalysisTK.jar -T VariantRecalibrator -nt $(NT_HALF) --input $< -R $(REF) --mode SNP --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/hapmap_3.3.b37.vcf --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 $(GATKRES_PATH_2k15)/1000G_phase1.snps.high_confidence.b37.vcf --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 $(GATKRES_PATH_2k15)/1000G_omni2.5.b37.vcf --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 $(GATKRES_PATH_2k15)/dbsnp_138.b37.vcf --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum --recal_file $@.tmp --tranches_file $@.tranches.tmp --rscript_file $@.plots.R.tmp --maxGaussians 6 $(OUTPUT_TO_LOG) \
+        # 	&& (mv $@.tmp $@ ; mv $@.tranches.tmp $@.tranches ; mv $@.plots.R.tmp $@.plots.R)
+        # 	-mv $@.plots.R.tmp.pdf $@.plots.R.pdf
+        # 	-mv $@.tranches.tmp.pdf $@.tranches.pdf
 
 
-#         # # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
-#         # # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
-#         # %.gatk.raw.snps.recal: %.gatk.raw.snps.vcf
-#         # 	@echo "$(DATE) ######### Create variant recalibration files for '$<'. This is step 1 of 2 for SNP variant recalibration #########"
-#         # 	gatk_2015.sh GenomeAnalysisTK.jar -T VariantRecalibrator -nt $(NT_HALF) --input $< -R $(REF) --mode SNP --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/hapmap_3.3.b37.vcf --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 $(GATKRES_PATH_2k15)/1000G_phase1.snps.high_confidence.b37.vcf --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 $(GATKRES_PATH_2k15)/1000G_omni2.5.b37.vcf --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 $(GATKRES_PATH_2k15)/dbsnp_138.b37.vcf --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum --recal_file $@.tmp --tranches_file $@.tranches.tmp --rscript_file $@.plots.R.tmp --maxGaussians 6 $(OUTPUT_TO_LOG) \
-#         # 	&& (mv $@.tmp $@ ; mv $@.tranches.tmp $@.tranches ; mv $@.plots.R.tmp $@.plots.R)
-#         # 	-mv $@.plots.R.tmp.pdf $@.plots.R.pdf
-#         # 	-mv $@.tranches.tmp.pdf $@.tranches.pdf
+rule gatk_4calling_vsqlodScore:
+    # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
+    # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
+    input:
+        rules.gatk_1intervals.input.gatkpackage,
+        rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
+        rules.gatk_3recalibration_stats.input.knownsDBSNP138,
+        rules.gatk_1intervals.input.knownsA,
+        vcf=rules.gatk_2calling_sep_snpindels.output.vcf,
+        hapmap="%s%shapmap_3.3.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        hapmapidx="%s%shapmap_3.3.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+        g1000p1="%s%s1000G_phase1.snps.high_confidence.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        g1000p1idx="%s%s1000G_phase1.snps.high_confidence.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+        g1000omni="%s%s1000G_omni2.5.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        g1000omniidx="%s%s1000G_omni2.5.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+    output:
+        recal="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.snps.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
+    benchmark:
+        "{prefix}%s{run}/{sample}.gatk_3calling_vsqlodScore.benchmark" % config['dirs']['benchmarks']
+    log:
+        "{prefix}%s{run}/{sample}.gatk_3calling_vsqlodScore.log" % config['dirs']['logs']
+    conda:
+        "envs/spike_gatk.yaml"
+    threads:
+        3
+    shell:
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
+        "java"
+        " -Xmx6g -XX:ParallelGCThreads={threads}"
+        " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
+        " -T VariantRecalibrator"
+        " -nt {threads}"
+        " --input {input.vcf}"
+        " -R {rules.gatk_1intervals.input.reference}"
+        " -mode SNP"
+        " --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 {input.hapmap}"
+        " --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 {input.g1000p1}"
+        " --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 {input.g1000omni}"
+        " --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 {rules.gatk_3recalibration_stats.input.knownsDBSNP138}"
+        " --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 {rules.gatk_1intervals.input.knownsA}"
+        " -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum"
+        " --recal_file {output.recal}.xxx.tmp"
+        " --tranches_file {output.recal}.xxx.tranches.tmp"
+        " --rscript_file {output.recal}.xxx.plots.R.tmp"
+        " --maxGaussians 6"
+        " 2>> {log}"
 
-#&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&  STEFAN  &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+        # #### 2 raw.indels.vcf <- Select(raw.vcf, INDEL)
+        # %.gatk.raw.indels.vcf : %.gatk.raw_calls.vcf
+        # 	@echo "$(DATE) ######### Separate SNPs and Indels from '$<'. #########"
+        # 	gatk_2015.sh GenomeAnalysisTK.jar -T SelectVariants -nt $(NT_HALF) --selectTypeToInclude INDEL --variant $< -R $(REF) --out $@.tmp  $(OUTPUT_TO_LOG) \
+        # 	&& mv $@.tmp $@
+        # 	-mv $@.tmp.idx $@.idx
+        # #this perl snippet could be used to flag all indels with the tag INDEL
+        # #	&& perl -pi -e 's/(AC=\d+;)/INDEL;\1/' $@.tmp  \
 
-# rule gatk_2calling_recalCompScore:
-#     # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
-#     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
+
+
+
+# rule gatk_4calling_prepareRecalibration:
+#     # Create recalibration files for '$<'. This is step 1 of 2 for indel recalibration
 #     input:
-#         vcf= "{prefix}%s%s/{run}/{sample}.gatk.raw.snps.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
-#         idx="{prefix}%s%s/{run}/{sample}.gatk.raw.snps.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling'])
-#         # bai="{prefix}%s%s/{run}/{sample}.reCal.reAl.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['gatk_recalibration']),
-#         # exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
-#         # gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
-#         # reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
-#         # reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
-#         # reference_dict="%s%shGRC37.dict" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # rules.gatk_1intervals.input.gatkpackage,
+#         # rules.gatk_1intervals.input.reference, rules.gatk_1intervals.input.reference_fai, rules.gatk_1intervals.input.reference_dict,
+#         # rules.gatk_3recalibration_stats.input.knownsDBSNP138,
+#         # rules.gatk_1intervals.input.knownsA,
+#         # vcf=rules.gatk_2calling_sep_snpindels.output.vcf,
+#         # hapmap="%s%shapmap_3.3.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # hapmapidx="%s%shapmap_3.3.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # g1000p1="%s%s1000G_phase1.snps.high_confidence.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # g1000p1idx="%s%s1000G_phase1.snps.high_confidence.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # g1000omni="%s%s1000G_omni2.5.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+#         # g1000omniidx="%s%s1000G_omni2.5.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
 #     output:
-#         "{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.snps.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling'])
+#         recal="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.raw.indels.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_calling']),
 #     benchmark:
-#         "{prefix}%s{run}/{sample}.gatk_calling_recalCompScore.benchmark" % config['dirs']['benchmarks']
+#         "{prefix}%s{run}/{sample}.gatk_4calling_prepareRecalibration.benchmark" % config['dirs']['benchmarks']
 #     log:
-#         "{prefix}%s{run}/{sample}.gatk_calling_recalCompScore.log" % config['dirs']['logs']
+#         "{prefix}%s{run}/{sample}.gatk_4calling_prepareRecalibration.log" % config['dirs']['logs']
 #     conda:
 #         "envs/spike_gatk.yaml"
 #     threads:
 #         3
 #     shell:
-#         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then gatk-register {input.gatkpackage}; 2>> {log}; fi; '
+#         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_1intervals.input.gatkpackage}; 2>> {log}; fi; '
 #         "java"
 #         " -Xmx6g -XX:ParallelGCThreads={threads}"
 #         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
-#         " -T HaplotypeCaller"
-#         " -I {input.bam}"
-#         " --genotyping_mode DISCOVERY"
-#         " -L {input.exometrack}"
-#         " -nct {threads}"
-#         " -R {input.reference}"
-#         " {config[gatk][HaplotypeCallerQualityArguments]}"
-#         " --out {output.vcf}"
+#         " -T VariantRecalibrator"
+#         " -nt {threads}"
+#         " --input {input.vcf}"
+#         " -R {rules.gatk_1intervals.input.reference}"
+#         " -mode SNP"
+#         " --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 {input.hapmap}"
+#         " --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 {input.g1000p1}"
+#         " --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 {input.g1000omni}"
+#         " --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 {rules.gatk_3recalibration_stats.input.knownsDBSNP138}"
+#         " --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 {rules.gatk_1intervals.input.knownsA}"
+#         " -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum"
+#         " --recal_file {output.recal}.xxx.tmp"
+#         " --tranches_file {output.recal}.xxx.tranches.tmp"
+#         " --rscript_file {output.recal}.xxx.plots.R.tmp"
+#         " --maxGaussians 6"
 #         " 2>> {log}"
 #
-#         # # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
-#         # # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
-#         # %.gatk.raw.snps.recal: %.gatk.raw.snps.vcf
-#         # 	@echo "$(DATE) ######### Create variant recalibration files for '$<'. This is step 1 of 2 for SNP variant recalibration #########"
-#         # 	gatk_2015.sh GenomeAnalysisTK.jar -T VariantRecalibrator -nt $(NT_HALF) --input $< -R $(REF) --mode SNP --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/hapmap_3.3.b37.vcf --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 $(GATKRES_PATH_2k15)/1000G_phase1.snps.high_confidence.b37.vcf --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 $(GATKRES_PATH_2k15)/1000G_omni2.5.b37.vcf --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 $(GATKRES_PATH_2k15)/dbsnp_138.b37.vcf --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum --recal_file $@.tmp --tranches_file $@.tranches.tmp --rscript_file $@.plots.R.tmp --maxGaussians 6 $(OUTPUT_TO_LOG) \
+#         # %.gatk.raw.indels.recal: %.gatk.raw.indels.vcf
+#         # 	@echo "$(DATE) ######### Create recalibration files for '$<'. This is step 1 of 2 for indel recalibration #########"
+#         # 	gatk_2015.sh GenomeAnalysisTK.jar -T VariantRecalibrator -nt $(NT_HALF) --input $< -R $(REF) --mode INDEL -resource:mills,known=true,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -resource:1000G,known=false,training=true,truth=false,prior=10.0 $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --maxGaussians 2 -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an QD -an DP -an FS -an SOR -an MQRankSum -an ReadPosRankSum --recal_file $@.tmp --tranches_file $@.tranches.tmp --rscript_file $@.plots.R.tmp $(OUTPUT_TO_LOG) \
 #         # 	&& (mv $@.tmp $@ ; mv $@.tranches.tmp $@.tranches ; mv $@.plots.R.tmp $@.plots.R)
 #         # 	-mv $@.plots.R.tmp.pdf $@.plots.R.pdf
 #         # 	-mv $@.tranches.tmp.pdf $@.tranches.pdf
 
 
-
-
-
-#
-#
+#&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&  STEFAN  &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
 #
 #
 
-#
-#
-#
-# %.gatk.raw.indels.recal: %.gatk.raw.indels.vcf
-# 	@echo "$(DATE) ######### Create recalibration files for '$<'. This is step 1 of 2 for indel recalibration #########"
-# 	gatk_2015.sh GenomeAnalysisTK.jar -T VariantRecalibrator -nt $(NT_HALF) --input $< -R $(REF) --mode INDEL -resource:mills,known=true,training=true,truth=true,prior=12.0 $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -resource:1000G,known=false,training=true,truth=false,prior=10.0 $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --maxGaussians 2 -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an QD -an DP -an FS -an SOR -an MQRankSum -an ReadPosRankSum --recal_file $@.tmp --tranches_file $@.tranches.tmp --rscript_file $@.plots.R.tmp $(OUTPUT_TO_LOG) \
-# 	&& (mv $@.tmp $@ ; mv $@.tranches.tmp $@.tranches ; mv $@.plots.R.tmp $@.plots.R)
-# 	-mv $@.plots.R.tmp.pdf $@.plots.R.pdf
-# 	-mv $@.tranches.tmp.pdf $@.tranches.pdf
-#
-# #### 2 raw.indels.vcf <- Select(raw.vcf, INDEL)
-# %.gatk.raw.indels.vcf : %.gatk.raw_calls.vcf
-# 	@echo "$(DATE) ######### Separate SNPs and Indels from '$<'. #########"
-# 	gatk_2015.sh GenomeAnalysisTK.jar -T SelectVariants -nt $(NT_HALF) --selectTypeToInclude INDEL --variant $< -R $(REF) --out $@.tmp  $(OUTPUT_TO_LOG) \
-# 	&& mv $@.tmp $@
-# 	-mv $@.tmp.idx $@.idx
-# #this perl snippet could be used to flag all indels with the tag INDEL
-# #	&& perl -pi -e 's/(AC=\d+;)/INDEL;\1/' $@.tmp  \
 #
 # #### 4 recalibratedSNPs.vcf <- ApplyRecalibration(raw.snps.vcf, snp.model)
 # # Apply SNP Variant recalibration Step 2 of 2
