@@ -1,3 +1,8 @@
+from scripts.reports import report_exome_coverage
+from scripts.parse_samplesheet import parse_samplesheet, get_sample_names
+from scripts.utils import exclude_sample
+
+
 rule gatk_RealignerTargetCreator:
     # Preprocessing to do a realignment of the reads with GATK
     input:
@@ -625,3 +630,14 @@ rule gatk_DepthOfCoverage:
         # %_exome_coverage.sample_summary: %.srt.bam
         # 	@echo "$(DATE) ######### QC: Calculate Exome Coverage for '$<' #########"
         # 	gatk_2015.sh GenomeAnalysisTK.jar -T DepthOfCoverage -I $<  -R $(REF) -L $(EXOME_TRACK) --calculateCoverageOverGenes $(GATKRES_PATH_2k15)/refGene-b37-sorted.txt --omitDepthOutputAtEachBase --summaryCoverageThreshold 10 --summaryCoverageThreshold 20 --summaryCoverageThreshold 30 --summaryCoverageThreshold 40 --summaryCoverageThreshold 50 --minBaseQuality 20 --minMappingQuality 30 --start 1 --stop 500 --nBins 499 -dt NONE -o $@ $(OUTPUT_TO_LOG)
+
+
+rule check_coverage:
+    input:
+        lambda wildcards: ["%s%s%s/%s/%s_exome_coverage.sample_summary.csv" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_DepthOfCoverage'], wildcards.run, sample)
+                           for sample in get_sample_names("%s%s%s%s_ukd.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run))
+                           if not exclude_sample(sample, EXCLUDE_SAMPLES)]
+    output:
+        "{prefix}%s{run}/{run}.exome_coverage.pdf" % config['dirs']['reports']
+    run:
+        report_exome_coverage(input, output[0])
