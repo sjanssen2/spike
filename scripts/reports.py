@@ -69,3 +69,72 @@ def report_undertermined_filesizes(fp_filesizes, fp_output, fp_error,
              ) % (zscorethreshold, fp_error, fp_filesizes))
     else:
         fig.savefig(fp_output, bbox_inches='tight')
+
+
+def report_exome_coverage(
+    fps_sample, fp_plot,
+    min_coverage=30, min_targets=80, coverage_cutoff=200):
+    """Creates an exome coverage plot for multiple samples.
+
+    Parameters
+    ----------
+    fps_sample : [str]
+        A list of file-paths with coverage data in csv format.
+    fp_plot : str
+        Filepath of output graph.
+    min_coverage : int
+        Default: 30.
+        An arbitraty threshold of minimal coverage that we expect.
+        A vertical dashed line is drawn at this value.
+    min_targets : float
+        Default: 80.
+        An arbitraty threshold of minimal targets that we expect to be covered.
+        A horizontal dashed line is drawn at this value.
+    coverage_cutoff : float
+        Default: 200.
+        Rightmost coverage cut-off value where X-axis is limited.
+
+    Raises
+    ------
+    ValueError : If one of the sample's coverage falls below expected
+    thresholds.
+    """
+    # Usually we aim for a 30X coverage on 80% of the sites.
+
+    fig, ax = plt.subplots()
+    ax.axhline(y=min_targets, xmin=0, xmax=coverage_cutoff, color='gray',
+               linestyle='--')
+    ax.axvline(x=min_coverage, ymin=0, ymax=100, color='gray', linestyle='--')
+
+    samples_below_coverage_threshold = []
+    for fp_sample in fps_sample:
+        coverage = pd.read_csv(fp_sample, sep="\t")
+        samplename = fp_sample.split('/')[-1].split('.')[0]
+        linewidth = 1
+        if coverage[coverage['#coverage'] == min_coverage]['percent_cumulative'].min() < min_targets:
+            linewidth = 4
+            samples_below_coverage_threshold.append(samplename)
+        ax.plot(coverage['#coverage'],
+                coverage['percent_cumulative'],
+                label=samplename,
+                linewidth=linewidth)
+
+    ax.set_xlim((0, coverage_cutoff))
+    ax.set_xlabel('Read Coverage')
+    ax.set_ylabel('Targeted Exome Bases')
+    ax.legend()
+
+    if len(samples_below_coverage_threshold) > 0:
+        fp_plot = fp_plot.replace('.pdf', '.error.pdf')
+
+    fig.savefig(fp_plot, bbox_inches='tight')
+
+    if len(samples_below_coverage_threshold) > 0:
+        raise ValueError(
+            "The following %i sample(s) have coverage below expected "
+            "thresholds. Please discuss with project PIs on how to proceed. "
+            "Maybe, samples need to be re-sequenced.\n\t%s\nYou will find more"
+            " information in the generated coverage plot '%s'." % (
+                len(samples_below_coverage_threshold),
+                '\n\t'.join(samples_below_coverage_threshold),
+                fp_plot))

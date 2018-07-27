@@ -1,0 +1,77 @@
+rule platypus:
+    input:
+        bam=rules.gatk_PrintReads.output.bam,
+        bai=rules.gatk_PrintReads.output.bai,
+        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference_dict="%s%shGRC37.dict" % (config['dirs']['prefix'], config['dirs']['references']),
+    output:
+        vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
+        idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
+    benchmark:
+        "{prefix}%s{run}/{sample}.platypus.benchmark" % (config['dirs']['benchmarks'])
+    log:
+        "{prefix}%s{run}/{sample}.platypus.log" % (config['dirs']['logs'])
+    conda:
+        "envs/spike_platypus.yaml"
+    threads:
+        3
+    shell:
+        "python2"
+        " Platypus.py"
+        " callVariants"
+        " --regions={input.exometrack}"
+        " --refFile={input.reference}"
+        " --bamFiles={input.bam}"
+        " --nCPU {threads}"
+        " --output {output.vcf}"
+        " 2>> {log}"
+
+        # #now for the new 2015 magic with platypus
+        # #and ultimately, Platypus
+        # %.ptp.raw.vcf: %.reCal.reAl.nodup.srt.bam %.reCal.reAl.nodup.srt.bam.bai
+        # 	@echo "$(DATE) ######### Perform variant call with platypus '$<'. #########"
+        # 	python2 $(PLATYPUS_PATH_2k15)/Platypus.py callVariants --regions=$(EXOME_TRACK) --refFile=$(REF) --bamFiles=$< --nCPU $(NUM_THREADS) --output=$@.tmp \
+        # 	&& mv $@.tmp $@
+        # 	-mv $@.tmp.idx $@.idx
+
+rule platypus_filtered:
+    input:
+        vcf="{prefix}%s%s/{run}/{sample}.ptp.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
+    output:
+        vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.annotated.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
+        idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered'])
+    benchmark:
+        "{prefix}%s{run}/{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['platypus_filtered'])
+    log:
+        "{prefix}%s{run}/{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['platypus_filtered'])
+    conda:
+        "envs/spike_platypus.yaml"
+    threads:
+        3
+    shell:
+        'cat {input.vcf}'
+        ' | vcf-mapper'
+        ' -a map'
+        ' -f "FORMAT:NR[0]"'
+        ' -t "FORMAT:DP"'
+        ' | vcf-mapper'
+        ' -a map'
+        ' -f "FORMAT:NR"'
+        ' -t "FORMAT:AD[0]"'
+        ' | vcf-mapper'
+        ' -a map'
+        ' -f "FORMAT:NV"'
+        ' -t "FORMAT:AD[1]"'
+        ' | vcf-mapper'
+        ' -a transform'
+        ' -f "FORMAT:AD[0]"'
+        ' -c "substract"'
+        ' -p "#{{FORMAT:NV[0]}}"'
+        ' -o {output.vcf}'
+        " 2>> {log}"
+        # %.ptp.annotated.filtered.indels.vcf: %.ptp.filtered.indels.vcf
+        # 	@echo "$(DATE) ######### Do a hard filtering of the indels in '$<'. #########"
+        # 	cat $< |vcf-mapper -a map -f "FORMAT:NR[0]" -t "FORMAT:DP" | vcf-mapper -a map -f "FORMAT:NR" -t "FORMAT:AD[0]" | vcf-mapper -a map -f "FORMAT:NV" -t "FORMAT:AD[1]" | vcf-mapper -a transform -f "FORMAT:AD[0]" -c "substract" -p "#{FORMAT:NV[0]}" -o $@.tmp\
+        # 	&& mv $@.tmp $@

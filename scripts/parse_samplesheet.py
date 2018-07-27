@@ -118,3 +118,24 @@ def get_laneSplitInputs(wildcards, dir_input_samplesheets, dir_intermediate_demu
         params['direction']) for lane in lanes]
     # print(params, res, ss['tmp-id'])
     return res
+
+def get_sample_names(fp_samplesheet, ukd_actions={'trio', 'somatic'}):
+    """Get unique list of full sample names, i.e. with Project-Name, Sample-Group-Name and s-idx.
+
+    Parameters
+    ----------
+    fp_samplesheet : str
+        Filepath to SampleSheet
+    ukd_action : set(str)
+        Default: {'trio', 'somatic'}.
+        Limit returned samples to those having one of the ukd_actions assigned
+
+    Returns
+    -------
+    [str] the unique full qualified sample names."""
+
+    ss = parse_samplesheet(fp_samplesheet)
+    samples = []
+    for n, g in ss[ss['ukd_action'].isin(ukd_actions)].fillna('').groupby(['Sample_Project', 'Sample_Name', 'Sample_ID', 's-idx']):
+        samples.append(g['fastq-prefix'].unique()[0])
+    return samples
