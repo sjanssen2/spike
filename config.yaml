@@ -9,7 +9,7 @@ emails_demultiplexreport: "stefan.m.janssen@gmail.com"
 name_program: "spike"
 
 dirs:
-  prefix: "/gpfs/project/jansses/"
+  prefix: "/data/Spike_data/"
 
   intermediate: "Intermediate/"
   inputs: "Inputs/"
@@ -29,10 +29,18 @@ stepnames:
   trim: "15_trim"
   map: "25_map"
   nodup: "30_remove_pcr_duplicates"
-  gatk_intervals: "35_gatk_intervals"
-  gatk_realignment: "40_gatk_realign"
-  gatk_recalibration: "45_gatk_recalibration"
-  gatk_calling: "50_gatk_calling"
+  gatk_RealignerTargetCreator: "35_gatk_RealignerTargetCreator"
+  gatk_IndelRealigner: "40_gatk_IndelRealigner"
+  gatk_BaseRecalibrator: "45_gatk_BaseRecalibrator"
+  gatk_PrintReads: "50_gatk_PrintReads"
+  gatk_HaplotypeCaller: "55_gatk_HaplotypeCaller"
+  gatk_SelectVariants: "60_gatk_SelectVariants"
+  gatk_VariantRecalibrator: "65_gatk_VariantRecalibrator"
+  gatk_ApplyRecalibration: "70_gatk_ApplyRecalibration"
+  gatk_VariantFiltration: "75_gatk_VariantFiltration"
+  gatk_CombineVariants: "80_gatk_CombineVariants"
+  platypus: "85_platypus"
+  platypus_filtered: "90_platypus_filtered"
 
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
