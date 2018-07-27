@@ -2,8 +2,9 @@ import os
 import socket
 import glob
 
-from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet
-#from scripts.utils import load_modules
+from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet, get_sample_names
+from scripts.utils import exclude_sample
+
 
 if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith("murks"):
     # this loads a highly parallelized version of bcl2fastq compiled by HHU-HPC's guys
@@ -17,10 +18,7 @@ include: "rules/map/Snakefile"
 include: "rules/gatk/Snakefile"
 include: "rules/platypus/Snakefile"
 
-def _get_samples(fp_samplesheet):
-    ss = parse_samplesheet(fp_samplesheet)
-    samples = {'%s/%s_S%s' % (row['Sample_Project'], row['Sample_ID'], row['s-idx']) for idx, row in ss.iterrows()}
-    return [sample for sample in samples if sample.startswith('Alps/ALPS_66')]
+EXCLUDE_SAMPLES = ['Maus_Hauer', 'Fischer']
 
 rule all:
     input:
@@ -29,12 +27,15 @@ rule all:
 
         # snv calling against background, this is the "main pipeline"
         snvs_background_ptp=['%s%s%s/%s/%s.ptp.annotated.filtered.indels.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['platypus_filtered'], config['run'], sample)
-                             for sample in _get_samples("%s%s%s%s_ukd.csv" % (config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], config['run']))],
+                             for sample in get_sample_names("%s%s%s%s_ukd.csv" % (config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], config['run']))
+                             if not exclude_sample(sample, EXCLUDE_SAMPLES)],
         snvs_background_gatk=['%s%s%s/%s/%s.gatk.%ssnp_indel.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['gatk_CombineVariants'], config['run'], sample, isrelax)
-                              for sample in _get_samples("%s%s%s%s_ukd.csv" % (config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], config['run']))
-                              for isrelax in ['', 'relax.']]
+                              for sample in get_sample_names("%s%s%s%s_ukd.csv" % (config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], config['run']))
+                              for isrelax in ['', 'relax.']
+                              if not exclude_sample(sample, EXCLUDE_SAMPLES)],
 
-        
+        coverage_report='%s%s%s/%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], config['run'], config['run'])
+
 
 rule all_trim:
     input:
