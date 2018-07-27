@@ -41,6 +41,7 @@ stepnames:
   gatk_CombineVariants: "80_gatk_CombineVariants"
   platypus: "85_platypus"
   platypus_filtered: "90_platypus_filtered"
+  gatk_DepthOfCoverage: "95_gatk_DepthOfCoverage"
 
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
