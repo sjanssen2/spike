@@ -483,10 +483,16 @@ rule gatk_VariantFiltration_INDEL:
     input:
         rules.gatk_RealignerTargetCreator.input.gatkpackage,
         rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
-        vcf=rules.gatk_ApplyRecalibration.output.vcf,
-        #
-        # vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}{isrelax,\.relax|}.recal.{snvtype,snps|indels}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_ApplyRecalibration']),
-        # vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.                    {snvtype,snps|indels}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_SelectVariants']),
+        vcf=lambda wildcards: "%s%s%s/%s/%s.%s%s.%s.%s.vcf" % (
+            wildcards.prefix,
+            config['dirs']['intermediate'],
+            config['stepnames']['gatk_ApplyRecalibration'] if wildcards.program == "gatk" else config['stepnames']['gatk_SelectVariants'],
+            wildcards.run,
+            wildcards.sample,
+            wildcards.program,
+            wildcards.isrelax,
+            'recal' if wildcards.program == "gatk" else 'raw',
+            wildcards.snvtype),
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}{isrelax,.{0}}.filtered.{snvtype,indels}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
         idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}{isrelax,.{0}}.filtered.{snvtype,indels}.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
