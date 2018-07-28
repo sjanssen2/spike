@@ -42,6 +42,7 @@ stepnames:
   platypus: "85_platypus"
   platypus_filtered: "90_platypus_filtered"
   gatk_DepthOfCoverage: "95_gatk_DepthOfCoverage"
+  varscan_mpileup: "100_varscan_mpileup"
 
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
