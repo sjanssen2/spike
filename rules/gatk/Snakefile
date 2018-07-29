@@ -180,7 +180,7 @@ rule exome_coverage:
     benchmark:
         "{prefix}%s{run}/{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['exome_coverage'])
     log:
-        bedtools="{prefix}%s{run}/{sample}.%s.bedtools.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage'])
+        bedtools="{prefix}%s{run}/{sample}.%s.bedtools.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage']),
         gawk="{prefix}%s{run}/{sample}.%s.gawk.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage'])
     conda:
         "envs/spike_bedtools.yaml"
@@ -193,7 +193,8 @@ rule exome_coverage:
         ' -abam {input.bam}'
         ' -b {input.exometrack}'
         ' -hist'
-        ' 2> {log.bedtools} | gawk \'BEGIN {{ FS="\t";OFS="\t"}} $1~"^all" {{print $2,$3,$4,(($4-sum)/($4+1)*100); sum+=$3}}\''
+        ' 2> {log.bedtools}'
+        ' | gawk \'BEGIN {{ FS="\t";OFS="\t"}} $1~"^all" {{print $2,$3,$4,(($4-sum)/($4+1)*100); sum+=$3}}\''
         ' >> {output}'
         " 2> {log.gawk}"
         # 	-exome_coverage.sh $@ $(EXOME_TRACK)
