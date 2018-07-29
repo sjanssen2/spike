@@ -170,6 +170,33 @@ rule gatk_PrintReads:
         # 	-exome_coverage.sh $@ $(EXOME_TRACK)
 
 
+rule exome_coverage:
+    # produce exome coverage statistics for a sample
+    input:
+        bam=rules.gatk_PrintReads.output.bam,
+        exometrack=rules.gatk_RealignerTargetCreator.input.exometrack,
+    output:
+        csv="{prefix}%s%s/{run,[^/]+XX}/{sample}.exome_coverage.csv" % (config['dirs']['intermediate'], config['stepnames']['exome_coverage']),
+    benchmark:
+        "{prefix}%s{run}/{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['exome_coverage'])
+    log:
+        "{prefix}%s{run}/{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage'])
+    conda:
+        "envs/spike_bedtools.yaml"
+    threads:
+        3
+    shell:
+        'bedtools'
+        ' coverage'
+        ' -abam {input.bam}'
+        ' -b {input.exometrack}'
+        ' -hist'
+        ' | gawk \'BEGIN {{ FS="\t";OFS="\t"}} $1~"^all" {{print $2,$3,$4,(($4-sum)/($4+1)*100); sum+=$3}}\''
+        ' > {output}'
+        " 2>> {log}"
+        # 	-exome_coverage.sh $@ $(EXOME_TRACK)
+
+
 rule gatk_HaplotypeCaller:
     # Call SNPs and Indels (using --genotype_likelihoods_model BOTH )
     input:
@@ -583,58 +610,58 @@ rule gatk_CombineVariants:
         # 	gatk_2015.sh GenomeAnalysisTK.jar -T CombineVariants --assumeIdenticalSamples -R $(REF) $(foreach vcf_file,$^,--variant $(vcf_file))  --out $@  $(OUTPUT_TO_LOG)
 
 
-rule gatk_DepthOfCoverage:
-    # QC: Calculate Exome Coverage for
-    input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
-        exometrack=rules.gatk_RealignerTargetCreator.input.exometrack,
-        geneset="%s%srefGene-b37-sorted.txt" % (config['dirs']['prefix'], config['dirs']['references']),
-        bam=rules.gatk_PrintReads.output.bam
-    output:
-        csv="{prefix}%s%s/{run,[^/]+XX}/{sample}_exome_coverage.sample_summary.csv" % (config['dirs']['intermediate'], config['stepnames']['gatk_DepthOfCoverage']),
-        png="{prefix}%s%s/{run,[^/]+XX}/{sample}_exome_coverage.sample_summary.png" % (config['dirs']['intermediate'], config['stepnames']['gatk_DepthOfCoverage']),
-    benchmark:
-        "{prefix}%s{run}/{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_DepthOfCoverage'])
-    log:
-        "{prefix}%s{run}/{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['gatk_DepthOfCoverage'])
-    conda:
-        "envs/spike_gatk.yaml"
-    threads:
-        1
-    shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
-        "java"
-        " -Xmx6g -XX:ParallelGCThreads={threads}"
-        " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
-        " -T DepthOfCoverage"
-        " -I {input.bam}"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
-        " -L {input.exometrack}"
-        " --calculateCoverageOverGenes {input.geneset}"
-        " --omitDepthOutputAtEachBase"
-        " --summaryCoverageThreshold 10"
-        " --summaryCoverageThreshold 20"
-        " --summaryCoverageThreshold 30"
-        " --summaryCoverageThreshold 40"
-        " --summaryCoverageThreshold 50"
-        " --minBaseQuality 20"
-        " --minMappingQuality 30"
-        " --start 1"
-        " --stop 500"
-        " --nBins 499"
-        " -dt NONE"
-        " -o {output.csv}"
-        " 2>> {log}"
-
-        # %_exome_coverage.sample_summary: %.srt.bam
-        # 	@echo "$(DATE) ######### QC: Calculate Exome Coverage for '$<' #########"
-        # 	gatk_2015.sh GenomeAnalysisTK.jar -T DepthOfCoverage -I $<  -R $(REF) -L $(EXOME_TRACK) --calculateCoverageOverGenes $(GATKRES_PATH_2k15)/refGene-b37-sorted.txt --omitDepthOutputAtEachBase --summaryCoverageThreshold 10 --summaryCoverageThreshold 20 --summaryCoverageThreshold 30 --summaryCoverageThreshold 40 --summaryCoverageThreshold 50 --minBaseQuality 20 --minMappingQuality 30 --start 1 --stop 500 --nBins 499 -dt NONE -o $@ $(OUTPUT_TO_LOG)
+# rule gatk_DepthOfCoverage:
+#     # QC: Calculate Exome Coverage for
+#     input:
+#         rules.gatk_RealignerTargetCreator.input.gatkpackage,
+#         rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+#         exometrack=rules.gatk_RealignerTargetCreator.input.exometrack,
+#         geneset="%s%srefGene-b37-sorted.txt" % (config['dirs']['prefix'], config['dirs']['references']),
+#         bam=rules.gatk_PrintReads.output.bam
+#     output:
+#         csv="{prefix}%s%s/{run,[^/]+XX}/{sample}_exome_coverage.sample_summary.csv" % (config['dirs']['intermediate'], config['stepnames']['gatk_DepthOfCoverage']),
+#         png="{prefix}%s%s/{run,[^/]+XX}/{sample}_exome_coverage.sample_summary.png" % (config['dirs']['intermediate'], config['stepnames']['gatk_DepthOfCoverage']),
+#     benchmark:
+#         "{prefix}%s{run}/{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_DepthOfCoverage'])
+#     log:
+#         "{prefix}%s{run}/{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['gatk_DepthOfCoverage'])
+#     conda:
+#         "envs/spike_gatk.yaml"
+#     threads:
+#         1
+#     shell:
+#         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+#         "java"
+#         " -Xmx6g -XX:ParallelGCThreads={threads}"
+#         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
+#         " -T DepthOfCoverage"
+#         " -I {input.bam}"
+#         " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+#         " -L {input.exometrack}"
+#         " --calculateCoverageOverGenes {input.geneset}"
+#         " --omitDepthOutputAtEachBase"
+#         " --summaryCoverageThreshold 10"
+#         " --summaryCoverageThreshold 20"
+#         " --summaryCoverageThreshold 30"
+#         " --summaryCoverageThreshold 40"
+#         " --summaryCoverageThreshold 50"
+#         " --minBaseQuality 20"
+#         " --minMappingQuality 30"
+#         " --start 1"
+#         " --stop 500"
+#         " --nBins 499"
+#         " -dt NONE"
+#         " -o {output.csv}"
+#         " 2>> {log}"
+#
+#         # %_exome_coverage.sample_summary: %.srt.bam
+#         # 	@echo "$(DATE) ######### QC: Calculate Exome Coverage for '$<' #########"
+#         # 	gatk_2015.sh GenomeAnalysisTK.jar -T DepthOfCoverage -I $<  -R $(REF) -L $(EXOME_TRACK) --calculateCoverageOverGenes $(GATKRES_PATH_2k15)/refGene-b37-sorted.txt --omitDepthOutputAtEachBase --summaryCoverageThreshold 10 --summaryCoverageThreshold 20 --summaryCoverageThreshold 30 --summaryCoverageThreshold 40 --summaryCoverageThreshold 50 --minBaseQuality 20 --minMappingQuality 30 --start 1 --stop 500 --nBins 499 -dt NONE -o $@ $(OUTPUT_TO_LOG)
 
 
 rule check_coverage:
     input:
-        lambda wildcards: ["%s%s%s/%s/%s_exome_coverage.sample_summary.csv" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_DepthOfCoverage'], wildcards.run, sample)
+        lambda wildcards: ["%s%s%s/%s/%s.exome_coverage.csv" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['exome_coverage'], wildcards.run, sample)
                            for sample in get_sample_names("%s%s%s%s_ukd.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run))
                            if not exclude_sample(sample, EXCLUDE_SAMPLES)]
     output:
