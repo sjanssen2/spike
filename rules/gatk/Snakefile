@@ -180,20 +180,22 @@ rule exome_coverage:
     benchmark:
         "{prefix}%s{run}/{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['exome_coverage'])
     log:
-        "{prefix}%s{run}/{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage'])
+        bedtools="{prefix}%s{run}/{sample}.%s.bedtools.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage'])
+        gawk="{prefix}%s{run}/{sample}.%s.gawk.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage'])
     conda:
         "envs/spike_bedtools.yaml"
     threads:
         3
     shell:
+        'echo "#coverage\tnumber_bases\ttotal_bases\tpercent_cumulative" > {outpu}; '
         'bedtools'
         ' coverage'
         ' -abam {input.bam}'
         ' -b {input.exometrack}'
         ' -hist'
-        ' | gawk \'BEGIN {{ FS="\t";OFS="\t"}} $1~"^all" {{print $2,$3,$4,(($4-sum)/($4+1)*100); sum+=$3}}\''
-        ' > {output}'
-        " 2>> {log}"
+        ' 2> {log.bedtools} | gawk \'BEGIN {{ FS="\t";OFS="\t"}} $1~"^all" {{print $2,$3,$4,(($4-sum)/($4+1)*100); sum+=$3}}\''
+        ' >> {output}'
+        " 2> {log.gawk}"
         # 	-exome_coverage.sh $@ $(EXOME_TRACK)
 
 
