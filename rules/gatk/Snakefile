@@ -187,7 +187,7 @@ rule exome_coverage:
     threads:
         3
     shell:
-        'echo "#coverage\tnumber_bases\ttotal_bases\tpercent_cumulative" > {outpu}; '
+        'echo "#coverage\tnumber_bases\ttotal_bases\tpercent_cumulative" > {output}; '
         'bedtools'
         ' coverage'
         ' -abam {input.bam}'
