@@ -10,9 +10,9 @@ rule rejoin_sample:
         lambda wildcards: ["%s%s%s/%s/%s_L%03i_%s_001.fastq.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, wildcards.sample, int(lane), wildcards.direction)
                            for lane in get_lanes_for_sampleID("%s%s%s%s_ukd.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run), wildcards.sample)]
     benchmark:
-        "{prefix}%s{run}/{sample}_R{direction}.benchmark" % config['dirs']['benchmarks']
+        "{prefix}%s{run}/{sample}_{direction}.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{run}/{sample}_R{direction}.log" % config['dirs']['logs']
+        "{prefix}%s{run}/{sample}_{direction}.log" % config['dirs']['logs']
     output:
         "{prefix}%s%s/{run,[^\/]+XX}/{sample, .*?}_{direction,R[1|2]}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
     threads:
