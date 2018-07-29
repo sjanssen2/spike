@@ -145,7 +145,7 @@ rule gatk_PrintReads:
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        16
+        3
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
         "java"
@@ -297,7 +297,7 @@ rule gatk_VariantRecalibrator_SNP:
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        30
+        3
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
         "java"
