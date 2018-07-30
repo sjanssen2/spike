@@ -1,6 +1,9 @@
+import yaml
 import pandas as pd
 import numpy as np
 from os.path import join
+import glob
+
 
 DIRECTIONS = ['R1', 'R2']
 
@@ -76,6 +79,7 @@ def get_sample_fastqprefixes(fp_samplesheet):
     ss = parse_samplesheet(fp_samplesheet)
     return list(ss['fastq-prefix'].unique())
 
+
 def get_lanes_for_sampleID(fp_samplesheet, sample):
     """Return lanes a given sample is spread across.
 
@@ -100,6 +104,7 @@ def get_lanes_for_sampleID(fp_samplesheet, sample):
 
     return res
 
+
 def get_laneSplitInputs(wildcards, dir_input_samplesheets, dir_intermediate_demultiplex):
     """Given targeted joined output fastq.gz file, obtain fastq.gz files eventually split across lanes."""
     #params must contain at least
@@ -119,6 +124,7 @@ def get_laneSplitInputs(wildcards, dir_input_samplesheets, dir_intermediate_demu
         params['direction']) for lane in lanes]
     # print(params, res, ss['tmp-id'])
     return res
+
 
 def get_sample_names(fp_samplesheet, ukd_actions={'trio', 'somatic'}):
     """Get unique list of full sample names, i.e. with Project-Name, Sample-Group-Name and s-idx.
@@ -140,3 +146,67 @@ def get_sample_names(fp_samplesheet, ukd_actions={'trio', 'somatic'}):
     for n, g in ss[ss['ukd_action'].isin(ukd_actions)].fillna('').groupby(['Sample_Project', 'Sample_Name', 'Sample_ID', 's-idx']):
         samples.append(g['fastq-prefix'].unique()[0])
     return samples
+
+
+def get_role(ukd_project, ukd_entity_id, ukd_entity_role, config):
+    """Returns file path for bam, given project, entity and role (for trio).
+
+    Parameters
+    ----------
+    ukd_project : str
+        Name of project, to avoid entity ID clashes across projects.
+    ukd_entity_id : str
+        Entity ID for which role needs to be obtained.
+    ukd_entity_role : str
+        Role of entity ID whose bam filepath shall be returned.
+    config : snakemake.config
+        Snakemakes config object to obtain file path of sample sheets.
+
+    Returns
+    -------
+    str: Filepath of bam file for given entity role.
+    """
+    # parse all available sample sheets
+    fps_samplesheets = glob.glob(join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], '*XX_ukd.csv'))
+
+    global_samplesheet = []
+    for fp_samplesheet in fps_samplesheets:
+        ss = parse_samplesheet(fp_samplesheet)
+        ss['run'] = fp_samplesheet.split('/')[-1].replace('_ukd.csv', '')
+        global_samplesheet.append(ss)
+    global_samplesheet = pd.concat(global_samplesheet)
+
+    samples = global_samplesheet
+
+    # select correct project
+    try:
+        x = samples[samples['Sample_Project'] == ukd_project]
+        x.iloc[0]
+    except IndexError:
+        raise ValueError('Could not find an UKD project with name "%s". Available projects are:\n\t%s\n' % (ukd_project, '\n\t'.join(sorted(samples['Sample_Project'].unique()))))
+    else:
+        samples = x
+
+    # select correct entity
+    try:
+        x = samples[samples['ukd_entity_id'] == ukd_entity_id]
+        x.iloc[0]
+    except IndexError:
+        raise ValueError('Could not find an UKD entity group with name "%s". Available entities for projects "%s" are:\n\t%s\n' % (ukd_entity_id, ukd_project, '\n\t'.join(sorted(samples['ukd_entity_id'].unique()))))
+    else:
+        samples = x
+
+    # select correct role
+    try:
+        x = samples[samples['ukd_entity_role'] == ukd_entity_role]
+        x.iloc[0]
+    except IndexError:
+        raise ValueError('Could not find a role "%s" for UKD entity group with name "%s". Available roles are:\n\t%s\n' % (ukd_entity_role, ukd_entity_id, '\n\t'.join(sorted(samples['ukd_entity_role'].unique()))))
+    else:
+        samples = x
+
+    res = {join(sample['run'], sample['fastq-prefix']) for idx, sample in samples.iterrows()}
+    if len(res) > 1:
+        raise ValueError("Stefan, check if use cases can occour with more than one result!")
+
+    return list(res)[0]

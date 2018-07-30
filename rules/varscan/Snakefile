@@ -1,5 +1,5 @@
 # from scripts.reports import report_exome_coverage
-# from scripts.parse_samplesheet import parse_samplesheet, get_sample_names
+from scripts.parse_samplesheet import get_role
 # from scripts.utils import exclude_sample
 
 
@@ -10,9 +10,9 @@ rule varscan_mpileup:
         # bam=rules.remove_pcr_duplicates.output.bam,
         # bai=rules.remove_pcr_duplicates.output.bai,
         # gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
-        patient="{prefix}%s%s/{run,[^/]+XX}/{trio}%s.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], '_S17'),
-        father="{prefix}%s%s/{run,[^/]+XX}/{trio}%s.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], '_a_S18'),
-        mother="{prefix}%s%s/{run,[^/]+XX}/{trio}%s.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], '_b_S19'),
+        patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
+        father=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'father', config)),
+        mother=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'mother', config)),
         exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
         reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
         reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
@@ -20,12 +20,13 @@ rule varscan_mpileup:
         # knownsA="%s%sMills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
         # knownsB="%s%s1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references'])
     output:
-        indel="{prefix}%s%s/{run,[^/]+XX}/{trio}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_mpileup']),
-        snp="{prefix}%s%s/{run,[^/]+XX}/{trio}.snp.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_mpileup']),
+        indel="{prefix}%s%s/{trio}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_mpileup']),
+        snp="{prefix}%s%s/{trio}.snp.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_mpileup']),
     benchmark:
-        "{prefix}%s{run}/{trio}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_mpileup'])
+        "{prefix}%s{trio}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_mpileup'])
     log:
-        "{prefix}%s{run}/{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_mpileup'])
+        samtools="{prefix}%s{trio}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_mpileup']),
+        varscan="{prefix}%s{trio}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_mpileup'])
     conda:
         "envs/spike_varscan.yaml"
     threads:
@@ -40,6 +41,7 @@ rule varscan_mpileup:
         " {input.father}"
         " {input.mother}"
         " {input.patient}"
+        " 2> {log.samtools}"
         " | java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
@@ -51,7 +53,7 @@ rule varscan_mpileup:
         " --p-value 0.05"
         " -adj-var-freq 0.05"
         " -adj-p-value 0.15"
-        " 2>> {log}"
+        " 2> {log.varscan}"
 
         # ##################################
         # # STEP PRODUCING MPILEUP FOR TRIOS
