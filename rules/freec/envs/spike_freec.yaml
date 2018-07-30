@@ -1,0 +1,7 @@
+name: spike_gatk
+
+channels:
+  - bioconda
+dependencies:
+  - control-freec =11.4
+  - samtools =1.3
