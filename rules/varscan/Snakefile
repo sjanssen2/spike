@@ -369,3 +369,104 @@ rule writing_headers:
         # cat $OUTPUTBASENAME.fpcorr.snp_indel.vcf | grep "#" >$OUTPUTBASENAME.var2denovo.vcf
         # #selecting for denovos via their status to avoid grepping a headerline too much
         # cat $OUTPUTBASENAME.fpcorr.snp_indel.vcf | grep "STATUS=3" | sort -k1,1 -n -k2,2 -n >>$OUTPUTBASENAME.var2denovo.vcf
+
+
+#### rules for somatic calling
+
+rule samtools_mpileup:
+    # Preprocessing to do a realignment of the reads with GATK
+    input:
+        rules.gatk_RealignerTargetCreator.input.exometrack,
+        rules.gatk_RealignerTargetCreator.input.reference,
+        bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
+    output:
+        "{prefix}%s%s/{entity}.pileup" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'])
+    benchmark:
+        "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
+    log:
+        "{prefix}%s{entity}.%s.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
+    conda:
+        "envs/spike_freec.yaml"
+    threads:
+        1
+    shell:
+        "samtools"
+        " mpileup"
+        " -f {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -l {rules.gatk_RealignerTargetCreator.input.exometrack}"
+        " -B {input.bam}"
+        " > {output}"
+        " 2> {log}"
+
+        # /data/biotools/src/samtools-1.3/samtools mpileup -f $REF -q1 -l $EXOME_TRACK -B $NORMAL_BAM > $NORMAL_PILEUP || usage "error ($?) reading normal bam file with samtools: $NORMAL_BAM"
+        # /data/biotools/src/samtools-1.3/samtools mpileup -f $REF -q1 -l $EXOME_TRACK -B $TUMOR_BAM > $TUMOR_PILEUP || usage "error ($?) reading normal bam file with samtools: $TUMOR_BAM"
+
+
+rule varscan_somatic:
+    # Preprocessing to do a realignment of the reads with GATK
+    input:
+        tumor=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', config)),
+        healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', config)),
+    output:
+        indel="{prefix}%s%s/{trio}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
+        snp="{prefix}%s%s/{trio}.snp.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
+    benchmark:
+        "{prefix}%s{trio}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_somatic'])
+    log:
+        "{prefix}%s{trio}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_somatic'])
+    conda:
+        "envs/spike_varscan.yaml"
+    threads:
+        1
+    shell:
+        "java"
+        " -Xmx3g"
+        " -XX:ParallelGCThreads={threads}"
+        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
+        " somatic"
+        " {input.healthy}"
+        " {input.tumor}"
+        " $(basename {output})"
+        " --min-coverage-normal 8"
+        " --min-coverage-tumor 10"
+        " --min-reads 4"
+        " --min-var-freq 0.1"
+        " --normal-purity 0.95"
+        " --strand-filter 1"
+        " --output-vcf 1"
+        " 2>> {log}"
+        " && java"
+        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
+        " processSomatic"
+        " {output.snp}"
+        " 2>> {log}"
+        " && java"
+        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
+        " processSomatic "
+        " {output.indel}"
+        " 2>> {log}"
+
+        # java -Xmx3g -XX:ParallelGCThreads=1 -Djava.io.tmpdir=$TEMPPATH -jar $VARSCAN2JAR  somatic $NORMAL_PILEUP $TUMOR_PILEUP $OUTPUTBASENAME --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 --min-var-freq 0.1 --normal-purity 0.95 --strand-filter 1 --output-vcf 1 -- $* && (java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.snp.vcf ; java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.indel.vcf)
+
+
+rule varscan_fpfilter_somatic:
+    # fpfilter
+    input:
+        "{prefix}%s%s/{trio}.{snvtype}.{snvtype}.{mutationclass}.hc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
+    output:
+        "{prefix}%s%s/{trio}.{snvtype,snp}.{mutationclass,Somatic|Germline}.hc.vcf.fpfilter.var" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
+    benchmark:
+        "{prefix}%s{trio}.{snvtype}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_fpfilter'])
+    log:
+        "{prefix}%s{trio}.{snvtype}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_fpfilter']),
+    threads:
+        1
+    shell:
+        "perl"
+        " -ane"
+        ' \'print join("\t",@F[0,1,1])."\n" unless(m/^#/)\'"
+        " {input}"
+        " > {output}"
+
+        # perl -ane 'print join("\t",@F[0,1,1])."\n" unless(m/^#/)' $OUTPUTBASENAME.snp.Somatic.hc.vcf > $OUTPUTBASENAME.snp.Somatic.hc.vcf.fpfilter.var
+        # perl -ane 'print join("\t",@F[0,1,1])."\n" unless(m/^#/)' $OUTPUTBASENAME.snp.Germline.hc.vcf > $OUTPUTBASENAME.snp.Germline.hc.vcf.fpfilter.var
