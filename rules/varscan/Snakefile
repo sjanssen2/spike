@@ -78,6 +78,8 @@ rule varscan_filter_SNP:
     threads:
         1
     shell:
+        #set the locale to C which avoids problems with . and , used as decimal separator
+        "export LANG=C"
         "java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
@@ -117,6 +119,8 @@ rule varscan_filter_INDEL:
     threads:
         1
     shell:
+        #set the locale to C which avoids problems with . and , used as decimal separator
+        "export LANG=C"
         "java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
@@ -237,6 +241,8 @@ rule varscan_fpfilter:
     threads:
         1
     shell:
+        #set the locale to C which avoids problems with . and , used as decimal separator
+        "export LANG=C"
         "java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
