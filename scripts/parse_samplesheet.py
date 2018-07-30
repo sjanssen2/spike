@@ -20,6 +20,8 @@ def parse_samplesheet(fp_samplesheet):
             uidx[sample_id] = len(uidx) + 1
     ss['s-idx'] = ss['Sample_ID'].apply(lambda x: uidx[x])
 
+    # TODO: ensure that sample names do not clash when not considering s-idx!
+
     # fastq-prefix
     fp_fastqs = []
     for idx, row in ss.iterrows():
@@ -29,10 +31,9 @@ def parse_samplesheet(fp_samplesheet):
         if pd.notnull(row['Sample_Name']):
             fp_fastq = join(fp_fastq, row['Sample_ID'])
         fp_fastqs.append(join(fp_fastq,
-            '%s_S%i' % (
+            '%s' % (
                 row['Sample_Name'] if pd.notnull(
-                    row['Sample_Name']) else row['Sample_ID'],
-                row['s-idx'])))
+                    row['Sample_Name']) else row['Sample_ID'])))
     ss['fastq-prefix'] = fp_fastqs
 
     return ss
@@ -66,7 +67,7 @@ def get_fastq_filenames(fp_samplesheet):
     for lane in ss['Lane'].unique():
         for direction in DIRECTIONS:
             fp_fastqs.append(
-                'Undetermined_S0_L%03i_%s_001.fastq.gz' % (lane, direction))
+                'Undetermined_L%03i_%s_001.fastq.gz' % (lane, direction))
 
     return fp_fastqs
 
@@ -94,7 +95,7 @@ def get_lanes_for_sampleID(fp_samplesheet, sample):
     [str] : Lane numbers on which to find the given sample.
     """
     ss = parse_samplesheet(fp_samplesheet)
-    ss['tmp-id'] = ['%s/%s%s_S%s' % (row['Sample_Project'], row['Sample_ID'], '/'+row['Sample_Name'] if pd.notnull(row['Sample_Name']) else "", row['s-idx']) for _, row in ss.iterrows()]
+    ss['tmp-id'] = ['%s/%s%s' % (row['Sample_Project'], row['Sample_ID'], '/'+row['Sample_Name'] if pd.notnull(row['Sample_Name']) else "") for _, row in ss.iterrows()]
     res = ss[ss['tmp-id'] == sample]['Lane'].unique()
 
     return res

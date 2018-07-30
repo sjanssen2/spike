@@ -17,6 +17,7 @@ include: "rules/trim/Snakefile"
 include: "rules/map/Snakefile"
 include: "rules/gatk/Snakefile"
 include: "rules/platypus/Snakefile"
+include: "rules/varscan/Snakefile"
 
 EXCLUDE_SAMPLES = ['Maus_Hauer', 'Fischer']
 

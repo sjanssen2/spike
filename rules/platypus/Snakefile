@@ -8,7 +8,7 @@ rule platypus:
         reference_dict="%s%shGRC37.dict" % (config['dirs']['prefix'], config['dirs']['references']),
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
-        idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
+        #idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
     benchmark:
         "{prefix}%s{run}/{sample}.platypus.benchmark" % (config['dirs']['benchmarks'])
     log:
@@ -19,14 +19,15 @@ rule platypus:
         3
     shell:
         "python2"
-        " Platypus.py"
+        " $CONDA_PREFIX/share/platypus-variant-0.8.1.1-2/Platypus.py"
         " callVariants"
         " --regions={input.exometrack}"
         " --refFile={input.reference}"
         " --bamFiles={input.bam}"
         " --nCPU {threads}"
         " --output {output.vcf}"
-        " 2>> {log}"
+        " 2> {log};"
+        # " mv -v {output.vcf}.tmp {output.vcf} 2>> {log}"
 
         # #now for the new 2015 magic with platypus
         # #and ultimately, Platypus
@@ -41,7 +42,7 @@ rule platypus_filtered:
         vcf="{prefix}%s%s/{run}/{sample}.ptp.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.annotated.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
-        idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered'])
+        #idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered'])
     benchmark:
         "{prefix}%s{run}/{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['platypus_filtered'])
     log:

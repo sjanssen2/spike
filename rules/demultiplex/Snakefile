@@ -50,12 +50,14 @@ rule demultiplex:
         " --processing-threads {threads}"
         " --writing-threads {threads}"
         " 2>> {log}"
+        # rename demux fastq files such that S\d+ are removed from filenames
+        ' ; for f in `find {config[dirs][prefix]}{config[dirs][intermediate]}/{config[stepnames][demultiplex]}/{config[run]}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
 
 
 rule aggregate_undetermined_filesizes:
     input:
         lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, fastq)
-                           for fastq in get_fastq_filenames("%s%s%s%s_ukd.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run)) if 'Undetermined_S0_L' in fastq]
+                           for fastq in get_fastq_filenames("%s%s%s%s_ukd.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run)) if 'Undetermined_L' in fastq]
     output:
         sizes="{prefix}%sUndeterminedFilesizes/{run}.txt" % (config['dirs']['aggregation']),
         fp_check="{prefix}%s%s-{run}-aggregate_undetermined_filesizes.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])

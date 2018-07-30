@@ -1,0 +1,6 @@
+name: spike_bedtools
+
+channels:
+  - bioconda
+dependencies:
+  - bedtools =2.16.2
