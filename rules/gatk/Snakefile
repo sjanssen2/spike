@@ -370,7 +370,8 @@ rule gatk_VariantRecalibrator_INDEL:
         recal="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         recalidx="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.recal.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         tranches="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.tranches" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
-        tranchespdf="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.tranches.pdf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
+        #INFO  09:58:02,727 VariantRecalibrator - Tranches plot will not be generated since we are running in INDEL mode
+        #tranchespdf="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.tranches.pdf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         plots="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.plots.R" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         plotspdf="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.plots.R.pdf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
     benchmark:
