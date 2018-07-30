@@ -42,7 +42,7 @@ rule platypus_filtered:
         vcf="{prefix}%s%s/{run}/{sample}.ptp.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.annotated.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
-        idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered'])
+        #idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered'])
     benchmark:
         "{prefix}%s{run}/{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['platypus_filtered'])
     log:
