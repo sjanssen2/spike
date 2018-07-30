@@ -157,7 +157,7 @@ rule bam_readcount_SNP:
         'cat {input.vcf}'
         ' | grep -v "#"'
         ' | cut -f 1,2'
-        " | awk '{{ print $1, $2, $2 }}"
+        " | awk '{{ print $1, $2, $2 }}'"
         ' > {output.var}'
         ' 2> {log}'
         ' && bam-readcount'
@@ -373,7 +373,7 @@ rule writing_headers:
 
 #### rules for somatic calling
 
-rule samtools_mpileup:
+rule samtools_mpileup_somatic:
     # Preprocessing to do a realignment of the reads with GATK
     input:
         rules.gatk_RealignerTargetCreator.input.exometrack,
@@ -456,15 +456,15 @@ rule varscan_fpfilter_somatic:
     output:
         "{prefix}%s%s/{trio}.{snvtype,snp}.{mutationclass,Somatic|Germline}.hc.vcf.fpfilter.var" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
     benchmark:
-        "{prefix}%s{trio}.{snvtype}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_fpfilter'])
+        "{prefix}%s{trio}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_fpfilter'])
     log:
-        "{prefix}%s{trio}.{snvtype}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_fpfilter']),
+        "{prefix}%s{trio}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_fpfilter']),
     threads:
         1
     shell:
         "perl"
         " -ane"
-        ' \'print join("\t",@F[0,1,1])."\n" unless(m/^#/)\'"
+        ' \'print join("\t",@F[0,1,1])."\n" unless(m/^#/)\'"'
         " {input}"
         " > {output}"
 
