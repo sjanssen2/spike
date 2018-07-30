@@ -37,7 +37,7 @@ rule all:
 
         coverage_report='%s%s%s/%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], config['run'], config['run']),
 
-        trio=['%s%s%s%s.%s.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['varscan_mpileup'], 'ALPS_66', snvtype) for snvtype in ['indel','snp']]
+        trio=['%s%s%s/%s.%s.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['varscan_mpileup'], 'ALPS_66', snvtype) for snvtype in ['indel','snp']]
 
 
 rule all_trim:
