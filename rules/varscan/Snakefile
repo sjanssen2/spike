@@ -26,7 +26,9 @@ rule varscan_trio:
     params:
         workdir="{prefix}%s%s/{trio}" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio'])
     shell:
-        "mkdir -v -p {params.workdir} > {log.samtools}"
+        #set the locale to C which avoids problems with . and , used as decimal separator
+        "export LANG=C"
+        "; mkdir -v -p {params.workdir} > {log.samtools}"
         " && samtools"
         " mpileup"
         " -B "
