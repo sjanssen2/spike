@@ -1,4 +1,6 @@
 channels:
   - bioconda
+  - biobuilds
 dependencies:
   - bam-readcount =0.8
+  - perl =5.22
