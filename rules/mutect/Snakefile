@@ -8,34 +8,56 @@ rule mutect:
     input:
         rules.gatk_RealignerTargetCreator.input.exometrack,
         rules.gatk_RealignerTargetCreator.input.reference,
-        # tumor=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', config)),
-        # healthy=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', config)),
+        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        rules.gatk_BaseRecalibrator.input.knownsDBSNP138,
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        mutect117="%s%smutect-1.1.7.jar" % (config['dirs']['prefix'], config['dirs']['references']),
+        cosmic="%s%sCosmicCodingMuts_v63_300113.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        cosmicvcf="%s%sCosmicCodingMuts_v63_300113.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+        tumor=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', config)),
+        healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', config)),
     output:
-        pileup="{prefix}%s%s/{entity}.all_calls.csv" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+        csv="{prefix}%s%s/{entity}.all_calls.csv" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+        vcf="{prefix}%s%s/{entity}.all_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
     benchmark:
         "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['mutect'])
     log:
         mutect="{prefix}%s{entity}.%s.mutect.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
-        # pigz="{prefix}%s{entity}.%s.pigz.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup'])
+        post="{prefix}%s{entity}.%s.post.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
     conda:
-        "envs/spike_mutect.yaml"
+        "../gatk/envs/spike_mutect.yaml"
     threads:
         1
     shell:
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
-        " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
-
-        # "samtools"
-        # " mpileup"
-        # " -C50 "
-        # " -Q20"
-        # " -f {rules.gatk_RealignerTargetCreator.input.reference}"
-        # " -l {rules.gatk_RealignerTargetCreator.input.exometrack}"
-        # " 2> {log.samtools}"
-        # " | pigz"
-        # " > {output}"
-        # " 2> {log.pigz}"
+        " -jar {mutect117}"
+        " --analysis_type MuTect"
+        " --reference_sequence {rules.gatk_RealignerTargetCreator.input.reference}"
+        " --dbsnp {rules.gatk_BaseRecalibrator.input.knownsDBSNP138}"
+        " --cosmic {input.cosmic}"
+        " --intervals {rules.gatk_RealignerTargetCreator.input.exometrack}"
+        " --input_file:normal {input.healthy}"
+        " --input_file:tumor {input.tumor}"
+        " --out {output.csv}"
+        " --vcf {output.vcf}"
+        " 2> {log.mutect}"
+        " && grep"
+        " -v REJECT"
+        " {output.csv}"
+        " > {OUTPUT.csv}_KEEP_only.csv"
+        " 2> {log.post}"
+        " && grep"
+        " -v REJECT"
+        " {output.vcf}"
+        " > {OUTPUT.vcf}_KEEP_only.csv"
+        " 2>> {log.post}"
+        " && gzip {OUTPUT.csv}"
+        " 2>> {log.post}"
+        " && bgzip {output.vcf}"
+        " && tabix -p vcf {output.vcf}.gz"
+        " 2>> {log.post}"
 
         # COMMAND="/opt/Oracle_Java/jre1.7.0_51/bin/java $GATK_OPTS -jar $MUTECTJAR \
         # --analysis_type MuTect \

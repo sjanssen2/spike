@@ -21,7 +21,7 @@ include: "rules/varscan/Snakefile"
 include: "rules/freec/Snakefile"
 include: "rules/mutect/Snakefile"
 
-EXCLUDE_SAMPLES = ['Maus_Hauer']
+EXCLUDE_SAMPLES = ['Maus_Hauer', 'Fischer']
 
 rule all:
     input:
@@ -39,7 +39,10 @@ rule all:
 
         coverage_report='%s%s%s/%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], config['run'], config['run']),
 
-        trio=['%s%s%s/%s/%s.var2denovo.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['writing_headers'], 'Alps', 'ALPS_66')]
+        trio=['%s%s%s/%s/%s.var2denovo.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['writing_headers'], 'Alps', 'ALPS_66')],
+
+        somatic_freec=['%s%s%s/%s/%s.stefan' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'], 'Fischer_Geron', 'hum_leuk_unknown')],
+        somatic_mutect=['%s%s%s/%s/%s.all_calls.csv' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'], 'Fischer_Geron', 'hum_leuk_unknown')],
 
 
 rule all_trim:

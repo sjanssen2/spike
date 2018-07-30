@@ -1,4 +1,0 @@
-channels:
-  - bioconda
-dependencies:
-  - mutect =1.1.7
