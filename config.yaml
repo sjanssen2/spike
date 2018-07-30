@@ -41,8 +41,10 @@ stepnames:
   gatk_CombineVariants: "80_gatk_CombineVariants"
   platypus: "85_platypus"
   platypus_filtered: "90_platypus_filtered"
-  #gatk_DepthOfCoverage: "95_gatk_DepthOfCoverage"
   exome_coverage: "95_exome_coverage"
+  #gatk_DepthOfCoverage: "95_gatk_DepthOfCoverage"
+
+  # trio
   varscan_trio: "100_varscan_trio"
   varscan_filter: "105_varscan_filter"
   bam_readcount: "110_bam_readcount"
@@ -51,6 +53,10 @@ stepnames:
   merge_vcfs: "125_merge_vcfs"
   writing_headers: "130_writing_headers"
 
+  # somatic
+  samtools_mpileup: "135_samtools_mpileup"
+  freec: "140_freec"
+  mutect: "145_mutect"
 
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
