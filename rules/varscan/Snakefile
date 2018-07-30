@@ -31,8 +31,11 @@ rule varscan_mpileup:
         "envs/spike_varscan.yaml"
     threads:
         3
+    params:
+        workdir="{prefix}%s%s/{trio}" % (config['dirs']['intermediate'], config['stepnames']['varscan_mpileup'])
     shell:
-        "samtools"
+        "mkdir -v -p {params.workdir} 2> {log.samtools}"
+        " && samtools"
         " mpileup"
         " -B "
         " -q 1"
@@ -41,19 +44,20 @@ rule varscan_mpileup:
         " {input.father}"
         " {input.mother}"
         " {input.patient}"
-        " 2> {log.samtools}"
+        " 2>> {log.samtools}"
         " | java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
         " trio"
-        " - {output}"
+        " - {params.workdir}"
         " --min-coverage 10"
         " --min-var-freq 0.20"
         " --p-value 0.05"
         " -adj-var-freq 0.05"
         " -adj-p-value 0.15"
         " 2> {log.varscan}"
+        " && rmdir -v {params.workdir} 2>> {log.varscan}"
 
         # ##################################
         # # STEP PRODUCING MPILEUP FOR TRIOS
