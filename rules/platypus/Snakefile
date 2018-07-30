@@ -8,7 +8,7 @@ rule platypus:
         reference_dict="%s%shGRC37.dict" % (config['dirs']['prefix'], config['dirs']['references']),
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
-        idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
+        #idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
     benchmark:
         "{prefix}%s{run}/{sample}.platypus.benchmark" % (config['dirs']['benchmarks'])
     log:
@@ -26,7 +26,8 @@ rule platypus:
         " --bamFiles={input.bam}"
         " --nCPU {threads}"
         " --output {output.vcf}"
-        " 2>> {log}"
+        " 2> {log};"
+        " mv -v {output.vcf}.tmp {output.vcf} 2>> {log}"
 
         # #now for the new 2015 magic with platypus
         # #and ultimately, Platypus
