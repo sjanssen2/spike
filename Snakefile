@@ -18,8 +18,10 @@ include: "rules/map/Snakefile"
 include: "rules/gatk/Snakefile"
 include: "rules/platypus/Snakefile"
 include: "rules/varscan/Snakefile"
+include: "rules/freec/Snakefile"
+include: "rules/mutect/Snakefile"
 
-EXCLUDE_SAMPLES = ['Maus_Hauer', 'Fischer']
+EXCLUDE_SAMPLES = ['Maus_Hauer']
 
 rule all:
     input:
