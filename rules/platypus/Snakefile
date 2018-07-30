@@ -27,7 +27,7 @@ rule platypus:
         " --nCPU {threads}"
         " --output {output.vcf}"
         " 2> {log};"
-        " mv -v {output.vcf}.tmp {output.vcf} 2>> {log}"
+        # " mv -v {output.vcf}.tmp {output.vcf} 2>> {log}"
 
         # #now for the new 2015 magic with platypus
         # #and ultimately, Platypus
