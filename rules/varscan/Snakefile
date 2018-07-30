@@ -3,44 +3,36 @@ from scripts.parse_samplesheet import get_role
 # from scripts.utils import exclude_sample
 
 
-rule varscan_mpileup:
+rule varscan_trio:
     # Preprocessing to do a realignment of the reads with GATK
-    # make me independent of runs, such that split trios can be automatically obtained!
     input:
-        # bam=rules.remove_pcr_duplicates.output.bam,
-        # bai=rules.remove_pcr_duplicates.output.bai,
-        # gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        rules.gatk_RealignerTargetCreator.input.exometrack,
+        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
         father=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'father', config)),
         mother=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'mother', config)),
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_dict="%s%shGRC37.dict" % (config['dirs']['prefix'], config['dirs']['references']),
-        # knownsA="%s%sMills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        # knownsB="%s%s1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references'])
     output:
-        indel="{prefix}%s%s/{trio}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_mpileup']),
-        snp="{prefix}%s%s/{trio}.snp.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_mpileup']),
+        indel="{prefix}%s%s/{trio}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio']),
+        snp="{prefix}%s%s/{trio}.snp.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio']),
     benchmark:
-        "{prefix}%s{trio}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_mpileup'])
+        "{prefix}%s{trio}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_trio'])
     log:
-        samtools="{prefix}%s{trio}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_mpileup']),
-        varscan="{prefix}%s{trio}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_mpileup'])
+        samtools="{prefix}%s{trio}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_trio']),
+        varscan="{prefix}%s{trio}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_trio'])
     conda:
         "envs/spike_varscan.yaml"
     threads:
         3
     params:
-        workdir="{prefix}%s%s/{trio}" % (config['dirs']['intermediate'], config['stepnames']['varscan_mpileup'])
+        workdir="{prefix}%s%s/{trio}" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio'])
     shell:
-        "mkdir -v -p {params.workdir} 2> {log.samtools}"
+        "mkdir -v -p {params.workdir} > {log.samtools}"
         " && samtools"
         " mpileup"
         " -B "
         " -q 1"
-        " -f {input.reference}"
-        " -l {input.exometrack}"
+        " -f {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -l {rules.gatk_RealignerTargetCreator.input.exometrack}"
         " {input.father}"
         " {input.mother}"
         " {input.patient}"
@@ -57,7 +49,7 @@ rule varscan_mpileup:
         " -adj-var-freq 0.05"
         " -adj-p-value 0.15"
         " 2> {log.varscan}"
-        " && rmdir -v {params.workdir} 2>> {log.varscan}"
+        " && rmdir -v {params.workdir} >> {log.varscan}"
 
         # ##################################
         # # STEP PRODUCING MPILEUP FOR TRIOS
@@ -66,3 +58,314 @@ rule varscan_mpileup:
         # # $EXOME_TRACK is set in common.env
         # /data/biotools/src/samtools-1.3/samtools mpileup -B -q 1 -f $REF -l $EXOME_TRACK $FATHER_BAM $MOTHER_BAM $CHILD_BAM |java -Xmx3g -XX:ParallelGCThreads=1 -Djava.io.tmpdir=$TEMPPATH \
         # -jar $VARSCAN2JAR trio - $OUTPUTBASENAME --min-coverage 10 --min-var-freq 0.20 --p-value 0.05 -adj-var-freq 0.05 -adj-p-value 0.15
+
+
+rule varscan_filter_SNP:
+    # STEP FILTER
+    input:
+        snp="{prefix}%s%s/{trio}.snp.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio']),
+        indel="{prefix}%s%s/{trio}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio'])
+    output:
+        "{prefix}%s%s/{trio}.snp.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
+    benchmark:
+        "{prefix}%s_SNP{trio}.%s.benchmark" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+    log:
+        "{prefix}%s_SNP{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+    conda:
+        "envs/spike_varscan.yaml"
+    threads:
+        1
+    shell:
+        "java"
+        " -Xmx3g"
+        " -XX:ParallelGCThreads={threads}"
+        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
+        " filter"
+        " {input.snp}"
+        " --min-coverage 20"
+        " --min-reads2 2"
+        " --min-strands2 2"
+        " --min-avg-qual 20"
+        " --min-var-freq 0.2"
+        " --p-value 1e-01"
+        " --indel-file {input.indel}"
+        " --output-file {output}"
+        " 2> {log}"
+
+        # ################
+        # # STEP FILTER
+        # ################
+        # #filtering: filter for the snps
+        # echo filtering snps for $OUTPUTBASENAME
+        # java -Xmx3g -XX:ParallelGCThreads=1 -Djava.io.tmpdir=$TEMPPATH -jar $VARSCAN2JAR filter $OUTPUTBASENAME.snp.vcf --min-coverage 20 --min-reads2 2 --min-strands2 2 --min-avg-qual 20 --min-var-freq 0.2 --p-value 1e-01 --indel-file $OUTPUTBASENAME.indel.vcf --output-file $OUTPUTBASENAME.snp.filtered.vcf
+
+
+rule varscan_filter_INDEL:
+    # STEP FILTER
+    input:
+        "{prefix}%s%s/{trio}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio'])
+    output:
+        "{prefix}%s%s/{trio}.indel.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
+    benchmark:
+        "{prefix}%s_INDEL{trio}.%s.benchmark" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+    log:
+        "{prefix}%s_INDEL{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+    conda:
+        "envs/spike_varscan.yaml"
+    threads:
+        1
+    shell:
+        "java"
+        " -Xmx3g"
+        " -XX:ParallelGCThreads={threads}"
+        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
+        " filter"
+        " {input}"
+        " --min-coverage 20"
+        " --min-reads2 2"
+        " --min-strands2 2"
+        " --min-avg-qual 20"
+        " --min-var-freq 0.2"
+        " --output-file {output}"
+        " 2> {log}"
+
+        # ################
+        # # STEP FILTER
+        # ################
+        # #for the indels
+        # echo filtering indels for $OUTPUTBASENAME
+        # java -Xmx3g -XX:ParallelGCThreads=1 -Djava.io.tmpdir=$TEMPPATH -jar $VARSCAN2JAR filter $OUTPUTBASENAME.indel.vcf --min-coverage 20 --min-reads2 2 --min-strands2 2 --min-avg-qual 20 --min-var-freq 0.2 --p-value 1e-01 --output-file $OUTPUTBASENAME.indel.filtered.vcf
+
+
+rule bam_readcount_SNP:
+    input:
+        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        vcf="{prefix}%s%s/{trio}.snp.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
+        patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
+    output:
+        var="{prefix}%s%s/{trio}.snp.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
+        readcount="{prefix}%s%s/{trio}.snp.readcount" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount'])
+    benchmark:
+        "{prefix}%s_SNP{trio}.%s.benchmark" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+    log:
+        "{prefix}%s_SNP{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+    conda:
+        "envs/spike_bam-readcount.yaml"
+    threads:
+        1
+    shell:
+        'cat {input.vcf}'
+        ' | grep -v "#"'
+        ' | cut -f 1,2'
+        " | awk '{{ print $1, $2, $2 }}"
+        ' > {output.var}'
+        ' 2> {log}'
+        ' && bam-readcount'
+        ' -q 1'
+        ' -b 20'
+        ' -w 1'
+        ' -l {output}'
+        ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
+        ' {input.patient}'
+        ' > {output.readcount}'
+        ' 2>> {log}'
+
+        # echo prepare variant list for fpfilter for $OUTPUTBASENAME
+        # cat $OUTPUTBASENAME.snp.filtered.vcf | grep -v "#"| cut -f1,2 | awk '{ print $1, $2, $2 }' > $OUTPUTBASENAME.snp.filtered.var
+        # #launch bam readcount for the indels
+        # echo
+        # echo running /data/biotools/bin/bam-readcount -q 1 -b 20 -w 1 -l $OUTPUTBASENAME.snp.filtered.var -f $REF $CHILD_BAM > $CHILD_BAM.snp.readcount
+        # /data/biotools/bin/bam-readcount -q 1 -b 20 -w 1 -l $OUTPUTBASENAME.snp.filtered.var -f $REF $CHILD_BAM > $CHILD_BAM.snp.readcount
+        # #seems to work
+
+
+rule bam_readcount_INDEL:
+    input:
+        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        vcf="{prefix}%s%s/{trio}.indel.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
+        patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
+    output:
+        var="{prefix}%s%s/{trio}.indel.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
+        readcount="{prefix}%s%s/{trio}.indel.readcount" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount'])
+    benchmark:
+        "{prefix}%s_INDEL{trio}.%s.benchmark" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+    log:
+        "{prefix}%s_INDEL{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+    conda:
+        "envs/spike_bam-readcount.yaml"
+    threads:
+        1
+    shell:
+        "awk 'BEGIN {{OFS=\"\t\"}} {{if (!/^#/) {{ isDel=(length($4) > length($5)) ? 1 : 0; print $1,($2+isDel),($2+isDel); }}}}'"
+        " {input.vcf}"
+        " > {output.var}"
+        ' 2> {log}'
+        ' && bam-readcount'
+        ' -q 1'
+        ' -b 20'
+        ' -w 1'
+        ' -l {output.var}'
+        ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
+        ' {input.patient}'
+        ' > {output.readcount}'
+        ' 2>> {log}'
+
+        # #now do the same for the indels
+        # #taken from the varscan website
+        # echo preparing readcounts for indels from $OUTPUTBASENAME
+        # awk 'BEGIN {OFS="\t"} {if (!/^#/) { isDel=(length($4) > length($5)) ? 1 : 0; print $1,($2+isDel),($2+isDel); }}' $OUTPUTBASENAME.indel.filtered.vcf > $OUTPUTBASENAME.indel.filtered.var
+        # echo /data/biotools/bin/bam-readcount -q 1 -b 20 -w 1 -l $OUTPUTBASENAME.indel.filtered.var -f $REF $CHILD_BAM > $CHILD_BAM.indel.readcount
+        # /data/biotools/bin/bam-readcount -q 1 -b 20 -w 1 -l $OUTPUTBASENAME.indel.filtered.var -f $REF $CHILD_BAM > $CHILD_BAM.indel.readcount
+
+
+rule varscan_fpfilter:
+    # fpfilter
+    input:
+        var="{prefix}%s%s/{trio}.{snvtype}.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
+        readcount="{prefix}%s%s/{trio}.{snvtype}.readcount" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount'])
+    output:
+        vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.fpfiltered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
+        ogus="{prefix}%s%s/{trio}.{snvtype,snp|indel}.ogus.txt" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
+    benchmark:
+        "{prefix}%s{trio}.{snvtype}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_fpfilter'])
+    log:
+        "{prefix}%s{trio}.{snvtype}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_fpfilter']),
+    conda:
+        "envs/spike_varscan.yaml"
+    threads:
+        1
+    shell:
+        "java"
+        " -Xmx3g"
+        " -XX:ParallelGCThreads={threads}"
+        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
+        " fpfilter"
+        " {input.var}"
+        " {input.readcount}"
+        " --min-var-count 3"
+        " --min-strandedness 0"
+        " --min-var-basequal 30"
+        " --min-ref-readpos 0.20"
+        " --min-ref-dist3 0.20"
+        " --min-var-readpos 0.15"
+        " --min-var-dist3 0.15"
+        " --max-rl-diff 0.05"
+        " --max-mapqual-diff 10"
+        " --min-ref-mapqual 20"
+        " --min-var-mapqual 30"
+        " --max-var-mmqs 100"
+        " --max-ref-mmqs 50"
+        ' $(if [ "{wildcards.snvtype}" == "indel" ]; then " --min-var-count-lc 1"; fi)'
+        " --output-file {output.vcf}"
+        " --filtered-file {output.ogus}"
+        ' 2>> {log}'
+
+        # #The fpfilter parameters resemble what the varscan team did in the dream3-challenge
+        # # With the following changes:
+        # # --min-var-count-lc 2 removed, since this is not a tumor/normal scenario
+        # echo launching fpfilter for $OUTPUTBASENAME
+        # echo running fpfilter
+        # java -Xmx3g -XX:ParallelGCThreads=1 -Djava.io.tmpdir=$TEMPPATH -jar $VARSCAN2JAR fpfilter $OUTPUTBASENAME.snp.filtered.vcf $CHILD_BAM.snp.readcount \
+        # --min-var-count 3 --min-strandedness 0 --min-var-basequal 30 --min-ref-readpos 0.20 --min-ref-dist3 0.20 \
+        # --min-var-readpos 0.15 --min-var-dist3 0.15 --max-rl-diff 0.05 --max-mapqual-diff 10 --min-ref-mapqual 20 --min-var-mapqual 30 --max-var-mmqs 100 \
+        # --max-ref-mmqs 50 --output-file $OUTPUTBASENAME.snp.fpfiltered.vcf --filtered-file ogus.txt
+        # # works for the snps
+
+        # echo
+        # echo running flfilter for indels for $OUTPUTBASENAME
+        # java -Xmx3g -XX:ParallelGCThreads=1 -Djava.io.tmpdir=$TEMPPATH -jar $VARSCAN2JAR fpfilter $OUTPUTBASENAME.indel.filtered.vcf $CHILD_BAM.indel.readcount \
+        # --min-var-count 3 --min-var-count-lc 1 --min-strandedness 0 --min-var-basequal 30 --min-ref-readpos 0.20 --min-ref-dist3 0.20 \
+        # --min-var-readpos 0.15 --min-var-dist3 0.15 --max-rl-diff 0.05 --max-mapqual-diff 10 --min-ref-mapqual 20 --min-var-mapqual 30 --max-var-mmqs 100 \
+        # --max-ref-mmqs 50 --output-file $OUTPUTBASENAME.indel.fpfiltered.vcf --filtered-file ogus.txt
+
+
+rule correct_genotypes:
+    #correct genotypes
+    input:
+        rules.varscan_fpfilter.output.vcf
+    output:
+        vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.corrected.fpfiltered.vcf" % (config['dirs']['intermediate'], config['stepnames']['correct_genotypes']),
+    benchmark:
+        "{prefix}%s{trio}.{snvtype}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['correct_genotypes'])
+    log:
+        "{prefix}%s{trio}.{snvtype}.%s.log" % (config['dirs']['logs'], config['stepnames']['correct_genotypes']),
+    threads:
+        1
+    run:
+        with open(input, 'r') as f_in:
+            with open(output, 'w') as f_out:
+                for line in f_in:
+                    if not line or line[0] is "#":
+                        f_out.write(line)
+                    else:
+                        fields = line.split("\t")
+                        fields[3] = fields[3].replace("/", ",").replace("\\", ",")   # remove any slashes from REF field
+                        fields[4] = fields[4].replace("/", ",").replace("\\", ",")   # remove any slashes from ALT field
+                        f_out.write("\t".join(fields))
+
+        # #correct genotypes
+        # echo correcting genotypes for $OUTPUTBASENAME
+        # python /data/biotools/scripts/correct_varscan_genotypes.py $OUTPUTBASENAME.snp.fpfiltered.vcf $OUTPUTBASENAME.snp.fpfiltered.corrected.vcf
+        # python /data/biotools/scripts/correct_varscan_genotypes.py $OUTPUTBASENAME.indel.fpfiltered.vcf $OUTPUTBASENAME.indel.fpfiltered.corrected.vcf
+
+
+rule merge_vcfs:
+    #merge the vcfs
+    input:
+        snp="{prefix}%s%s/{trio}.snp.fpfiltered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
+        indel="{prefix}%s%s/{trio}.indel.fpfiltered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
+    output:
+        "{prefix}%s%s/{trio}.fpcorr.snp_indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['merge_vcfs']),
+    benchmark:
+        "{prefix}%s{trio}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['merge_vcfs'])
+    log:
+        "{prefix}%s{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['merge_vcfs']),
+    conda:
+        "envs/spike_vcftools.yaml"
+    threads:
+        1
+    shell:
+        "vcf-concat"
+        " {input.snp}"
+        " {input.indel}"
+        ' > {output}'
+        " 2> {log}"
+
+        # #merge the vcfs
+        # echo merging vcfs for $OUTPUTBASENAME
+        # vcf-concat $OUTPUTBASENAME.snp.fpfiltered.fixed.vcf $OUTPUTBASENAME.indel.fpfiltered.fixed.vcf > "$OUTPUTBASENAME.fpcorr.snp_indel.vcf" # $OUTPUTBASENAME.loh.corrected.varscan.somatic.vcf
+
+
+rule writing_headers:
+    #merge the vcfs
+    input:
+        rules.merge_vcfs.output
+    output:
+        "{prefix}%s%s/{trio}.var2denovo.vcf" % (config['dirs']['intermediate'], config['stepnames']['writing_headers']),
+    benchmark:
+        "{prefix}%s{trio}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['writing_headers'])
+    log:
+        "{prefix}%s{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['writing_headers']),
+    conda:
+        "envs/spike_vcftools.yaml"
+    threads:
+        1
+    shell:
+        "cat "
+        " {input}"
+        ' | grep'
+        ' "#" {output}'
+        ' && cat {input}'
+        ' | grep'
+        ' "STATUS=3" '
+        ' | sort '
+        ' -k1,1 -n'
+        ' -k2,2 -n'
+        ' >> {output}'
+        " 2> {log}"
+
+        # #writing the final header
+        # echo limiting to denovos and sorting for $OUTPUTBASENAME
+        # cat $OUTPUTBASENAME.fpcorr.snp_indel.vcf | grep "#" >$OUTPUTBASENAME.var2denovo.vcf
+        # #selecting for denovos via their status to avoid grepping a headerline too much
+        # cat $OUTPUTBASENAME.fpcorr.snp_indel.vcf | grep "STATUS=3" | sort -k1,1 -n -k2,2 -n >>$OUTPUTBASENAME.var2denovo.vcf
