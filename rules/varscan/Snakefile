@@ -263,7 +263,7 @@ rule varscan_fpfilter:
         " --min-var-mapqual 30"
         " --max-var-mmqs 100"
         " --max-ref-mmqs 50"
-        ' $(if [ "{wildcards.snvtype}" == "indel" ]; then " --min-var-count-lc 1"; fi)'
+        ' $(if [ "{wildcards.snvtype}" == "indel" ]; then echo " --min-var-count-lc 1"; fi)'
         " --output-file {output.vcf}"
         " --filtered-file {output.ogus}"
         ' 2>> {log}'
