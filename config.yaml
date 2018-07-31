@@ -33,6 +33,7 @@ stepnames:
   demultiplex: "05_demultiplex"
   rejoin_samples: "10_rejoin_samples"
   trim: "15_trim"
+  xenograft_alignhybrid: "20_xenograft_alignhybrid"
   map: "25_map"
   nodup: "30_remove_pcr_duplicates"
   gatk_RealignerTargetCreator: "35_gatk_RealignerTargetCreator"

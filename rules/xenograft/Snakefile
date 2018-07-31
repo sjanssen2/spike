@@ -1,0 +1,24 @@
+rule xenograft_alignhybrid:
+    input:
+        trimmed="{prefix}%s%s/{run}/Paired/{sample}_{direction}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
+        hybridreference=lambda wildcards: "%s%sxeno:%s.fa" % (wildcards.prefix, config['dirs']['references'], parse_samplesheet(os.path.join(wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], '%s%s' % (wildcards.run, '_ukd.csv'))))
+    output:
+        "{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample, .*?}_{direction,R1|R2}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_alignhybrid'])
+    benchmark:
+        "{prefix}%s{run}/{sample}_{direction}.benchmark" % config['dirs']['benchmarks']
+    log:
+        "{prefix}%s{run}/{sample}_{direction}.log" % config['dirs']['logs']
+    conda:
+        "../map/envs/spike_map.yaml"
+    threads:
+        16
+    shell:
+        "bwa"
+        " aln"
+        " -t {threads}"
+        " {input.hybridreference}"
+        " {input.trimmed}"
+        " > {output}"
+        " 2> {log}"
+
+        # bwa aln -t 4 /data/biotools/reference/GRCh_GRCm_filter_hybrid/GRCh_GRCm_filtering_hybrid.fa 42_R1.fastq.gz > 42_R1.sai &
