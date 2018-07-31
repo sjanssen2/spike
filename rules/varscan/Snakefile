@@ -170,10 +170,10 @@ rule bam_readcount_SNP:
         ' -q 1'
         ' -b 20'
         ' -w 1'
-        ' -l {output.var}'
+        ' -l {output.readcount}'
         ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
         ' {input.patient}'
-        ' > {output.readcount}'
+        ' > {output.var}'
         ' 2>> {log}'
 
         # echo prepare variant list for fpfilter for $OUTPUTBASENAME
@@ -210,10 +210,10 @@ rule bam_readcount_INDEL:
         ' -q 1'
         ' -b 20'
         ' -w 1'
-        ' -l {output.var}'
+        ' -l {output.readcount}'
         ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
         ' {input.patient}'
-        ' > {output.readcount}'
+        ' > {output.var}'
         ' 2>> {log}'
 
         # #now do the same for the indels
