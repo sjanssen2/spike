@@ -4,7 +4,9 @@ directions:
   - 'R1'
   - 'R2'
 
-emails_demultiplexreport: "stefan.m.janssen@gmail.com"
+emails:
+  demultiplexreport: "stefan.m.janssen@gmail.com"
+  backup_validated: "stefan.m.janssen@gmail.com"
 
 name_program: "spike"
 
@@ -24,6 +26,10 @@ dirs:
   logs: "Logs/"
 
 stepnames:
+  backup_compress: "01_backup_compress"
+  backup_transfer: "02_backup_transfer"
+  backup_validate: "03_backup_validate"
+
   demultiplex: "05_demultiplex"
   rejoin_samples: "10_rejoin_samples"
   trim: "15_trim"
@@ -62,3 +68,9 @@ stepnames:
 
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
+
+backup:
+  username: "SeqUser"
+  password: "thisisasecret"
+  host: '10.2.5.12'
+  targetdirectory: "array1/Sequencing_Backups/Illumina_HiSeq"
