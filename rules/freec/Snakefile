@@ -104,7 +104,6 @@ rule freec:
         ' -conf {output.config}'
         ' 2> {log.freec}'
         ' 1>&2'
-        '; mv $(dirname {output.baf})../*.cpn $(dirname {output.baf})'
         ' && cd $(dirname {output.baf})'
         ' && cat $CONDA_PREFIX/bin/makeGraph.R'
         ' | R '
