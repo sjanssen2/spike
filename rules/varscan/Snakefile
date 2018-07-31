@@ -170,7 +170,7 @@ rule bam_readcount_SNP:
         ' -q 1'
         ' -b 20'
         ' -w 1'
-        ' -l {output}'
+        ' -l {output.var}'
         ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
         ' {input.patient}'
         ' > {output.readcount}'
