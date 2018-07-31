@@ -96,7 +96,7 @@ rule freec:
         'echo "[target]" >> {params.fp_config}; '
         'echo "captureRegions = {rules.gatk_RealignerTargetCreator.input.exometrack}" >> {params.fp_config}; '
         # actual command
-        ' && freec'
+        ' freec'
         ' -conf {output.config}'
         ' 2> {log.freec}'
         ' && cd $(basename {output.config})'
