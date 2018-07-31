@@ -58,6 +58,7 @@ stepnames:
   freec: "140_freec"
   mutect: "145_mutect"
   varscan_somatic: "150_varscan_somatic"
+  varscan_processSomatic: "155_varscan_processSomatic"
 
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
