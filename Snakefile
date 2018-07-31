@@ -35,7 +35,9 @@ rule all:
                               for isrelax in ['', 'relax.']
                               if not exclude_sample(sample, EXCLUDE_SAMPLES)],
 
-        coverage_report='%s%s%s/%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], config['run'], config['run'])
+        coverage_report='%s%s%s/%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], config['run'], config['run']),
+
+        trio=['%s%s%s/%s/%s.var2denovo.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['writing_headers'], 'Alps', 'ALPS_66')]
 
 
 rule all_trim:

@@ -43,7 +43,13 @@ stepnames:
   platypus_filtered: "90_platypus_filtered"
   #gatk_DepthOfCoverage: "95_gatk_DepthOfCoverage"
   exome_coverage: "95_exome_coverage"
-  varscan_mpileup: "100_varscan_mpileup"
+  varscan_trio: "100_varscan_trio"
+  varscan_filter: "105_varscan_filter"
+  bam_readcount: "110_bam_readcount"
+  varscan_fpfilter: "115_varscan_fpfilter"
+  correct_genotypes: "120_correct_genotypes"
+  merge_vcfs: "125_merge_vcfs"
+  writing_headers: "130_writing_headers"
 
 
 gatk:
