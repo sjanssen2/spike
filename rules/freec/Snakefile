@@ -101,6 +101,7 @@ rule freec:
         ' freec'
         ' -conf {output.config}'
         ' 2> {log.freec}'
+        ' 1>&2'
         ' && cd $(basename {output.config})'
         ' && makeGraph.R'
         ' 2> {log.gzratio}'

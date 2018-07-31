@@ -2,3 +2,4 @@ channels:
   - bioconda
 dependencies:
   - vcftools =0.1.15
+  - perl-vcftools-vcf =0.1.15
