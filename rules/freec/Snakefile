@@ -41,6 +41,7 @@ rule freec:
     # Preprocessing to do a realignment of the reads with GATK
     input:
         rules.gatk_RealignerTargetCreator.input.exometrack,
+        freec="%s%sfreec" % (config['dirs']['prefix'], config['dirs']['references']),
         reference_len="%s%shGRC37.len" % (config['dirs']['prefix'], config['dirs']['references']),
         reference_mappability="%s%shGRC37.mappability.mappability" % (config['dirs']['prefix'], config['dirs']['references']),
         reference_chromosomes=["%s%shGRC37_chromosomes/%s.fa" % (config['dirs']['prefix'], config['dirs']['references'], chr) for chr in ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '1', '20', '21', '22', '2', '3', '4', '5', '6', '7', '8', '9', 'X', 'Y']],
@@ -48,9 +49,12 @@ rule freec:
         tumor=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', config)),
         healthy=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', config)),
     output:
-        unknown="{prefix}%s%s/{entity}.stefan" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        unknown="{prefix}%s%s/{entity}/.stefan" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         config="{prefix}%s%s/{entity}.config" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         gzratio="{prefix}%s%s/{entity}.pileup.gz_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+
+        # cpn_control="{prefix}%s%s/{entity}/42.pileup.gz_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        # cpn_sample="{prefix}%s%s/{entity}/F49.pileup.gz_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
     benchmark:
         "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['freec'])
     log:
@@ -74,7 +78,7 @@ rule freec:
         'echo "#sex=XY" >> {output.config}; '
         'echo "breakPointType=4" >> {output.config}; '
         'echo "gemMappabilityFile = {input.reference_mappability}" >> {output.config}; '
-        'echo "chrFiles = $(dirname {input.reference_chromosomes[0]})" >> {output.config}; '
+        'echo "chrFiles = $(dirname {input.reference_chromosomes[0]})/" >> {output.config}; '
         'echo "breakPointThreshold=1.5" >> {output.config}; '
         'echo "noisyData=TRUE" >> {output.config}; '
         'echo "printNA=FALSE" >> {output.config}; '
@@ -98,7 +102,7 @@ rule freec:
         # create output dir
         ' mkdir -p $(dirname {output.unknown});'
         # actual command
-        ' freec'
+        ' {input.freec}'
         ' -conf {output.config}'
         ' 2> {log.freec}'
         ' 1>&2'
