@@ -27,8 +27,8 @@ rule varscan_trio:
         workdir="{prefix}%s%s/{trio}" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio'])
     shell:
         #set the locale to C which avoids problems with . and , used as decimal separator
-        "export LANG=C"
-        "; mkdir -v -p {params.workdir} > {log.samtools}"
+        "export LANG=C; "
+        "mkdir -v -p {params.workdir} > {log.samtools}"
         " && samtools"
         " mpileup"
         " -B "
@@ -79,7 +79,7 @@ rule varscan_filter_SNP:
         1
     shell:
         #set the locale to C which avoids problems with . and , used as decimal separator
-        "export LANG=C"
+        "export LANG=C; "
         "java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
@@ -120,7 +120,7 @@ rule varscan_filter_INDEL:
         1
     shell:
         #set the locale to C which avoids problems with . and , used as decimal separator
-        "export LANG=C"
+        "export LANG=C; "
         "java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
@@ -242,7 +242,7 @@ rule varscan_fpfilter:
         1
     shell:
         #set the locale to C which avoids problems with . and , used as decimal separator
-        "export LANG=C"
+        "export LANG=C; "
         "java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
