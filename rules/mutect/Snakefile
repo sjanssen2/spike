@@ -25,7 +25,7 @@ rule mutect:
         mutect="{prefix}%s{entity}.%s.mutect.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
         post="{prefix}%s{entity}.%s.post.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
     conda:
-        "../gatk/envs/spike_gatk.yaml"
+        "envs/spike_mutect.yaml"
     threads:
         1
     shell:

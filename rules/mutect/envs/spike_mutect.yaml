@@ -1,0 +1,6 @@
+name: spike_gatk
+
+channels:
+  - conda-forge
+dependencies:
+  - openjdk =7.0
