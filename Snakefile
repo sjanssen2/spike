@@ -12,6 +12,7 @@ if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith
 
 configfile: "config.yaml"
 include: "rules/demultiplex/Snakefile"
+include: "rules/backup/Snakefile"
 include: "rules/rejoin_samples/Snakefile"
 include: "rules/trim/Snakefile"
 include: "rules/map/Snakefile"
