@@ -29,7 +29,7 @@ rule mutect:
     threads:
         1
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log.mutect}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar {input.mutect117}"
