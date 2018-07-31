@@ -32,7 +32,7 @@ rule mutect:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage}; 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
-        " -jar {mutect117}"
+        " -jar {input.mutect117}"
         " --analysis_type MuTect"
         " --reference_sequence {rules.gatk_RealignerTargetCreator.input.reference}"
         " --dbsnp {rules.gatk_BaseRecalibrator.input.knownsDBSNP138}"
