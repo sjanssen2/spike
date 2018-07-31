@@ -27,6 +27,7 @@ rule samtools_mpileup:
         " -Q20"
         " -f {rules.gatk_RealignerTargetCreator.input.reference}"
         " -l {rules.gatk_RealignerTargetCreator.input.exometrack}"
+        " {input.bam}"
         " 2> {log.samtools}"
         " | pigz"
         " > {output}"
@@ -106,5 +107,5 @@ rule freec:
         ' --args 2'
         ' {output.gzratio}'
         ' 2>> {log.gzratio}'
-        
+
         # freec -conf $CONFIG_FILE && cd $OUTPUT_DIR && cat /data/biotools/src/freec_6.6/makeGraph.R | R --slave --args 2 $SAMPLE_PREFIX.pileup.gz_ratio.txt"
