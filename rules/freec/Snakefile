@@ -99,7 +99,7 @@ rule freec:
         ' && freec'
         ' -conf {output.config}'
         ' 2> {log.freec}'
-        ' && cd $(basename {output.config}'
+        ' && cd $(basename {output.config})'
         ' && makeGraph.R'
         ' 2> {log.gzratio}'
         ' | R '
