@@ -386,15 +386,16 @@ rule samtools_mpileup_somatic:
     input:
         rules.gatk_RealignerTargetCreator.input.exometrack,
         rules.gatk_RealignerTargetCreator.input.reference,
-        bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
+        bam=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], wildcards.role, config)),
+        #bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
-        "{prefix}%s%s/{entity}.pileup" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'])
+        "{prefix}%s%s/{entity}.{role,healthy|tumor}.pileup" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'])
     benchmark:
-        "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
+        "{prefix}%s{entity}.{role}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
     log:
-        "{prefix}%s{entity}.%s.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
+        "{prefix}%s{entity}.{role}.%s.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
     conda:
-        "envs/spike_freec.yaml"
+        "envs/spike_varscan.yaml"
     threads:
         1
     shell:
@@ -413,8 +414,8 @@ rule samtools_mpileup_somatic:
 rule varscan_somatic:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        tumor=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', config)),
-        healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', config)),
+        tumor="{prefix}%s%s/{entity}.tumor.pileup" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
+        healthy="{prefix}%s%s/{entity}.healthy.pileup" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
     output:
         indel="{prefix}%s%s/{entity}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
         snp="{prefix}%s%s/{entity}.snp.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
@@ -434,7 +435,7 @@ rule varscan_somatic:
         " somatic"
         " {input.healthy}"
         " {input.tumor}"
-        " $(basename {output})"
+        " $(dirname {output.indel})"
         " --min-coverage-normal 8"
         " --min-coverage-tumor 10"
         " --min-reads 4"
@@ -443,24 +444,48 @@ rule varscan_somatic:
         " --strand-filter 1"
         " --output-vcf 1"
         " 2>> {log}"
-        " && java"
+
+        # java -Xmx3g -XX:ParallelGCThreads=1 -Djava.io.tmpdir=$TEMPPATH -jar $VARSCAN2JAR  somatic $NORMAL_PILEUP $TUMOR_PILEUP $OUTPUTBASENAME --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 --min-var-freq 0.1 --normal-purity 0.95 --strand-filter 1 --output-vcf 1 -- $*
+
+
+rule varscan_processSomatic:
+    # Preprocessing to do a realignment of the reads with GATK
+    input:
+        "{prefix}%s%s/{entity}.{snvtype}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
+    output:
+        somatic_hc="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Somatic.hc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        somatic_lc="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Somatic.lc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        germline="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Germline.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        loh="{prefix}%s%s/{entity}.{snvtype,snp|indel}.LOH.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+    benchmark:
+        "{prefix}%s{entity}.{snvtype}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_processSomatic'])
+    log:
+        "{prefix}%s{entity}.{snvtype}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_processSomatic'])
+    conda:
+        "envs/spike_varscan.yaml"
+    threads:
+        1
+    shell:
+        "java"
         " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
         " processSomatic"
-        " {output.snp}"
-        " 2>> {log}"
-        " && java"
-        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
-        " processSomatic "
-        " {output.indel}"
+        " $(dirname {output.somatic_hc})"
         " 2>> {log}"
 
-        # java -Xmx3g -XX:ParallelGCThreads=1 -Djava.io.tmpdir=$TEMPPATH -jar $VARSCAN2JAR  somatic $NORMAL_PILEUP $TUMOR_PILEUP $OUTPUTBASENAME --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 --min-var-freq 0.1 --normal-purity 0.95 --strand-filter 1 --output-vcf 1 -- $* && (java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.snp.vcf ; java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.indel.vcf)
+        # java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.snp.vcf ;
+        # java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.indel.vcf
+        # processSomatic: from http://varscan.sourceforge.net/somatic-calling.html
+        # The above command will produce 4 output files:
+        # output.snp.Somatic.hc 	(high-confidence Somatic mutations)
+        # output.snp.Somatic.lc 	(low-confidence Somatic mutations)
+        # output.snp.Germline 	(sites called Germline)
+        # output.snp.LOH 		(sites called loss-of-heterozygosity, or LOH)
 
 
 rule varscan_fpfilter_somatic:
     # fpfilter
     input:
-        "{prefix}%s%s/{entity}.{snvtype}.{snvtype}.{mutationclass}.hc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
+        "{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.hc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
     output:
         "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic|Germline}.hc.vcf.fpfilter.var" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
     benchmark:
