@@ -45,6 +45,7 @@ rule all:
         somatic_freec=['%s%s%s/%s/%s/.stefan' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'], 'Fischer_Geron', 'hum_leuk_unknown')],
         somatic_mutect=['%s%s%s/%s/%s.all_calls.csv' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'], 'Fischer_Geron', 'hum_leuk_unknown')],
 
+        backup="%s%s%s.%s.done" % (config['dirs']['prefix'], config['dirs']['checks'], config['run'], config['stepnames']['backup_validate']),
 
 rule all_trim:
     input:

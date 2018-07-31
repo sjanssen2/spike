@@ -44,7 +44,7 @@ rule backup_transfer:
     shell:
         "tmpfile=$(mktemp);"
         ' echo "quote USER {config[backup][username]}" > $tmpfile;'
-        ' echo "quote PASS {config[backup][password]}" >> $tmpfile;'
+        ' echo "quote PASS {config[pwd_backup]}" >> $tmpfile;'
         ' echo "cd {config[backup][targetdirectory]}" >> $tmpfile;'
         ' echo "binary" >> $tmpfile;'
         ' echo "prompt" >> $tmpfile;'
@@ -84,7 +84,7 @@ rule backup_validate:
         "tmpdir=$(mktemp -d);"
         "tmpfile=$(mktemp);"
         ' echo "quote USER {config[backup][username]}" > $tmpfile;'
-        ' echo "quote PASS {config[backup][password]}" >> $tmpfile;'
+        ' echo "quote PASS {config[pwd_backup]}" >> $tmpfile;'
         ' echo "cd {config[backup][targetdirectory]}" >> $tmpfile;'
         ' echo "binary" >> $tmpfile;'
         ' echo "prompt" >> $tmpfile;'

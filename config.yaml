@@ -71,6 +71,9 @@ gatk:
 
 backup:
   username: "SeqUser"
-  password: "thisisasecret"
   host: '10.2.5.12'
   targetdirectory: "array1/Sequencing_Backups/Illumina_HiSeq"
+
+
+# variables that can directly be overwritten from CML
+pwd_backup: "thisisasecret"
