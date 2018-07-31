@@ -42,7 +42,7 @@ rule all:
 
         trio=['%s%s%s/%s/%s.var2denovo.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['writing_headers'], 'Alps', 'ALPS_66')],
 
-        somatic_freec=['%s%s%s/%s/%s/.stefan' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'], 'Fischer_Geron', 'hum_leuk_unknown')],
+        somatic_freec=['%s%s%s/%s/%s/tumor.pileup.gz_BAF.txt' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'], 'Fischer_Geron', 'hum_leuk_unknown')],
         somatic_mutect=['%s%s%s/%s/%s.all_calls.csv' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'], 'Fischer_Geron', 'hum_leuk_unknown')],
 
         backup="%s%s%s.%s.done" % (config['dirs']['prefix'], config['dirs']['checks'], config['run'], config['stepnames']['backup_validate']),
