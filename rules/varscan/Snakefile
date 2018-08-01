@@ -146,7 +146,7 @@ rule varscan_filter_INDEL:
 rule bam_readcount_SNP:
     input:
         rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
-        vcf=lambda wildcards: "%s%s%s/%s.snp.filtered.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['varscan_filter'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
+        vcf=lambda wildcards: "%s%s%s/%s.snp.filtered.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['varscan_filter'], '/'.join(get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config).split('/')[1:])),
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
     output:
         var="{prefix}%s%s/{trio}.snp.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
