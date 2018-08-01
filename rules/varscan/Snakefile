@@ -229,6 +229,7 @@ rule varscan_fpfilter:
     input:
         var="{prefix}%s%s/{trio}.{snvtype}.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
         readcount="{prefix}%s%s/{trio}.{snvtype}.readcount" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount'])
+        vcf="{prefix}%s%s/{trio}.{snvtype}.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
     output:
         vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.fpfiltered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
         ogus="{prefix}%s%s/{trio}.{snvtype,snp|indel}.ogus.txt" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
@@ -248,7 +249,7 @@ rule varscan_fpfilter:
         " -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
         " fpfilter"
-        " {input.var}"
+        " {input.vcf}"
         " {input.readcount}"
         " --min-var-count 3"
         " --min-strandedness 0"
