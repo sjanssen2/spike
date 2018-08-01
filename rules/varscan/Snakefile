@@ -363,7 +363,7 @@ rule writing_headers:
         "cat "
         " {input}"
         ' | grep'
-        ' "#" {output}'
+        ' "#" > {output}'
         ' && cat {input}'
         ' | grep'
         ' "STATUS=3" '
