@@ -1,8 +1,3 @@
-# from scripts.reports import report_exome_coverage
-# from scripts.parse_samplesheet import parse_samplesheet, get_sample_names
-# from scripts.utils import exclude_sample
-
-
 rule mutect:
     # Preprocessing to do a realignment of the reads with GATK
     input:

@@ -1,9 +1,3 @@
-from scripts.checks import check_illuminarun_complete
-from scripts.parse_samplesheet import get_fastq_filenames
-from scripts.reports import report_undertermined_filesizes
-import glob
-
-
 # rule all_demultiplex:
 #     input:
 #         lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, fastq)

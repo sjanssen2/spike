@@ -2,8 +2,10 @@ import os
 import socket
 import glob
 
-from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet, get_sample_names, get_xenograft_host
+from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet, get_sample_names, get_xenograft_host, get_fastq_filenames, get_lanes_for_sampleID, get_role
 from scripts.utils import exclude_sample
+from scripts.checks import check_illuminarun_complete
+from scripts.reports import report_undertermined_filesizes, report_exome_coverage
 
 
 if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith("murks"):
@@ -23,7 +25,7 @@ include: "rules/varscan/Snakefile"
 include: "rules/freec/Snakefile"
 include: "rules/mutect/Snakefile"
 
-EXCLUDE_SAMPLES = ['Maus_Hauer', 'Fischer']
+EXCLUDE_SAMPLES = ['Maus_Hauer']
 
 rule all:
     input:
@@ -43,10 +45,12 @@ rule all:
 
         trio=['%s%s%s/%s/%s.var2denovo.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['writing_headers'], 'Alps', 'ALPS_66')],
 
-        somatic_freec=['%s%s%s/%s/%s/tumor.pileup.gz_BAF.txt' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'], 'Fischer_Geron', 'hum_leuk_unknown')],
-        somatic_mutect=['%s%s%s/%s/%s.all_calls.csv' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'], 'Fischer_Geron', 'hum_leuk_unknown')],
+        somatic_freec=['%s%s%s/%s/%s/tumor.pileup.gz_BAF.txt' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'],         'Fischer_Geron', 'hum_leuk_unknown')],
+        somatic_mutect=['%s%s%s/%s/%s.all_calls.csv'          % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'],        'Fischer_Geron', 'hum_leuk_unknown')],
+        somatic_varscan=['%s%s%s/%s/%s.indel_snp.hc.vcf'      % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['merge_somatic'], 'Fischer_Geron', 'hum_leuk_unknown')],
 
         backup="%s%s%s.%s.done" % (config['dirs']['prefix'], config['dirs']['checks'], config['run'], config['stepnames']['backup_validate']),
+
 
 rule all_trim:
     input:

@@ -1,6 +1,7 @@
 def _get_reference(wildcards):
     return get_xenograft_host(os.path.join(wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], '%s%s' % (wildcards.run, '_ukd.csv')), wildcards.sample, config)
 
+import sys
 def _get_input(wildcards):
     reference = _get_reference(wildcards)
     if reference == "":
@@ -14,8 +15,7 @@ rule xenograft_bwa_aln:
         hybridreference=lambda wildcards: ['%s%s%s_filtering_hybrid.fa%s' % (wildcards.prefix, config['dirs']['references'], _get_reference(wildcards), ending) for ending in ['', '.amb', '.ann', '.bwt', '.pac', '.sa']],
         fastq="{prefix}%s%s/{run}/Paired/{sample}_{direction}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim'])
     output:
-        fastq="{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample, .*?}_{direction,R1|R2}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln']),
-        sai="{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample, .*?}_{direction,R1|R2}.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln'])
+        "{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample, .*?}_{direction,R1|R2}.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln'])
     benchmark:
         "{prefix}%s{run}/{sample}_{direction}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_aln'])
     log:
@@ -30,7 +30,7 @@ rule xenograft_bwa_aln:
         " -t {threads}"
         " {input.hybridreference[0]}"
         " {input.fastq}"
-        " > {output.fastq}"
+        " > {output}"
         " 2> {log}"
 
         # bwa aln -t 4 /data/biotools/reference/GRCh_GRCm_filter_hybrid/GRCh_GRCm_filtering_hybrid.fa 42_R1.fastq.gz > 42_R1.sai &
@@ -42,11 +42,11 @@ rule xenograft_bwa_sampe:
         bed=lambda wildcards: '%s%s%s.bed' % (wildcards.prefix, config['dirs']['references'], _get_reference(wildcards).split('_')[0]),
         sai_forward="{prefix}%s%s/{run}/Paired/{sample}_R1.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln']),
         sai_reverse="{prefix}%s%s/{run}/Paired/{sample}_R2.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln']),
-        fastq_forward="{prefix}%s%s/{run}/Paired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln']),
-        fastq_reverse="{prefix}%s%s/{run}/Paired/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln']),
+        fastq_forward="{prefix}%s%s/{run}/Paired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
+        fastq_reverse="{prefix}%s%s/{run}/Paired/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
     output:
-        forward="{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_sampe']),
-        reverse="{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_sampe'])
+        forward="{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_sampe']),
+        reverse="{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_sampe'])
     benchmark:
         "{prefix}%s{run}/{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_sampe'])
     log:

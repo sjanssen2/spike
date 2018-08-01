@@ -1,8 +1,3 @@
-# from scripts.reports import report_exome_coverage
-from scripts.parse_samplesheet import get_role
-# from scripts.utils import exclude_sample
-
-
 rule varscan_trio:
     # Preprocessing to do a realignment of the reads with GATK
     input:
