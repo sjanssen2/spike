@@ -148,6 +148,20 @@ def get_sample_names(fp_samplesheet, ukd_actions={'trio', 'somatic'}):
     return samples
 
 
+def get_global_samplesheets(config):
+    # parse all available sample sheets
+    fps_samplesheets = glob.glob(join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], '*XX_ukd.csv'))
+
+    global_samplesheet = []
+    for fp_samplesheet in fps_samplesheets:
+        ss = parse_samplesheet(fp_samplesheet)
+        ss['run'] = fp_samplesheet.split('/')[-1].replace('_ukd.csv', '')
+        global_samplesheet.append(ss)
+    global_samplesheet = pd.concat(global_samplesheet, sort=False)
+
+    return global_samplesheet
+
+
 def get_role(ukd_project, ukd_entity_id, ukd_entity_role, config):
     """Returns file path for bam, given project, entity and role (for trio).
 
@@ -166,17 +180,7 @@ def get_role(ukd_project, ukd_entity_id, ukd_entity_role, config):
     -------
     str: Filepath of bam file for given entity role.
     """
-    # parse all available sample sheets
-    fps_samplesheets = glob.glob(join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], '*XX_ukd.csv'))
-
-    global_samplesheet = []
-    for fp_samplesheet in fps_samplesheets:
-        ss = parse_samplesheet(fp_samplesheet)
-        ss['run'] = fp_samplesheet.split('/')[-1].replace('_ukd.csv', '')
-        global_samplesheet.append(ss)
-    global_samplesheet = pd.concat(global_samplesheet)
-
-    samples = global_samplesheet
+    samples = get_global_samplesheets(config)
 
     # select correct project
     try:
@@ -248,3 +252,23 @@ def get_xenograft_host(fp_samplesheet, sample, config):
         raise ValueError("Unknown xenograft host species!")
 
     return res
+
+
+def get_reference_genome(sample, config):
+    ss = get_global_samplesheets(config)
+
+    # test if a "sample" can be found
+    species = list(ss[ss['fastq-prefix'] == sample]['ukd_species'].dropna().unique())
+    # test if an entity for a project can be found
+    if len(species) == 0:
+        species = list(ss[ss['Sample_Project']+'/'+ss['ukd_entity_id'] == sample]['ukd_species'].dropna().unique())
+    # maybe the run is prefixed, remove and check if sample can be found
+    if len(species) == 0:
+        species = list(ss[ss['fastq-prefix'] == '/'.join(sample.split('/')[1:])]['ukd_species'].dropna().unique())
+
+    if len(species) == 0:
+        raise ValueError('Sample "%s" not found' % sample)
+    if len(species) > 1:
+        raise ValueError('Ambiguous species given!')
+
+    return config['references']['genomes'][species[0]]

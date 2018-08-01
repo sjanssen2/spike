@@ -88,6 +88,11 @@ xenograft:
     mus musculus: 'GRCm'
     homo sapiens: 'GRCh'
 
+references:
+  genomes:
+    homo sapiens: 'hGRC37.fa'
+    mus musculus: 'Mus_musculus.GRCm38.71.dna.fa'
+
 # variables that can directly be overwritten from CML
 pwd_backup: "thisisasecret"
 num_threads: 16

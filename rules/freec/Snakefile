@@ -1,8 +1,8 @@
 rule samtools_mpileup:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        rules.gatk_RealignerTargetCreator.input.exometrack,
-        rules.gatk_RealignerTargetCreator.input.reference,
+        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config), ending) for ending in ['', '.fai', '.dict']],
         bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
         pileup="{prefix}%s%s/{entity}.pileup.gz" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
@@ -20,8 +20,8 @@ rule samtools_mpileup:
         " mpileup"
         " -C50 "
         " -Q20"
-        " -f {rules.gatk_RealignerTargetCreator.input.reference}"
-        " -l {rules.gatk_RealignerTargetCreator.input.exometrack}"
+        " -f {input.references[0]}"
+        " -l {input.exometrack}"
         " {input.bam}"
         " 2> {log.samtools}"
         " | pigz"
@@ -35,11 +35,11 @@ rule samtools_mpileup:
 rule freec:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        rules.gatk_RealignerTargetCreator.input.exometrack,
+        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
         freec="%s%sfreec" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_len="%s%shGRC37.len" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_mappability="%s%shGRC37.mappability.mappability" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_chromosomes=["%s%shGRC37_chromosomes/%s.fa" % (config['dirs']['prefix'], config['dirs']['references'], chr) for chr in ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '1', '20', '21', '22', '2', '3', '4', '5', '6', '7', '8', '9', 'X', 'Y']],
+        reference_len=lambda wildcards: "%s%s%s.len" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)),
+        reference_mappability=lambda wildcards: "%s%s%s.mappability.mappability" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)),
+        reference_chromosomes=lambda wildcards: ["%s%s%s_chromosomes/%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config), chr) for chr in ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '1', '20', '21', '22', '2', '3', '4', '5', '6', '7', '8', '9', 'X', 'Y']],
         known_snps="%s%shg19_deCHRd_snp137.SingleDiNucl.1based.txt" % (config['dirs']['prefix'], config['dirs']['references']),
         tumor=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', config)),
         healthy=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', config)),
@@ -96,7 +96,7 @@ rule freec:
         'echo "minimalCoveragePerPosition = 5" >> {output.config}; '
         'echo "" >> {output.config}; '
         'echo "[target]" >> {output.config}; '
-        'echo "captureRegions = {rules.gatk_RealignerTargetCreator.input.exometrack}" >> {output.config}; '
+        'echo "captureRegions = {input.exometrack}" >> {output.config}; '
         # create output dir
         ' mkdir -p $(dirname {output.baf});'
         # actual command
