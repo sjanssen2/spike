@@ -254,7 +254,7 @@ def get_xenograft_host(fp_samplesheet, sample, config):
     return res
 
 
-def get_reference_genome(sample, config):
+def get_species(sample, config):
     ss = get_global_samplesheets(config)
 
     # test if a "sample" can be found
@@ -271,4 +271,11 @@ def get_reference_genome(sample, config):
     if len(species) > 1:
         raise ValueError('Ambiguous species given!')
 
-    return config['references']['genomes'][species[0]]
+    return species[0]
+
+
+def get_reference_genome(sample, config):
+    return config['references']['genomes'][get_species(sample, config)]
+
+def get_reference_knowns(sample, config):
+    return config['references']['knowns'][get_species(sample, config)]
