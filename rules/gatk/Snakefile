@@ -1,8 +1,3 @@
-from scripts.reports import report_exome_coverage
-from scripts.parse_samplesheet import parse_samplesheet, get_sample_names
-from scripts.utils import exclude_sample
-
-
 rule gatk_RealignerTargetCreator:
     # Preprocessing to do a realignment of the reads with GATK
     input:
@@ -26,7 +21,7 @@ rule gatk_RealignerTargetCreator:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -62,7 +57,7 @@ rule gatk_IndelRealigner:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -106,7 +101,7 @@ rule gatk_BaseRecalibrator:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -147,7 +142,7 @@ rule gatk_PrintReads:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx16g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -220,7 +215,7 @@ rule gatk_HaplotypeCaller:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -265,7 +260,7 @@ rule gatk_SelectVariants:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -329,7 +324,7 @@ rule gatk_VariantRecalibrator_SNP:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -383,7 +378,7 @@ rule gatk_VariantRecalibrator_INDEL:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -429,7 +424,7 @@ rule gatk_ApplyRecalibration:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -488,7 +483,7 @@ rule gatk_VariantFiltration_SNP:
     threads:
         1
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -541,7 +536,7 @@ rule gatk_VariantFiltration_INDEL:
     threads:
         1
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -590,7 +585,7 @@ rule gatk_CombineVariants:
     threads:
         1
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -634,7 +629,7 @@ rule gatk_CombineVariants:
 #     threads:
 #         1
 #     shell:
-#         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage}; 2>> {log}; fi; '
+#         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
 #         "java"
 #         " -Xmx6g -XX:ParallelGCThreads={threads}"
 #         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"

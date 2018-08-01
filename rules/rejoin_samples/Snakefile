@@ -1,6 +1,3 @@
-from scripts.parse_samplesheet import get_lanes_for_sampleID
-
-
 # DNA material of a sample might be split and loaded into several lanes to
 # increase coverage. We here use information from SampleSheet and merge fastq.gz
 # files from demultiplexing if necessary, otherwise we just use soft links

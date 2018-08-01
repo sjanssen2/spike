@@ -210,3 +210,41 @@ def get_role(ukd_project, ukd_entity_id, ukd_entity_role, config):
         raise ValueError("Stefan, check if use cases can occour with more than one result!")
 
     return list(res)[0]
+
+
+def get_xenograft_host(fp_samplesheet, sample, config):
+    """Returns xenograft host genome name for given sample.
+
+    Parameters
+    ----------
+    fp_samplesheet : str
+        Filepath to sample sheet.
+    sample : str
+        Fastq prefix for sample, e.g. Alps/ALPS_66_a
+
+    Returns
+    -------
+    str : empty string if no xenograft, otherwise name of host species name.
+
+    Raises
+    ------
+    ValueError if:
+        a) sample sheet lists conflicting host species names.
+        b) an unknown xenograft host species is listed in sample sheet.
+    """
+    ss = parse_samplesheet(fp_samplesheet)
+
+    host_species = list(ss[ss['fastq-prefix'] == sample]['ukd_xenograph_species'].dropna().unique())
+    if len(host_species) > 1:
+        raise ValueError("Ambiguous xenograft host species in sample sheet!")
+    if len(host_species) == 0:
+        return ""
+
+    res = ""
+    try:
+        res += config['xenograft']['references']['homo sapiens']
+        res += '_' + config['xenograft']['references'][host_species[0]]
+    except KeyError:
+        raise ValueError("Unknown xenograft host species!")
+
+    return res

@@ -1,8 +1,3 @@
-# from scripts.reports import report_exome_coverage
-from scripts.parse_samplesheet import get_role
-# from scripts.utils import exclude_sample
-
-
 rule varscan_trio:
     # Preprocessing to do a realignment of the reads with GATK
     input:
@@ -26,6 +21,8 @@ rule varscan_trio:
     params:
         workdir="{prefix}%s%s/{trio}" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio'])
     shell:
+        #set the locale to C which avoids problems with . and , used as decimal separator
+        "export LANG=C; "
         "mkdir -v -p {params.workdir} > {log.samtools}"
         " && samtools"
         " mpileup"
@@ -68,14 +65,16 @@ rule varscan_filter_SNP:
     output:
         "{prefix}%s%s/{trio}.snp.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
     benchmark:
-        "{prefix}%s_SNP{trio}.%s.benchmark" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+        "{prefix}%s{trio}_SNP.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_filter']),
     log:
-        "{prefix}%s_SNP{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+        "{prefix}%s{trio}_SNP.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
     conda:
         "envs/spike_varscan.yaml"
     threads:
         1
     shell:
+        #set the locale to C which avoids problems with . and , used as decimal separator
+        "export LANG=C; "
         "java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
@@ -107,14 +106,16 @@ rule varscan_filter_INDEL:
     output:
         "{prefix}%s%s/{trio}.indel.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
     benchmark:
-        "{prefix}%s_INDEL{trio}.%s.benchmark" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+        "{prefix}%s{trio}_INDEL.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_filter']),
     log:
-        "{prefix}%s_INDEL{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+        "{prefix}%s{trio}_INDEL.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
     conda:
         "envs/spike_varscan.yaml"
     threads:
         1
     shell:
+        #set the locale to C which avoids problems with . and , used as decimal separator
+        "export LANG=C; "
         "java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
@@ -140,15 +141,15 @@ rule varscan_filter_INDEL:
 rule bam_readcount_SNP:
     input:
         rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
-        vcf="{prefix}%s%s/{trio}.snp.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
+        vcf=lambda wildcards: "%s%s%s/%s.snp.filtered.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['varscan_filter'], '/'.join(get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config).split('/')[1:])),
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
     output:
         var="{prefix}%s%s/{trio}.snp.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
         readcount="{prefix}%s%s/{trio}.snp.readcount" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount'])
     benchmark:
-        "{prefix}%s_SNP{trio}.%s.benchmark" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+        "{prefix}%s{trio}_SNP.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount']),
     log:
-        "{prefix}%s_SNP{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+        "{prefix}%s{trio}_SNP.%s.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
     conda:
         "envs/spike_bam-readcount.yaml"
     threads:
@@ -157,14 +158,14 @@ rule bam_readcount_SNP:
         'cat {input.vcf}'
         ' | grep -v "#"'
         ' | cut -f 1,2'
-        " | awk '{{ print $1, $2, $2 }}"
+        " | awk '{{ print $1, $2, $2 }}'"
         ' > {output.var}'
         ' 2> {log}'
         ' && bam-readcount'
         ' -q 1'
         ' -b 20'
         ' -w 1'
-        ' -l {output}'
+        ' -l {output.var}'
         ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
         ' {input.patient}'
         ' > {output.readcount}'
@@ -188,9 +189,9 @@ rule bam_readcount_INDEL:
         var="{prefix}%s%s/{trio}.indel.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
         readcount="{prefix}%s%s/{trio}.indel.readcount" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount'])
     benchmark:
-        "{prefix}%s_INDEL{trio}.%s.benchmark" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+        "{prefix}%s{trio}_INDEL.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount']),
     log:
-        "{prefix}%s_INDEL{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+        "{prefix}%s{trio}_INDEL.%s.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
     conda:
         "envs/spike_bam-readcount.yaml"
     threads:
@@ -222,7 +223,8 @@ rule varscan_fpfilter:
     # fpfilter
     input:
         var="{prefix}%s%s/{trio}.{snvtype}.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
-        readcount="{prefix}%s%s/{trio}.{snvtype}.readcount" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount'])
+        readcount="{prefix}%s%s/{trio}.{snvtype}.readcount" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
+        vcf="{prefix}%s%s/{trio}.{snvtype}.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
     output:
         vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.fpfiltered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
         ogus="{prefix}%s%s/{trio}.{snvtype,snp|indel}.ogus.txt" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
@@ -235,12 +237,14 @@ rule varscan_fpfilter:
     threads:
         1
     shell:
+        #set the locale to C which avoids problems with . and , used as decimal separator
+        "export LANG=C; "
         "java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
         " fpfilter"
-        " {input.var}"
+        " {input.vcf}"
         " {input.readcount}"
         " --min-var-count 3"
         " --min-strandedness 0"
@@ -255,7 +259,7 @@ rule varscan_fpfilter:
         " --min-var-mapqual 30"
         " --max-var-mmqs 100"
         " --max-ref-mmqs 50"
-        ' $(if [ "{wildcards.snvtype}" == "indel" ]; then " --min-var-count-lc 1"; fi)'
+        ' $(if [ "{wildcards.snvtype}" == "indel" ]; then echo " --min-var-count-lc 1"; fi)'
         " --output-file {output.vcf}"
         " --filtered-file {output.ogus}"
         ' 2>> {log}'
@@ -282,13 +286,13 @@ rule varscan_fpfilter:
 rule correct_genotypes:
     #correct genotypes
     input:
-        rules.varscan_fpfilter.output.vcf
+        "{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
     output:
-        vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.corrected.fpfiltered.vcf" % (config['dirs']['intermediate'], config['stepnames']['correct_genotypes']),
+        vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.corrected.vcf" % (config['dirs']['intermediate'], config['stepnames']['correct_genotypes']),
     benchmark:
-        "{prefix}%s{trio}.{snvtype}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['correct_genotypes'])
+        "{prefix}%s{trio}.{snvtype}.{suffix}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['correct_genotypes'])
     log:
-        "{prefix}%s{trio}.{snvtype}.%s.log" % (config['dirs']['logs'], config['stepnames']['correct_genotypes']),
+        "{prefix}%s{trio}.{snvtype}.{suffix}.%s.log" % (config['dirs']['logs'], config['stepnames']['correct_genotypes']),
     threads:
         1
     run:
@@ -307,6 +311,34 @@ rule correct_genotypes:
         # echo correcting genotypes for $OUTPUTBASENAME
         # python /data/biotools/scripts/correct_varscan_genotypes.py $OUTPUTBASENAME.snp.fpfiltered.vcf $OUTPUTBASENAME.snp.fpfiltered.corrected.vcf
         # python /data/biotools/scripts/correct_varscan_genotypes.py $OUTPUTBASENAME.indel.fpfiltered.vcf $OUTPUTBASENAME.indel.fpfiltered.corrected.vcf
+
+rule correct_genotypes_somatic:
+    #correct genotypes
+    input:
+        "{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+    output:
+        vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.corrected.vcf" % (config['dirs']['intermediate'], config['stepnames']['correct_genotypes']),
+    benchmark:
+        "{prefix}%s{trio}.{snvtype}.{suffix}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['correct_genotypes'])
+    log:
+        "{prefix}%s{trio}.{snvtype}.{suffix}.%s.log" % (config['dirs']['logs'], config['stepnames']['correct_genotypes']),
+    threads:
+        1
+    run:
+        with open(input, 'r') as f_in:
+            with open(output, 'w') as f_out:
+                for line in f_in:
+                    if not line or line[0] is "#":
+                        f_out.write(line)
+                    else:
+                        fields = line.split("\t")
+                        fields[3] = fields[3].replace("/", ",").replace("\\", ",")   # remove any slashes from REF field
+                        fields[4] = fields[4].replace("/", ",").replace("\\", ",")   # remove any slashes from ALT field
+                        f_out.write("\t".join(fields))
+
+        # SMJ: changing position of .corrected. :
+        # python /data/biotools/scripts/correct_varscan_genotypes.py $OUTPUTBASENAME.snp.Somatic.hc.vcf $OUTPUTBASENAME.snp.Somatic.hc.corrected.vcf
+        # python /data/biotools/scripts/correct_varscan_genotypes.py $OUTPUTBASENAME.snp.Germline.hc.vcf $OUTPUTBASENAME.snp.Germline.hc.corrected.vcf
 
 
 rule merge_vcfs:
@@ -354,7 +386,7 @@ rule writing_headers:
         "cat "
         " {input}"
         ' | grep'
-        ' "#" {output}'
+        ' "#" > {output}'
         ' && cat {input}'
         ' | grep'
         ' "STATUS=3" '
@@ -369,3 +401,291 @@ rule writing_headers:
         # cat $OUTPUTBASENAME.fpcorr.snp_indel.vcf | grep "#" >$OUTPUTBASENAME.var2denovo.vcf
         # #selecting for denovos via their status to avoid grepping a headerline too much
         # cat $OUTPUTBASENAME.fpcorr.snp_indel.vcf | grep "STATUS=3" | sort -k1,1 -n -k2,2 -n >>$OUTPUTBASENAME.var2denovo.vcf
+
+
+#### rules for somatic calling
+
+rule samtools_mpileup_somatic:
+    # Preprocessing to do a realignment of the reads with GATK
+    input:
+        rules.gatk_RealignerTargetCreator.input.exometrack,
+        rules.gatk_RealignerTargetCreator.input.reference,
+        bam=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], wildcards.role, config)),
+        #bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
+    output:
+        "{prefix}%s%s/{entity}.{role,healthy|tumor}.pileup" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'])
+    benchmark:
+        "{prefix}%s{entity}.{role}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
+    log:
+        "{prefix}%s{entity}.{role}.%s.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
+    conda:
+        "envs/spike_varscan.yaml"
+    threads:
+        1
+    shell:
+        "samtools"
+        " mpileup"
+        " -f {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -l {rules.gatk_RealignerTargetCreator.input.exometrack}"
+        " -B {input.bam}"
+        " > {output}"
+        " 2> {log}"
+
+        # /data/biotools/src/samtools-1.3/samtools mpileup -f $REF -q1 -l $EXOME_TRACK -B $NORMAL_BAM > $NORMAL_PILEUP || usage "error ($?) reading normal bam file with samtools: $NORMAL_BAM"
+        # /data/biotools/src/samtools-1.3/samtools mpileup -f $REF -q1 -l $EXOME_TRACK -B $TUMOR_BAM > $TUMOR_PILEUP || usage "error ($?) reading normal bam file with samtools: $TUMOR_BAM"
+
+
+rule varscan_somatic:
+    # Preprocessing to do a realignment of the reads with GATK
+    input:
+        tumor="{prefix}%s%s/{entity}.tumor.pileup" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
+        healthy="{prefix}%s%s/{entity}.healthy.pileup" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
+    output:
+        indel="{prefix}%s%s/{entity}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
+        snp="{prefix}%s%s/{entity}.snp.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
+    benchmark:
+        "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_somatic'])
+    log:
+        "{prefix}%s{entity}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_somatic'])
+    conda:
+        "envs/spike_varscan.yaml"
+    threads:
+        1
+    shell:
+        "java"
+        " -Xmx3g"
+        " -XX:ParallelGCThreads={threads}"
+        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
+        " somatic"
+        " {input.healthy}"
+        " {input.tumor}"
+        " $(dirname {output.indel})"
+        " --min-coverage-normal 8"
+        " --min-coverage-tumor 10"
+        " --min-reads 4"
+        " --min-var-freq 0.1"
+        " --normal-purity 0.95"
+        " --strand-filter 1"
+        " --output-vcf 1"
+        " 2>> {log}"
+
+        # java -Xmx3g -XX:ParallelGCThreads=1 -Djava.io.tmpdir=$TEMPPATH -jar $VARSCAN2JAR  somatic $NORMAL_PILEUP $TUMOR_PILEUP $OUTPUTBASENAME --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 --min-var-freq 0.1 --normal-purity 0.95 --strand-filter 1 --output-vcf 1 -- $*
+
+
+rule varscan_processSomatic:
+    # Preprocessing to do a realignment of the reads with GATK
+    input:
+        "{prefix}%s%s/{entity}.{snvtype}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
+    output:
+        somatic_hc="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Somatic.hc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        somatic_lc="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Somatic.lc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        germline="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Germline.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        loh="{prefix}%s%s/{entity}.{snvtype,snp|indel}.LOH.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+    benchmark:
+        "{prefix}%s{entity}.{snvtype}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_processSomatic'])
+    log:
+        "{prefix}%s{entity}.{snvtype}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_processSomatic'])
+    conda:
+        "envs/spike_varscan.yaml"
+    threads:
+        1
+    shell:
+        "java"
+        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
+        " processSomatic"
+        " $(dirname {output.somatic_hc})"
+        " 2>> {log}"
+
+        # java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.snp.vcf ;
+        # java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.indel.vcf
+        # processSomatic: from http://varscan.sourceforge.net/somatic-calling.html
+        # The above command will produce 4 output files:
+        # output.snp.Somatic.hc 	(high-confidence Somatic mutations)
+        # output.snp.Somatic.lc 	(low-confidence Somatic mutations)
+        # output.snp.Germline 	(sites called Germline)
+        # output.snp.LOH 		(sites called loss-of-heterozygosity, or LOH)
+
+
+rule varscan_fpfilter_somatic:
+    # fpfilter
+    input:
+        "{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+    output:
+        "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.vcf.fpfilter.var" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
+    benchmark:
+        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_fpfilter'])
+    log:
+        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_fpfilter']),
+    threads:
+        1
+    shell:
+        "perl"
+        " -ane"
+        ' \'print join("\t",@F[0,1,1])."\n" unless(m/^#/)\'"'
+        " {input}"
+        " > {output}"
+
+        # perl -ane 'print join("\t",@F[0,1,1])."\n" unless(m/^#/)' $OUTPUTBASENAME.snp.Somatic.hc.vcf > $OUTPUTBASENAME.snp.Somatic.hc.vcf.fpfilter.var
+        # perl -ane 'print join("\t",@F[0,1,1])."\n" unless(m/^#/)' $OUTPUTBASENAME.snp.Germline.hc.vcf > $OUTPUTBASENAME.snp.Germline.hc.vcf.fpfilter.var
+
+
+rule bam_readcount_somatic_SNP:
+    input:
+        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        var="{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.vcf.fpfilter.var" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
+        bam=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', config)),
+    output:
+        "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.vcf.fpfilter.var.readcounts" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount_somatic']),
+    benchmark:
+        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount_somatic']),
+    log:
+        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount_somatic']),
+    conda:
+        "envs/spike_bam-readcount.yaml"
+    threads:
+        1
+    shell:
+        'bam-readcount'
+        ' -q 1'
+        ' -b 15'
+        ' -w 1'
+        ' -l {input.var}'
+        ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
+        ' {input.bam}'
+        ' > {output}'
+        ' 2>> {log}'
+
+        # /data/biotools/bin/bam-readcount -q1 -b15 -w1 -l $OUTPUTBASENAME.snp.Somatic.hc.vcf.fpfilter.var -f $REF $TUMOR_BAM >$OUTPUTBASENAME.snp.Somatic.hc.vcf.fpfilter.var.readcounts
+        # /data/biotools/bin/bam-readcount -q1 -b15 -w1 -l $OUTPUTBASENAME.snp.Germline.hc.vcf.fpfilter.var -f $REF $TUMOR_BAM >$OUTPUTBASENAME.snp.Germline.hc.vcf.fpfilter.var.readcounts
+
+
+rule somatic_FPfilter:
+    input:
+        script_fpfilter="{prefix}%sfpfilter.pl" % config['dirs']['references'],
+        fixed="{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.corrected.vcf" % (config['dirs']['intermediate'], config['stepnames']['correct_genotypes']),
+        readcounts="{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.vcf.fpfilter.var.readcounts" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount_somatic']),
+    output:
+        "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.corrected.fpfilter.tsv" % (config['dirs']['intermediate'], config['stepnames']['somatic_FPfilter']),
+    benchmark:
+        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['somatic_FPfilter']),
+    log:
+        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['benchmarks'], config['stepnames']['somatic_FPfilter']),
+    threads:
+        1
+    shell:
+        "perl"
+        " {input.script_fpfilter}"
+        " --var-file {input.fixed}"
+        " --readcount-file {input.readcounts}"
+        " --output-file {output}"
+        " 2> {log}"
+        # ## [SNV] Execute FP filter
+        # perl /data/Michael/software/variant-filter-master/fpfilter.pl --var-file $OUTPUTBASENAME.snp.Somatic.hc.fixed.vcf --readcount-file $OUTPUTBASENAME.snp.Somatic.hc.vcf.fpfilter.var.readcounts --output-file $OUTPUTBASENAME.snp.hc.corrected.fpfilter.tsv
+        # ## [SNV] Execute FP filter on germline SNVs
+        # perl /data/Michael/software/variant-filter-master/fpfilter.pl --var-file $OUTPUTBASENAME.snp.Germline.hc.fixed.vcf --readcount-file $OUTPUTBASENAME.snp.Germline.hc.vcf.fpfilter.var.readcounts --output-file $OUTPUTBASENAME.snp.Germline.hc.corrected.fpfilter.tsv
+
+
+rule somatic_reduce:
+    input:
+        "{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.corrected.fpfilter.tsv" % (config['dirs']['intermediate'], config['stepnames']['somatic_FPfilter']),
+    output:
+        "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.corrected.fpfilter.reduced.tsv.gz" % (config['dirs']['intermediate'], config['stepnames']['somatic_reduce']),
+    benchmark:
+        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['somatic_reduce']),
+    log:
+        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['benchmarks'], config['stepnames']['somatic_reduce']),
+    threads:
+        1
+    shell:
+        "awk"
+        " -v OFS='\t'"
+        " '{{print $1, $2, $8, $9}}'"
+        " {input}"
+        " > {output}"
+        " 2> {log}"
+        " | bgzip {output}"
+        " && tabix"
+        " -s 1"
+        " -b 2"
+        " -e 2"
+        " {output}"
+        " 2>> {log}"
+
+        # ## Use FP Filter output to annotate the FILTER column
+        # ### [SNV] Reduce FP Filter output to neccessary columns
+        # awk -v OFS='\t' '{print $1, $2, $8, $9}' $OUTPUTBASENAME.snp.hc.corrected.fpfilter.tsv > $OUTPUTBASENAME.snp.hc.corrected.fpfilter.reduced.tsv
+        # awk -v OFS='\t' '{print $1, $2, $8, $9}' $OUTPUTBASENAME.snp.Germline.hc.corrected.fpfilter.tsv > $OUTPUTBASENAME.snp.Germline.hc.corrected.fpfilter.reduced.tsv
+        # ### [SNV] Index the FP Filter file
+        # bgzip $OUTPUTBASENAME.snp.corrected.fpfilter.reduced.tsv
+        # bgzip $OUTPUTBASENAME.snp.Germline.corrected.fpfilter.reduced.tsv
+        # tabix -s 1 -b 2 -e 2 $OUTPUTBASENAME.snp.hc.corrected.fpfilter.reduced.tsv.gz
+        # tabix -s 1 -b 2 -e 2 $OUTPUTBASENAME.snp.Germline.hc.corrected.fpfilter.reduced.tsv.gz
+
+
+rule vcf_annotate:
+    input:
+        script_filter="{prefix}%sfilter_freq_difference.rb" % config['dirs']['references'],
+        vcf="{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        tsv="{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.corrected.fpfilter.reduced.tsv.gz" % (config['dirs']['intermediate'], config['stepnames']['somatic_reduce']),
+    output:
+        "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.corrected.varscan.somatic.vcf" % (config['dirs']['intermediate'], config['stepnames']['vcf_annotate']),
+    benchmark:
+        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['vcf_annotate']),
+    log:
+        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['benchmarks'], config['stepnames']['vcf_annotate']),
+    conda:
+        "envs/spike_vcftools.yaml"
+    threads:
+        1
+    shell:
+        "cat {input.vcf}"
+        " | {input.script_filter}"
+        " -freq 9"
+        " | vcf-annotate"
+        " -a {input.tsv}"
+        ' -d "key=INFO,ID=VSFP,Number=1,Type=String,Description=\'VarScan2 FP filter annotation\'"'
+        " -c CHROM,POS,FILTER,INFO/VSFP"
+        " 2> {log}"
+        ' | grep -e "^#" -e "SS=2"'
+        ' | grep -e "^#" -e "PASS"'
+        " > {output}"
+
+        # ### [SNV] Actually use vcf-annotate to add the annotation to the filter field
+        # ### [SNV] ALSO: Filter SOMATIC and PASS variants for final VCF output
+        # cat $OUTPUTBASENAME.snp.Somatic.hc.vcf |
+        # /data/biotools/scripts/filter_freq_difference.rb -freq 9 | ## make sure we only consider SNVs that have at least 10% frequency difference between tumor and normal
+        # vcf-annotate -a $OUTPUTBASENAME.snp.hc.corrected.fpfilter.reduced.tsv.gz \
+        # -d "key=INFO,ID=VSFP,Number=1,Type=String,Description='VarScan2 FP filter annotation'" \
+        # -c CHROM,POS,FILTER,INFO/VSFP | grep -e "^#" -e "SS=2" | grep -e "^#" -e "PASS" > $OUTPUTBASENAME.snp.hc.corrected.varscan.somatic.vcf
+        #
+        # cat $OUTPUTBASENAME.snp.Germline.hc.vcf |
+        # /data/biotools/scripts/filter_freq_difference.rb -freq 9 | ## make sure we only consider SNVs that have at least 10% frequency difference between tumor and normal
+        # vcf-annotate -a $OUTPUTBASENAME.snp.Germline.hc.corrected.fpfilter.reduced.tsv.gz \
+        # -d "key=INFO,ID=VSFP,Number=1,Type=String,Description='VarScan2 FP filter annotation'" \
+        # -c CHROM,POS,FILTER,INFO/VSFP | grep -e "^#" -e "SS=1" | grep -e "^#" -e "PASS" > $OUTPUTBASENAME.snp.Germline.hc.corrected.varscan.somatic.vcf
+
+
+rule merge_somatic:
+    # Use vcf-concat to combine SNP, INDEL and LOH calls
+    input:
+        hc="{prefix}%s%s/{entity}.snp.Somatic.hc.corrected.varscan.somatic.vcf" % (config['dirs']['intermediate'], config['stepnames']['vcf_annotate']),
+        germline="{prefix}%s%s/{entity}.snp.Germline.corrected.varscan.somatic.vcf" % (config['dirs']['intermediate'], config['stepnames']['vcf_annotate']),
+    output:
+        "{prefix}%s%s/{entity}.indel_snp.hc.vcf" % (config['dirs']['intermediate'], config['stepnames']['merge_somatic']),
+    benchmark:
+        "{prefix}%s%s/{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['merge_somatic']),
+    log:
+        "{prefix}%s%s/{entity}.log" % (config['dirs']['logs'], config['stepnames']['merge_somatic']),
+    conda:
+        "envs/spike_vcftools.yaml"
+    threads:
+        1
+    shell:
+        "vcf-concat"
+        " {input.hc}"
+        " {input.germline}"
+        ' > {output}'
+        " 2> {log}"
+
+        # # Use vcf-concat to combine SNP, INDEL and LOH calls
+        # vcf-concat $OUTPUTBASENAME.snp.hc.corrected.varscan.somatic.vcf $OUTPUTBASENAME.snp.Germline.hc.corrected.varscan.somatic.vcf > "$OUTPUTBASENAME.indel_snp.hc.vcf" # $OUTPUTBASENAME.loh.corrected.varscan.somatic.vcf

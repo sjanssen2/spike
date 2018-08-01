@@ -1,9 +1,3 @@
-from scripts.checks import check_illuminarun_complete
-from scripts.parse_samplesheet import get_fastq_filenames
-from scripts.reports import report_undertermined_filesizes
-import glob
-
-
 # rule all_demultiplex:
 #     input:
 #         lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, fastq)
@@ -86,4 +80,4 @@ rule convert_illumina_report:
         "envs/spike_report.yaml"
     shell:
         "wkhtmltopdf --orientation Landscape {input.demux} {output}; "
-        "echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report and some statistics about the file sizes of undetermined reads.\n\nHave a nice day!' | mail -s '[{config[name_program]}] demultiplex report {config[run]}' -A {output} -A {input.undetermined} {config[emails_demultiplexreport]}"
+        "echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report and some statistics about the file sizes of undetermined reads.\n\nHave a nice day!' | mail -s '[{config[name_program]}] demultiplex report {config[run]}' -A {output} -A {input.undetermined} {config[emails][demultiplexreport]}"
