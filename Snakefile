@@ -2,7 +2,7 @@ import os
 import socket
 import glob
 
-from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet, get_sample_names, get_xenograft_host, get_fastq_filenames, get_lanes_for_sampleID, get_role, get_reference_genome
+from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet, get_sample_names, get_xenograft_host, get_fastq_filenames, get_lanes_for_sampleID, get_role, get_reference_genome, get_reference_knowns
 from scripts.utils import exclude_sample
 from scripts.checks import check_illuminarun_complete
 from scripts.reports import report_undertermined_filesizes, report_exome_coverage
