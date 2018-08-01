@@ -19,7 +19,7 @@ Adapter,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,,
 AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,,
 ,,,,,,,,,,,,
 [Data],,,,,,,,,,,,
-Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,ukd_entity_id,ukd_entity_role,ukd_xenograph_species,ukd_action
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,ukd_entity_id,ukd_entity_role,ukd_xenograft_species,ukd_action
 1,Chri_3,297,,,7,CAGATC,AG_Remke,"Lane1-Lauf18-6,5PM",Chri_3,,,demux
 1,Chri_4,298,,,2,CGATGT,AG_Remke,"Lane1-Lauf18-6,5PM",Chri_4,,,demux
 1,NPTH_17,299,,,4,TGACCA,AG_Remke,"Lane1-Lauf18-6,5PM",NPTH_17,,,demux
