@@ -164,16 +164,16 @@ rule bam_readcount_SNP:
         ' | grep -v "#"'
         ' | cut -f 1,2'
         " | awk '{{ print $1, $2, $2 }}'"
-        ' > {output.readcount}'
+        ' > {output.var}'
         ' 2> {log}'
         ' && bam-readcount'
         ' -q 1'
         ' -b 20'
         ' -w 1'
-        ' -l {output.readcount}'
+        ' -l {output.var}'
         ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
         ' {input.patient}'
-        ' > {output.var}'
+        ' > {output.readcount}'
         ' 2>> {log}'
 
         # echo prepare variant list for fpfilter for $OUTPUTBASENAME
@@ -204,16 +204,16 @@ rule bam_readcount_INDEL:
     shell:
         "awk 'BEGIN {{OFS=\"\t\"}} {{if (!/^#/) {{ isDel=(length($4) > length($5)) ? 1 : 0; print $1,($2+isDel),($2+isDel); }}}}'"
         " {input.vcf}"
-        " > {output.readcount}"
+        " > {output.var}"
         ' 2> {log}'
         ' && bam-readcount'
         ' -q 1'
         ' -b 20'
         ' -w 1'
-        ' -l {output.readcount}'
+        ' -l {output.var}'
         ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
         ' {input.patient}'
-        ' > {output.var}'
+        ' > {output.readcount}'
         ' 2>> {log}'
 
         # #now do the same for the indels
