@@ -68,6 +68,12 @@ stepnames:
   mutect: "145_mutect"
   varscan_somatic: "150_varscan_somatic"
   varscan_processSomatic: "155_varscan_processSomatic"
+  bam_readcount_somatic: "160_bam_readcount_somatic"
+
+  somatic_FPfilter: "165_somatic_FPfilter"
+  somatic_reduce: "170_somatic_reduce"
+  vcf_annotate: "175_vcf_annotate"
+  merge_somatic: "180_merge_somatic"
 
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
