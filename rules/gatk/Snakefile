@@ -6,8 +6,7 @@ rule gatk_RealignerTargetCreator:
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config), ending) for ending in ['', '.fai', '.dict']],
-        knownsA="%s%sMills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsB="%s%s1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references'])
+        knowns=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config)],
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam.intervals" % (config['dirs']['intermediate'], config['stepnames']['gatk_RealignerTargetCreator'])
     benchmark:
@@ -28,12 +27,12 @@ rule gatk_RealignerTargetCreator:
         " -L {input.exometrack}"
         " -I {input.bam}"
         " -R {input.references[0]}"
-        " -known {input.knownsA}"
-        " -known {input.knownsB}"
+        ' $(for x in `echo "{input.knowns}"`; do echo " -known $x"; done)'
         " --out {output}"
         " 2>> {log}"
 
-        #gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(REF) -known $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -known $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --out $@.tmp  $(OUTPUT_TO_LOG) \
+        #       gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(REF)       -known $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -known $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --out $@.tmp  $(OUTPUT_TO_LOG) \
+	    #MOUSE: gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(MOUSE_REF) -known /data/biotools/reference/mgp_indels/C57BL6NJ_CBAJDBA2.indels.vcf.gz                                                       --out $@.tmp  $(OUTPUT_TO_LOG) \
 
 
 rule gatk_IndelRealigner:
@@ -77,8 +76,7 @@ rule gatk_IndelRealigner:
 rule gatk_BaseRecalibrator:
     # Preprocessing to do a base quality score recalibration with GATK
     input:
-        knownsA="%s%sMills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsB="%s%s1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        knowns=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config)],
         exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config), ending) for ending in ['', '.fai', '.dict']],
@@ -108,9 +106,8 @@ rule gatk_BaseRecalibrator:
         " -I {input.bam}"
         " -R {input.references[0]}"
         " -knownSites {input.knownsDBSNP}"
-        " -knownSites {input.knownsA}"
         " -knownSites {input.knownsDBSNP138}"
-        " -knownSites {input.knownsB}"
+        ' $(for x in `echo "{input.knowns}"`; do echo " -knownSites $x"; done)'
         " -o {output}"
         " 2>> {log}"
 
@@ -295,7 +292,7 @@ rule gatk_VariantRecalibrator_SNP:
     input:
         rules.gatk_SelectVariants.output.vcf,
         knownsDBSNP138="%s%sdbsnp_138.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsA="%s%sMills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        knowns=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config) if 'VariantRecalibrator_SNP' in known],
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config), ending) for ending in ['', '.fai', '.dict']],
         vcf=rules.gatk_SelectVariants.output.vcf,
@@ -320,6 +317,8 @@ rule gatk_VariantRecalibrator_SNP:
         "envs/spike_gatk.yaml"
     threads:
         3
+    params:
+        knowns_settings=lambda wildcards: [' %s %s%s%s' % (known['VariantRecalibrator_SNP'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config) if 'VariantRecalibrator_SNP' in known],
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
@@ -334,7 +333,7 @@ rule gatk_VariantRecalibrator_SNP:
         " --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 {input.g1000p1}"
         " --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 {input.g1000omni}"
         " --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 {input.knownsDBSNP138}"
-        " --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 {input.knownsA}"
+        "{params.knowns_settings}"
         " -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum"
         " --recal_file {output.recal}"
         " --tranches_file {output.tranches}"
@@ -354,8 +353,7 @@ rule gatk_VariantRecalibrator_INDEL:
     # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
     input:
-        knownsA="%s%sMills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsB="%s%s1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
+        knowns=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config)],
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         vcf=rules.gatk_SelectVariants.output.vcf,
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config), ending) for ending in ['', '.fai', '.dict']],
@@ -375,6 +373,8 @@ rule gatk_VariantRecalibrator_INDEL:
         "envs/spike_gatk.yaml"
     threads:
         3
+    params:
+        knowns_settings=lambda wildcards: [' %s %s%s%s' % (known['VariantRecalibrator'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config)],
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
@@ -385,8 +385,8 @@ rule gatk_VariantRecalibrator_INDEL:
         " --input {input.vcf}"
         " -R {input.references[0]}"
         " -mode INDEL"
-        " --resource:mills,known=true,training=true,truth=true,prior=12.0 {input.knownsA}"
-        " --resource:1000G,known=false,training=true,truth=false,prior=10.0 {input.knownsB}"
+        ' $(for x in `echo "{input.knowns}"`; do echo " -known $x"; done)'
+        "{params.knowns_settings}"
         " --maxGaussians 2 -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an QD -an DP -an FS -an SOR -an MQRankSum -an ReadPosRankSum"
         " --recal_file {output.recal}"
         " --tranches_file {output.tranches}"
