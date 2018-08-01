@@ -1,8 +1,8 @@
 rule bwa:
     # Do the alignment, read paring, introduction of the read groups, sam-import and sorting on a pipe. Paired-end flavour
     input:
-        forward="{prefix}%s%s/{run}/Paired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
-        reverse="{prefix}%s%s/{run}/Paired/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
+        forward="{prefix}%s%s/{run}/Paired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check']),
+        reverse="{prefix}%s%s/{run}/Paired/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check']),
         reference="{prefix}%shGRC37.fa" % (config['dirs']['references'])
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
