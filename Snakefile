@@ -2,7 +2,7 @@ import os
 import socket
 import glob
 
-from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet, get_sample_names
+from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet, get_sample_names, get_xenograft_host
 from scripts.utils import exclude_sample
 
 
