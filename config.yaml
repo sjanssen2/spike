@@ -33,7 +33,9 @@ stepnames:
   demultiplex: "05_demultiplex"
   rejoin_samples: "10_rejoin_samples"
   trim: "15_trim"
-  xenograft_alignhybrid: "20_xenograft_alignhybrid"
+  xenograft_bwa_aln: "22_xenograft_bwa_aln"
+  xenograft_bwa_sampe: "23_xenograft_bwa_sampe"
+  xenograft_check: "24_xenograft_check"
   map: "25_map"
   nodup: "30_remove_pcr_duplicates"
   gatk_RealignerTargetCreator: "35_gatk_RealignerTargetCreator"
@@ -75,6 +77,11 @@ backup:
   host: '10.2.5.12'
   targetdirectory: "array1/Sequencing_Backups/Illumina_HiSeq"
 
+xenograft:
+  references:
+    mus musculus: 'GRCm'
+    homo sapiens: 'GRCh'
 
 # variables that can directly be overwritten from CML
 pwd_backup: "thisisasecret"
+num_threads: 16
