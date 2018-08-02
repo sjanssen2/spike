@@ -4,12 +4,9 @@ rule gatk_RealignerTargetCreator:
         bam=rules.remove_pcr_duplicates.output.bam,
         bai=rules.remove_pcr_duplicates.output.bai,
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_dict="%s%shGRC37.fa.dict" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsA="%s%sMills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsB="%s%s1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references'])
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, config, 'RealignerTargetCreator') for ending in ['', '.idx']],
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam.intervals" % (config['dirs']['intermediate'], config['stepnames']['gatk_RealignerTargetCreator'])
     benchmark:
@@ -20,6 +17,8 @@ rule gatk_RealignerTargetCreator:
         "envs/spike_gatk.yaml"
     threads:
         3
+    params:
+        knowns_settings=lambda wildcards: [' -known %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config, 'RealignerTargetCreator')],
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
@@ -29,20 +28,20 @@ rule gatk_RealignerTargetCreator:
         " -nt {threads}"
         " -L {input.exometrack}"
         " -I {input.bam}"
-        " -R {input.reference}"
-        " -known {input.knownsA}"
-        " -known {input.knownsB}"
+        " -R {input.references[0]}"
+        "{params.knowns_settings}"
         " --out {output}"
         " 2>> {log}"
 
-        #gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(REF) -known $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -known $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --out $@.tmp  $(OUTPUT_TO_LOG) \
+        #       gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(REF)       -known $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -known $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --out $@.tmp  $(OUTPUT_TO_LOG) \
+	    #MOUSE: gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(MOUSE_REF) -known /data/biotools/reference/mgp_indels/C57BL6NJ_CBAJDBA2.indels.vcf.gz                                                       --out $@.tmp  $(OUTPUT_TO_LOG) \
 
 
 rule gatk_IndelRealigner:
     # Realign the the reads
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         bam=rules.remove_pcr_duplicates.output.bam,
         intervals=rules.gatk_RealignerTargetCreator.output
     output:
@@ -57,13 +56,13 @@ rule gatk_IndelRealigner:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T IndelRealigner"
         " -I {input.bam}"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -R {input.references[0]}"
         " -targetIntervals {input.intervals}"
         " --out {output.bam}"
         " 2>> {log}"
@@ -79,17 +78,11 @@ rule gatk_IndelRealigner:
 rule gatk_BaseRecalibrator:
     # Preprocessing to do a base quality score recalibration with GATK
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
-        rules.gatk_RealignerTargetCreator.input.knownsA,
-        rules.gatk_RealignerTargetCreator.input.knownsB,
-        rules.gatk_RealignerTargetCreator.input.exometrack,
-        rules.gatk_RealignerTargetCreator.input.reference,
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in (get_reference_knowns(wildcards.sample, config, 'BaseRecalibrator')) for ending in ['', '.idx']],
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         bam=rules.gatk_IndelRealigner.output.bam,
-        knownsDBSNP="%s%sdbSNP135_GRCh37.3.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsDBSNPindex="%s%sdbSNP135_GRCh37.3.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsDBSNP138="%s%sdbsnp_138.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsDBSNP138index="%s%sdbsnp_138.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references'])
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bam.recal_data.csv" % (config['dirs']['intermediate'], config['stepnames']['gatk_BaseRecalibrator']),
     benchmark:
@@ -100,20 +93,19 @@ rule gatk_BaseRecalibrator:
         "envs/spike_gatk.yaml"
     threads:
         3
+    params:
+        knowns_settings=lambda wildcards: [' -knownSites %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in (get_reference_knowns(wildcards.sample, config, 'BaseRecalibrator'))],
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T BaseRecalibrator"
         " -nct {threads}"
-        " -L {rules.gatk_RealignerTargetCreator.input.exometrack}"
+        " -L {input.exometrack}"
         " -I {input.bam}"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
-        " -knownSites {input.knownsDBSNP}"
-        " -knownSites {rules.gatk_RealignerTargetCreator.input.knownsA}"
-        " -knownSites {input.knownsDBSNP138}"
-        " -knownSites {rules.gatk_RealignerTargetCreator.input.knownsB}"
+        " -R {input.references[0]}"
+        "{params.knowns_settings}"
         " -o {output}"
         " 2>> {log}"
 
@@ -126,8 +118,8 @@ rule gatk_BaseRecalibrator:
 rule gatk_PrintReads:
     # Preprocessing to do a base quality score recalibration with GATK
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         csv=rules.gatk_BaseRecalibrator.output,
         bam=rules.gatk_IndelRealigner.output.bam
     output:
@@ -141,15 +133,17 @@ rule gatk_PrintReads:
         "envs/spike_gatk.yaml"
     threads:
         3
+    params:
+        disable=lambda wildcards: " --disable_indel_quals" if get_species(wildcards.sample, config) == 'homo sapiens' else ""
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx16g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T PrintReads"
         " -nct {threads}"
-        " --disable_indel_quals"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        "{params.disable}"
+        " -R {input.references[0]}"
         " -BQSR {input.csv}"
         " -I {input.bam}"
         " -o {output.bam}"
@@ -169,7 +163,7 @@ rule exome_coverage:
     # produce exome coverage statistics for a sample
     input:
         bam=rules.gatk_PrintReads.output.bam,
-        exometrack=rules.gatk_RealignerTargetCreator.input.exometrack,
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
     output:
         csv="{prefix}%s%s/{run,[^/]+XX}/{sample}.exome_coverage.csv" % (config['dirs']['intermediate'], config['stepnames']['exome_coverage']),
     benchmark:
@@ -198,9 +192,9 @@ rule exome_coverage:
 rule gatk_HaplotypeCaller:
     # Call SNPs and Indels (using --genotype_likelihoods_model BOTH )
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.exometrack,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         bam=rules.gatk_PrintReads.output.bam,
         bai=rules.gatk_PrintReads.output.bai
     output:
@@ -215,16 +209,16 @@ rule gatk_HaplotypeCaller:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T HaplotypeCaller"
         " -I {input.bam}"
         " --genotyping_mode DISCOVERY"
-        " -L {rules.gatk_RealignerTargetCreator.input.exometrack}"
+        " -L {input.exometrack}"
         " -nct {threads}"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -R {input.references[0]}"
         " {config[gatk][HaplotypeCallerQualityArguments]}"
         " --out {output.vcf}"
         " 2>> {log}"
@@ -245,8 +239,8 @@ rule gatk_HaplotypeCaller:
 rule gatk_SelectVariants:
     # Separate SNPs and Indels from
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program}.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,snps|indels}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_SelectVariants']),
@@ -260,7 +254,7 @@ rule gatk_SelectVariants:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
@@ -268,7 +262,7 @@ rule gatk_SelectVariants:
         " -nt {threads}"
         ' --selectTypeToInclude $(echo "{wildcards.snvtype}" | tr "[:lower:]" "[:upper:]" | rev | cut -b 2- | rev) '
         " --variant {input.vcf}"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -R {input.references[0]}"
         " --out {output.vcf}"
         " 2>> {log}"
 
@@ -296,18 +290,11 @@ rule gatk_VariantRecalibrator_SNP:
     # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
         rules.gatk_SelectVariants.output.vcf,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
-        rules.gatk_BaseRecalibrator.input.knownsDBSNP138,
-        rules.gatk_RealignerTargetCreator.input.knownsA,
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         vcf=rules.gatk_SelectVariants.output.vcf,
-        hapmap="%s%shapmap_3.3.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        hapmapidx="%s%shapmap_3.3.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
-        g1000p1="%s%s1000G_phase1.snps.high_confidence.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        g1000p1idx="%s%s1000G_phase1.snps.high_confidence.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
-        g1000omni="%s%s1000G_omni2.5.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        g1000omniidx="%s%s1000G_omni2.5.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, config, 'VariantRecalibrator_SNP') for ending in ['', '.idx']],
     output:
         recal="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,snps}.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         recalidx="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,snps}.recal.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
@@ -323,21 +310,19 @@ rule gatk_VariantRecalibrator_SNP:
         "envs/spike_gatk.yaml"
     threads:
         3
+    params:
+        knowns_settings=lambda wildcards: [' --resource:%s %s%s%s' % (known['VariantRecalibrator_SNP'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config, 'VariantRecalibrator_SNP')],
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T VariantRecalibrator"
         " -nt {threads}"
         " --input {input.vcf}"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -R {input.references[0]}"
         " -mode SNP"
-        " --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 {input.hapmap}"
-        " --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 {input.g1000p1}"
-        " --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 {input.g1000omni}"
-        " --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 {rules.gatk_BaseRecalibrator.input.knownsDBSNP138}"
-        " --resource:mills,VCF,known=false,training=true,truth=true,prior=12.0 {rules.gatk_RealignerTargetCreator.input.knownsA}"
+        "{params.knowns_settings}"
         " -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum"
         " --recal_file {output.recal}"
         " --tranches_file {output.tranches}"
@@ -357,10 +342,10 @@ rule gatk_VariantRecalibrator_INDEL:
     # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.knownsA,
-        rules.gatk_RealignerTargetCreator.input.knownsB,
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, config, 'VariantRecalibrator_INDEL') for ending in ['', '.idx']],
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         vcf=rules.gatk_SelectVariants.output.vcf,
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
     output:
         recal="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         recalidx="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.recal.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
@@ -377,18 +362,20 @@ rule gatk_VariantRecalibrator_INDEL:
         "envs/spike_gatk.yaml"
     threads:
         3
+    params:
+        knowns_settings=lambda wildcards: [' --resource:%s %s%s%s' % (known['VariantRecalibrator_INDEL'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config, 'VariantRecalibrator_INDEL')],
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T VariantRecalibrator"
         " -nt {threads}"
         " --input {input.vcf}"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -R {input.references[0]}"
         " -mode INDEL"
-        " --resource:mills,known=true,training=true,truth=true,prior=12.0 {rules.gatk_RealignerTargetCreator.input.knownsA}"
-        " --resource:1000G,known=false,training=true,truth=false,prior=10.0 {rules.gatk_RealignerTargetCreator.input.knownsB}"
+        ' $(for x in `echo "{input.knowns}"`; do echo " -known $x"; done)'
+        "{params.knowns_settings}"
         " --maxGaussians 2 -tranche 100.0 -tranche 99.9 -tranche 99.0 -tranche 90.0 -an QD -an DP -an FS -an SOR -an MQRankSum -an ReadPosRankSum"
         " --recal_file {output.recal}"
         " --tranches_file {output.tranches}"
@@ -406,8 +393,8 @@ rule gatk_VariantRecalibrator_INDEL:
 rule gatk_ApplyRecalibration:
     # Apply SNP Variant recalibration Step 2 of 2
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         vcf=rules.gatk_SelectVariants.output.vcf,
         #vcf="{prefix}%s%s/{run}/{sample}.{program}.raw.{snvtype}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_SelectVariants']),
         recal="{prefix}%s%s/{run}/{sample}.{program}.raw.{snvtype}.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
@@ -424,14 +411,14 @@ rule gatk_ApplyRecalibration:
     threads:
         3
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T ApplyRecalibration"
         ' --mode $(echo "{wildcards.snvtype}" | tr "[:lower:]" "[:upper:]" | rev | cut -b 2- | rev) '
         " --input {input.vcf}"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -R {input.references[0]}"
         ' --ts_filter_level $(if [ "{wildcards.isrelax}" == "" ]; then echo "90.0"; else echo "99.0"; fi)'
         " -tranchesFile {input.tranches}"
         " -recalFile {input.recal}"
@@ -468,8 +455,8 @@ rule gatk_ApplyRecalibration:
 rule gatk_VariantFiltration_SNP:
     # Apply SNP Variant recalibration Step 2 of 2
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         vcf=rules.gatk_ApplyRecalibration.output.vcf,
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk}{isrelax,\.relax|}.hf.recal.{snvtype,snps}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
@@ -483,13 +470,13 @@ rule gatk_VariantFiltration_SNP:
     threads:
         1
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T VariantFiltration"
         " -V {input.vcf}"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -R {input.references[0]}"
         ' --filterExpression "QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0"'
         ' --filterName "LC_SB_MQ_Reapos_Filter"'
         " --out {output.vcf}"
@@ -512,8 +499,8 @@ rule gatk_VariantFiltration_SNP:
 rule gatk_VariantFiltration_INDEL:
     # Apply SNP Variant recalibration Step 2 of 2
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         vcf=lambda wildcards: "%s%s%s/%s/%s.%s%s.%s.%s.vcf" % (
             wildcards.prefix,
             config['dirs']['intermediate'],
@@ -536,12 +523,12 @@ rule gatk_VariantFiltration_INDEL:
     threads:
         1
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T VariantFiltration"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -R {input.references[0]}"
         " --variant {input.vcf}"
         ' --filterExpression "QD < 2.0"'
         ' --filterExpression "ReadPosRankSum < -20.0"'
@@ -569,8 +556,8 @@ rule gatk_VariantFiltration_INDEL:
 rule gatk_CombineVariants:
     # Join postprocessed snps and indels to
     input:
-        rules.gatk_RealignerTargetCreator.input.gatkpackage,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         indels="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
         snps="{prefix}%s%s/{run,[^/]+XX}/{sample}.gatk{isrelax}.hf.recal.snps.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
     output:
@@ -585,13 +572,13 @@ rule gatk_CombineVariants:
     threads:
         1
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {rules.gatk_RealignerTargetCreator.input.gatkpackage} 2>> {log}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T CombineVariants"
         " --assumeIdenticalSamples"
-        " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+        " -R {input.references[0]}"
         " --variant {input.indels}"
         " --variant {input.snps}"
         " --out {output.vcf}"
@@ -613,8 +600,8 @@ rule gatk_CombineVariants:
 #     # QC: Calculate Exome Coverage for
 #     input:
 #         rules.gatk_RealignerTargetCreator.input.gatkpackage,
-#         rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
-#         exometrack=rules.gatk_RealignerTargetCreator.input.exometrack,
+#         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
+#         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
 #         geneset="%s%srefGene-b37-sorted.txt" % (config['dirs']['prefix'], config['dirs']['references']),
 #         bam=rules.gatk_PrintReads.output.bam
 #     output:
@@ -635,7 +622,7 @@ rule gatk_CombineVariants:
 #         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
 #         " -T DepthOfCoverage"
 #         " -I {input.bam}"
-#         " -R {rules.gatk_RealignerTargetCreator.input.reference}"
+#         " -R {input.references[0]}"
 #         " -L {input.exometrack}"
 #         " --calculateCoverageOverGenes {input.geneset}"
 #         " --omitDepthOutputAtEachBase"

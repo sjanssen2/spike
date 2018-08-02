@@ -88,6 +88,118 @@ xenograft:
     mus musculus: 'GRCm'
     homo sapiens: 'GRCh'
 
+references:
+  genomes:
+    homo sapiens:
+      file: 'hGRC37.fa'
+      lengths: 'hGRC37.len'
+      gemMappabilityFile: 'hGRC37.mappability.mappability'
+      chromosomes:
+        - "hGRC37_chromosomes/1.fa"
+        - "hGRC37_chromosomes/2.fa"
+        - "hGRC37_chromosomes/3.fa"
+        - "hGRC37_chromosomes/4.fa"
+        - "hGRC37_chromosomes/5.fa"
+        - "hGRC37_chromosomes/6.fa"
+        - "hGRC37_chromosomes/7.fa"
+        - "hGRC37_chromosomes/8.fa"
+        - "hGRC37_chromosomes/9.fa"
+        - "hGRC37_chromosomes/10.fa"
+        - "hGRC37_chromosomes/11.fa"
+        - "hGRC37_chromosomes/12.fa"
+        - "hGRC37_chromosomes/13.fa"
+        - "hGRC37_chromosomes/14.fa"
+        - "hGRC37_chromosomes/15.fa"
+        - "hGRC37_chromosomes/16.fa"
+        - "hGRC37_chromosomes/17.fa"
+        - "hGRC37_chromosomes/18.fa"
+        - "hGRC37_chromosomes/19.fa"
+        - "hGRC37_chromosomes/20.fa"
+        - "hGRC37_chromosomes/21.fa"
+        - "hGRC37_chromosomes/22.fa"
+        - "hGRC37_chromosomes/X.fa"
+        - "hGRC37_chromosomes/Y.fa"
+      SNPfile: "hg19_deCHRd_snp137.SingleDiNucl.1based.txt"
+      cosmic: "CosmicCodingMuts_v63_300113.vcf"
+    mus musculus:
+      file: 'Mus_musculus.GRCm38.71.dna.fa'
+      lengths: 'GRCm38.71.len'
+      gemMappabilityFile: 'Mus_musculus.GRCm38.71.dna.fa.index.gem.mappability.mappability'
+      chromosomes:
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.1.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.2.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.3.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.4.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.5.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.6.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.7.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.8.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.9.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.10.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.11.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.12.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.13.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.14.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.15.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.16.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.17.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.18.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.19.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.X.fa"
+        - "GRCm38.71_chromosomes/Mus_musculus.GRCm38.71.dna.chromosome.Y.fa"
+      SNPfile: "UCSC_mm10_dechr_reorder_nomult_sort_for_freec.txt"
+      cosmic:
+  knowns:
+    homo sapiens:
+      - file: "Mills_and_1000G_gold_standard.indels.b37.vcf"
+        RealignerTargetCreator: "yes"
+        BaseRecalibrator: 'yes'
+        VariantRecalibrator_SNP: "mills,VCF,known=false,training=true,truth=true,prior=12.0"
+        VariantRecalibrator_INDEL: "mills,known=true,training=true,truth=true,prior=12.0"
+
+      - file: "1000G_phase1.indels.b37.vcf"
+        RealignerTargetCreator: "yes"
+        BaseRecalibrator: 'yes'
+        VariantRecalibrator_INDEL: "1000G,known=false,training=true,truth=false,prior=10.0"
+
+      - file: "hapmap_3.3.b37.vcf"
+        VariantRecalibrator_SNP: "hapmap,VCF,known=false,training=true,truth=true,prior=12.0"
+
+      - file: "1000G_phase1.snps.high_confidence.b37.vcf"
+        VariantRecalibrator_SNP: "omni,VCF,known=false,training=true,truth=false,prior=10.0"
+
+      - file: "1000G_omni2.5.b37.vcf"
+        VariantRecalibrator_SNP: "omni,VCF,known=false,training=true,truth=false,prior=12.0"
+
+      - file: "dbSNP135_GRCh37.3.vcf"
+        BaseRecalibrator: 'yes'
+
+      - file: "dbsnp_138.b37.vcf"
+        BaseRecalibrator: 'yes'
+        VariantRecalibrator_SNP: "dbsnp,VCF,known=true,training=false,truth=false,prior=2.0"
+        mutect:
+    mus musculus:
+      - file: "C57BL6NJ_CBAJDBA2.indels.vcf.gz"
+        RealignerTargetCreator: "yes"
+        BaseRecalibrator: 'yes'
+        VariantRecalibrator_INDEL: "mgpindels,known=true,training=true,truth=true,prior=12.0"
+
+      - file: "Mus_musculus.ref_clean.vcf.gz.recode.vcf.gz"
+        BaseRecalibrator: 'yes'
+        VariantRecalibrator_SNP: "mouse_dbsnp,VCF,known=true,training=true,truth=false,prior=8.0"
+
+      - file: "C57BL6NJ.genoc5.ref.snp.vcf.gz.recode.vcf.gz"
+        VariantRecalibrator_SNP: "C58BL6NJ_snps,VCF,known=false,training=true,truth=true,prior=12.0"
+
+      - file: "CBAJDBA2.genoc7.ref.snp.recode.vcf.gz"
+        VariantRecalibrator_SNP: "CBAJDBA2_snps,VCF,known=false,training=true,truth=true,prior=12.0"
+  exometrack:
+    homo sapiens: "Agilent_SureSelect_V5plusUTR.bed"
+    mus musculus: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
+  varscan_somatic:
+    homo sapiens: " --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 "
+    mus musculus: " --min-coverage-normal 6 --min-coverage-tumor 8 "
+
 # variables that can directly be overwritten from CML
 pwd_backup: "thisisasecret"
 num_threads: 16

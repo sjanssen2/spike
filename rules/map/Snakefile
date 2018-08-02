@@ -3,7 +3,7 @@ rule bwa:
     input:
         forward="{prefix}%s%s/{run}/Paired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check']),
         reverse="{prefix}%s%s/{run}/Paired/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check']),
-        reference="{prefix}%shGRC37.fa" % (config['dirs']['references'])
+        reference=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'])
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
     benchmark:
@@ -20,7 +20,7 @@ rule bwa:
         date='%04i/%02i/%02i' % (
             int(config['run'].split('_')[0][:2])+2000,
             int(config['run'].split('_')[0][3:4]),
-            int(config['run'].split('_')[0][5:6]))
+            int(config['run'].split('_')[0][5:6])),
     shell:
         'bwa mem -t {threads} -v 2 -M'
         ' -R "@RG\\tID:{params.run}\\tCN:Department_of_Pediatric_Oncology_Dusseldorf\\tPU:{params.flowcell}\\tDT:{params.date}\\tPL:ILLUMINA\\tLB:SureSelectXTV5plusUTRautomated\\tSM:readgroups.info"'
@@ -36,6 +36,11 @@ rule bwa:
         #$(SAMTOOLS_PATH_2k15)/samtools view -bSu -F 0x04 - |
         #$(SAMTOOLS_PATH_2k15)/samtools sort -m 1G -@ 1 - $@.tmp     $(STDERR_TO_LOG) \
 	    #&& mv $@.tmp.bam $@
+
+        #MOUSE: $(BWA_PATH_2k15)/bwa mem -t $(NT_MINUS_ONE) -v 1 -M $(shell getReadGroupStringFromFilename_2015.pl $*) $(MOUSE_REF) $*.fastq.gz                   |
+        #MOUSE: $(SAMTOOLS_PATH_2k15)/samtools view -bSu -F 0x04 - |
+        #MOUSE: $(SAMTOOLS_PATH_2k15)/samtools sort -m 1G -@ 1 - $@.tmp     $(STDERR_TO_LOG) \
+
 
 rule remove_pcr_duplicates:
     # Remove PCR duplicates from the reads

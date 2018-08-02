@@ -1,8 +1,8 @@
 rule varscan_trio:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        rules.gatk_RealignerTargetCreator.input.exometrack,
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.trio, config)),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.trio, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
         father=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'father', config)),
         mother=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'mother', config)),
@@ -28,8 +28,8 @@ rule varscan_trio:
         " mpileup"
         " -B "
         " -q 1"
-        " -f {rules.gatk_RealignerTargetCreator.input.reference}"
-        " -l {rules.gatk_RealignerTargetCreator.input.exometrack}"
+        " -f {input.references[0]}"
+        " -l {input.exometrack}"
         " {input.father}"
         " {input.mother}"
         " {input.patient}"
@@ -140,7 +140,7 @@ rule varscan_filter_INDEL:
 
 rule bam_readcount_SNP:
     input:
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.trio, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         vcf=lambda wildcards: "%s%s%s/%s.snp.filtered.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['varscan_filter'], '/'.join(get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config).split('/')[1:])),
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
     output:
@@ -166,7 +166,7 @@ rule bam_readcount_SNP:
         ' -b 20'
         ' -w 1'
         ' -l {output.var}'
-        ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
+        ' -f {input.references[0]}'
         ' {input.patient}'
         ' > {output.readcount}'
         ' 2>> {log}'
@@ -182,7 +182,7 @@ rule bam_readcount_SNP:
 
 rule bam_readcount_INDEL:
     input:
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.trio, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         vcf="{prefix}%s%s/{trio}.indel.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
     output:
@@ -206,7 +206,7 @@ rule bam_readcount_INDEL:
         ' -b 20'
         ' -w 1'
         ' -l {output.var}'
-        ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
+        ' -f {input.references[0]}'
         ' {input.patient}'
         ' > {output.readcount}'
         ' 2>> {log}'
@@ -312,6 +312,7 @@ rule correct_genotypes:
         # python /data/biotools/scripts/correct_varscan_genotypes.py $OUTPUTBASENAME.snp.fpfiltered.vcf $OUTPUTBASENAME.snp.fpfiltered.corrected.vcf
         # python /data/biotools/scripts/correct_varscan_genotypes.py $OUTPUTBASENAME.indel.fpfiltered.vcf $OUTPUTBASENAME.indel.fpfiltered.corrected.vcf
 
+
 rule correct_genotypes_somatic:
     #correct genotypes
     input:
@@ -408,8 +409,8 @@ rule writing_headers:
 rule samtools_mpileup_somatic:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        rules.gatk_RealignerTargetCreator.input.exometrack,
-        rules.gatk_RealignerTargetCreator.input.reference,
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, config)),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         bam=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], wildcards.role, config)),
         #bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
@@ -425,8 +426,8 @@ rule samtools_mpileup_somatic:
     shell:
         "samtools"
         " mpileup"
-        " -f {rules.gatk_RealignerTargetCreator.input.reference}"
-        " -l {rules.gatk_RealignerTargetCreator.input.exometrack}"
+        " -f {input.references[0]}"
+        " -l {input.exometrack}"
         " -B {input.bam}"
         " > {output}"
         " 2> {log}"
@@ -451,6 +452,8 @@ rule varscan_somatic:
         "envs/spike_varscan.yaml"
     threads:
         1
+    params:
+        speciesParams=lambda wildcards: get_reference_varscan_somatic(wildcards.entity, config)
     shell:
         "java"
         " -Xmx3g"
@@ -460,9 +463,7 @@ rule varscan_somatic:
         " {input.healthy}"
         " {input.tumor}"
         " $(dirname {output.indel})"
-        " --min-coverage-normal 8"
-        " --min-coverage-tumor 10"
-        " --min-reads 4"
+        "{params.speciesParams}"
         " --min-var-freq 0.1"
         " --normal-purity 0.95"
         " --strand-filter 1"
@@ -531,7 +532,7 @@ rule varscan_fpfilter_somatic:
 
 rule bam_readcount_somatic_SNP:
     input:
-        rules.gatk_RealignerTargetCreator.input.reference, rules.gatk_RealignerTargetCreator.input.reference_fai, rules.gatk_RealignerTargetCreator.input.reference_dict,
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         var="{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.vcf.fpfilter.var" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
         bam=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', config)),
     output:
@@ -550,7 +551,7 @@ rule bam_readcount_somatic_SNP:
         ' -b 15'
         ' -w 1'
         ' -l {input.var}'
-        ' -f {rules.gatk_RealignerTargetCreator.input.reference}'
+        ' -f {input.references[0]}'
         ' {input.bam}'
         ' > {output}'
         ' 2>> {log}'

@@ -2,10 +2,8 @@ rule platypus:
     input:
         bam=rules.gatk_PrintReads.output.bam,
         bai=rules.gatk_PrintReads.output.bai,
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_dict="%s%shGRC37.fa.dict" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
         #idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
@@ -17,12 +15,14 @@ rule platypus:
         "envs/spike_platypus.yaml"
     threads:
         3
+    params:
+        regions=lambda wildcards, input: " --regions=%s" % input.exometrack if get_species(wildcards.sample, config) == 'homo sapiens' else ""
     shell:
         "python2"
         " $CONDA_PREFIX/share/platypus-variant-0.8.1.1-2/Platypus.py"
         " callVariants"
-        " --regions={input.exometrack}"
-        " --refFile={input.reference}"
+        "{params.regions}"
+        " --refFile={input.references[0]}"
         " --bamFiles={input.bam}"
         " --nCPU {threads}"
         " --output {output.vcf}"
