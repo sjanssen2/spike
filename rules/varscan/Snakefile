@@ -1,7 +1,7 @@
 rule varscan_trio:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.trio, config)),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.trio, config), ending) for ending in ['', '.fai', '.dict']],
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', config)),
         father=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'father', config)),
@@ -312,6 +312,7 @@ rule correct_genotypes:
         # python /data/biotools/scripts/correct_varscan_genotypes.py $OUTPUTBASENAME.snp.fpfiltered.vcf $OUTPUTBASENAME.snp.fpfiltered.corrected.vcf
         # python /data/biotools/scripts/correct_varscan_genotypes.py $OUTPUTBASENAME.indel.fpfiltered.vcf $OUTPUTBASENAME.indel.fpfiltered.corrected.vcf
 
+
 rule correct_genotypes_somatic:
     #correct genotypes
     input:
@@ -408,7 +409,7 @@ rule writing_headers:
 rule samtools_mpileup_somatic:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, config)),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config), ending) for ending in ['', '.fai', '.dict']],
         bam=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], wildcards.role, config)),
         #bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])

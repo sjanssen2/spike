@@ -4,9 +4,9 @@ rule gatk_RealignerTargetCreator:
         bam=rules.remove_pcr_duplicates.output.bam,
         bai=rules.remove_pcr_duplicates.output.bai,
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config), ending) for ending in ['', '.fai', '.dict']],
-        knowns=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config)],
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, config, 'RealignerTargetCreator') for ending in ['', '.idx']],
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.nodup.srt.bam.intervals" % (config['dirs']['intermediate'], config['stepnames']['gatk_RealignerTargetCreator'])
     benchmark:
@@ -17,6 +17,8 @@ rule gatk_RealignerTargetCreator:
         "envs/spike_gatk.yaml"
     threads:
         3
+    params:
+        knowns_settings=lambda wildcards: [' -known %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config, 'RealignerTargetCreator')],
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
@@ -27,7 +29,7 @@ rule gatk_RealignerTargetCreator:
         " -L {input.exometrack}"
         " -I {input.bam}"
         " -R {input.references[0]}"
-        ' $(for x in `echo "{input.knowns}"`; do echo " -known $x"; done)'
+        "{params.knowns_settings}"
         " --out {output}"
         " 2>> {log}"
 
@@ -76,15 +78,11 @@ rule gatk_IndelRealigner:
 rule gatk_BaseRecalibrator:
     # Preprocessing to do a base quality score recalibration with GATK
     input:
-        knowns=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config)],
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in (get_reference_knowns(wildcards.sample, config, 'BaseRecalibrator')) for ending in ['', '.idx']],
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config), ending) for ending in ['', '.fai', '.dict']],
         bam=rules.gatk_IndelRealigner.output.bam,
-        knownsDBSNP="%s%sdbSNP135_GRCh37.3.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsDBSNPindex="%s%sdbSNP135_GRCh37.3.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsDBSNP138="%s%sdbsnp_138.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knownsDBSNP138index="%s%sdbsnp_138.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references'])
     output:
         "{prefix}%s%s/{run,[^/]+XX}/{sample}.reAl.nodup.srt.bam.recal_data.csv" % (config['dirs']['intermediate'], config['stepnames']['gatk_BaseRecalibrator']),
     benchmark:
@@ -95,6 +93,8 @@ rule gatk_BaseRecalibrator:
         "envs/spike_gatk.yaml"
     threads:
         3
+    params:
+        knowns_settings=lambda wildcards: [' -knownSites %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in (get_reference_knowns(wildcards.sample, config, 'BaseRecalibrator'))],
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
@@ -105,9 +105,7 @@ rule gatk_BaseRecalibrator:
         " -L {input.exometrack}"
         " -I {input.bam}"
         " -R {input.references[0]}"
-        " -knownSites {input.knownsDBSNP}"
-        " -knownSites {input.knownsDBSNP138}"
-        ' $(for x in `echo "{input.knowns}"`; do echo " -knownSites $x"; done)'
+        "{params.knowns_settings}"
         " -o {output}"
         " 2>> {log}"
 
@@ -135,6 +133,8 @@ rule gatk_PrintReads:
         "envs/spike_gatk.yaml"
     threads:
         3
+    params:
+        disable=lambda wildcards: " --disable_indel_quals" if get_species(wildcards.sample, config) == 'homo sapiens' else ""
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
@@ -142,7 +142,7 @@ rule gatk_PrintReads:
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T PrintReads"
         " -nct {threads}"
-        " --disable_indel_quals"
+        "{params.disable}"
         " -R {input.references[0]}"
         " -BQSR {input.csv}"
         " -I {input.bam}"
@@ -163,7 +163,7 @@ rule exome_coverage:
     # produce exome coverage statistics for a sample
     input:
         bam=rules.gatk_PrintReads.output.bam,
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
     output:
         csv="{prefix}%s%s/{run,[^/]+XX}/{sample}.exome_coverage.csv" % (config['dirs']['intermediate'], config['stepnames']['exome_coverage']),
     benchmark:
@@ -192,7 +192,7 @@ rule exome_coverage:
 rule gatk_HaplotypeCaller:
     # Call SNPs and Indels (using --genotype_likelihoods_model BOTH )
     input:
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config), ending) for ending in ['', '.fai', '.dict']],
         bam=rules.gatk_PrintReads.output.bam,
@@ -291,17 +291,10 @@ rule gatk_VariantRecalibrator_SNP:
     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
     input:
         rules.gatk_SelectVariants.output.vcf,
-        knownsDBSNP138="%s%sdbsnp_138.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        knowns=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config) if 'VariantRecalibrator_SNP' in known],
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config), ending) for ending in ['', '.fai', '.dict']],
         vcf=rules.gatk_SelectVariants.output.vcf,
-        hapmap="%s%shapmap_3.3.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        hapmapidx="%s%shapmap_3.3.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
-        g1000p1="%s%s1000G_phase1.snps.high_confidence.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        g1000p1idx="%s%s1000G_phase1.snps.high_confidence.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
-        g1000omni="%s%s1000G_omni2.5.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
-        g1000omniidx="%s%s1000G_omni2.5.b37.vcf.idx" % (config['dirs']['prefix'], config['dirs']['references']),
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, config, 'VariantRecalibrator_SNP') for ending in ['', '.idx']],
     output:
         recal="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,snps}.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         recalidx="{prefix}%s%s/{run,[^/]+XX}/{sample}.{program,gatk|ptp}.raw.{snvtype,snps}.recal.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
@@ -318,7 +311,7 @@ rule gatk_VariantRecalibrator_SNP:
     threads:
         3
     params:
-        knowns_settings=lambda wildcards: [' %s %s%s%s' % (known['VariantRecalibrator_SNP'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config) if 'VariantRecalibrator_SNP' in known],
+        knowns_settings=lambda wildcards: [' --resource:%s %s%s%s' % (known['VariantRecalibrator_SNP'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config, 'VariantRecalibrator_SNP')],
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
@@ -329,10 +322,6 @@ rule gatk_VariantRecalibrator_SNP:
         " --input {input.vcf}"
         " -R {input.references[0]}"
         " -mode SNP"
-        " --resource:hapmap,VCF,known=false,training=true,truth=true,prior=12.0 {input.hapmap}"
-        " --resource:omni,VCF,known=false,training=true,truth=false,prior=10.0 {input.g1000p1}"
-        " --resource:omni,VCF,known=false,training=true,truth=false,prior=12.0 {input.g1000omni}"
-        " --resource:dbsnp,VCF,known=true,training=false,truth=false,prior=2.0 {input.knownsDBSNP138}"
         "{params.knowns_settings}"
         " -an DP -an QD -an FS -an SOR -an MQ -an MQRankSum -an ReadPosRankSum"
         " --recal_file {output.recal}"
@@ -353,7 +342,7 @@ rule gatk_VariantRecalibrator_INDEL:
     # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
     input:
-        knowns=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config)],
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, config, 'VariantRecalibrator_INDEL') for ending in ['', '.idx']],
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         vcf=rules.gatk_SelectVariants.output.vcf,
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config), ending) for ending in ['', '.fai', '.dict']],
@@ -374,7 +363,7 @@ rule gatk_VariantRecalibrator_INDEL:
     threads:
         3
     params:
-        knowns_settings=lambda wildcards: [' %s %s%s%s' % (known['VariantRecalibrator'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config)],
+        knowns_settings=lambda wildcards: [' --resource:%s %s%s%s' % (known['VariantRecalibrator_INDEL'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, config, 'VariantRecalibrator_INDEL')],
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
@@ -612,7 +601,7 @@ rule gatk_CombineVariants:
 #     input:
 #         rules.gatk_RealignerTargetCreator.input.gatkpackage,
 #         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config), ending) for ending in ['', '.fai', '.dict']],
-#         exometrack=rules.gatk_RealignerTargetCreator.input.exometrack,
+#         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
 #         geneset="%s%srefGene-b37-sorted.txt" % (config['dirs']['prefix'], config['dirs']['references']),
 #         bam=rules.gatk_PrintReads.output.bam
 #     output:

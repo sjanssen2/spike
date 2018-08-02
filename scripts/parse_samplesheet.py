@@ -277,5 +277,14 @@ def get_species(sample, config):
 def get_reference_genome(sample, config):
     return config['references']['genomes'][get_species(sample, config)]
 
-def get_reference_knowns(sample, config):
-    return config['references']['knowns'][get_species(sample, config)]
+def get_reference_knowns(sample, config, _key):
+    return [k for k in config['references']['knowns'][get_species(sample, config)] if _key in k]
+
+def get_reference_exometrack(sample, config):
+    return config['references']['exometrack'][get_species(sample, config)]
+
+def get_reference_DBSNP(sample, config):
+    res = config['references']['DBSNP'][get_species(sample, config)]
+    if res is None:
+        res = []
+    return res

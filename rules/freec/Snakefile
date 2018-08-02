@@ -1,7 +1,7 @@
 rule samtools_mpileup:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, config)),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config), ending) for ending in ['', '.fai', '.dict']],
         bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
@@ -35,7 +35,7 @@ rule samtools_mpileup:
 rule freec:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, config)),
         freec="%s%sfreec" % (config['dirs']['prefix'], config['dirs']['references']),
         reference_len=lambda wildcards: "%s%s%s.len" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)),
         reference_mappability=lambda wildcards: "%s%s%s.mappability.mappability" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)),
