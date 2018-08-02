@@ -7,7 +7,7 @@ rule gatk_RealignerTargetCreator:
         exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
         reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
         reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_dict="%s%shGRC37.dict" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference_dict="%s%shGRC37.fa.dict" % (config['dirs']['prefix'], config['dirs']['references']),
         knownsA="%s%sMills_and_1000G_gold_standard.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references']),
         knownsB="%s%s1000G_phase1.indels.b37.vcf" % (config['dirs']['prefix'], config['dirs']['references'])
     output:

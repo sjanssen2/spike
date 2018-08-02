@@ -5,7 +5,7 @@ rule platypus:
         exometrack="%s%sAgilent_SureSelect_V5plusUTR.bed" % (config['dirs']['prefix'], config['dirs']['references']),
         reference="%s%shGRC37.fa" % (config['dirs']['prefix'], config['dirs']['references']),
         reference_fai="%s%shGRC37.fa.fai" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_dict="%s%shGRC37.dict" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference_dict="%s%shGRC37.fa.dict" % (config['dirs']['prefix'], config['dirs']['references']),
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
         #idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
