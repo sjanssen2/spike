@@ -2,7 +2,7 @@ rule samtools_mpileup:
     # Preprocessing to do a realignment of the reads with GATK
     input:
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, config)),
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config), ending) for ending in ['', '.fai', '.dict']],
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
         pileup="{prefix}%s%s/{entity}.pileup.gz" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
@@ -37,10 +37,10 @@ rule freec:
     input:
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, config)),
         freec="%s%sfreec" % (config['dirs']['prefix'], config['dirs']['references']),
-        reference_len=lambda wildcards: "%s%s%s.len" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)),
-        reference_mappability=lambda wildcards: "%s%s%s.mappability.mappability" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)),
-        reference_chromosomes=lambda wildcards: ["%s%s%s_chromosomes/%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config), chr) for chr in ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '1', '20', '21', '22', '2', '3', '4', '5', '6', '7', '8', '9', 'X', 'Y']],
-        known_snps="%s%shg19_deCHRd_snp137.SingleDiNucl.1based.txt" % (config['dirs']['prefix'], config['dirs']['references']),
+        reference_len=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)['lengths']),
+        reference_mappability=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)['gemMappabilityFile']),
+        reference_chromosomes=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], chr) for chr in get_reference_genome(wildcards.entity, config)['chromosomes']],
+        known_snps=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)['SNPfile']),
         tumor=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', config)),
         healthy=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', config)),
     output:
@@ -64,12 +64,15 @@ rule freec:
         "envs/spike_freec.yaml"
     threads:
         8
+    params:
+        minCNAlength=lambda wildcards: 'echo "minCNAlength = 4" >> {output.config}; ' if get_species(wildcards.sample, config) == 'mus musculus' else ""
     shell:
         'echo "[general]" > {output.config}; '
         'echo "chrLenFile = {input.reference_len}" >> {output.config}; '
         'echo "window = 50000" >> {output.config}; '
         'echo "step = 10000" >> {output.config}; '
         'echo "ploidy = 2" >> {output.config}; '
+        "{params.minCNAlength}"
         'echo "outputDir = $(dirname {output.baf})" >> {output.config}; '
         'echo "contaminationAdjustment = TRUE" >> {output.config}; '
         'echo "maxThreads = {threads}" >> {output.config}; '

@@ -283,6 +283,9 @@ def get_reference_knowns(sample, config, _key):
 def get_reference_exometrack(sample, config):
     return config['references']['exometrack'][get_species(sample, config)]
 
+def get_reference_varscan_somatic(sample, config):
+    return config['references']['varscan_somatic'][get_species(sample, config)]
+
 def get_reference_DBSNP(sample, config):
     res = config['references']['DBSNP'][get_species(sample, config)]
     if res is None:
