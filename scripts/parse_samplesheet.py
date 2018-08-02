@@ -234,7 +234,7 @@ def get_xenograft_host(fp_samplesheet, sample, config):
     """
     ss = parse_samplesheet(fp_samplesheet)
 
-    host_species = list(ss[ss['fastq-prefix'] == sample]['ukd_xenograph_species'].dropna().unique())
+    host_species = list(ss[ss['fastq-prefix'] == sample]['ukd_xenograft_species'].dropna().unique())
     if len(host_species) > 1:
         raise ValueError("Ambiguous xenograft host species in sample sheet!")
     if len(host_species) == 0:
