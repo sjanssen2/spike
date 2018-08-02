@@ -1,14 +1,3 @@
-# rule all_demultiplex:
-#     input:
-#         lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, fastq)
-#                            for fastq in get_fastq_filenames("%s%s%s%s_ukd.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run))]
-#     output:
-#         "{prefix}{run,\d{6}.+?XX}.done"
-#     shell:
-#         "touch {output}"
-#         "echo '{output}' >> {output}"
-
-
 rule check_complete:
     input:
         fp_status="{prefix}%s%s{run}/ImageAnalysis_Netcopy_complete.txt" % (config['dirs']['inputs'], config['dirs']['rawillumina'])
@@ -23,7 +12,7 @@ rule demultiplex:
         status="%s%s%s-%s-illuminarun_complete.txt" % (config['dirs']['prefix'], config['dirs']['checks'], config['stepnames']['demultiplex'], config['run'])
     output:
         fastqs = ["%s%s%s/%s/%s" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], fastq)
-                  for fastq in get_fastq_filenames("%s%s%s%s_ukd.csv" % (config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], config['run']))],
+                  for fastq in get_fastq_filenames(config['run'], SAMPLESHEETS)],
         report="%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], config['run'].split('_')[-1][1:])
     log:
         "%s%s%s-%s.log" % (config['dirs']['prefix'], config['dirs']['logs'], config['run'], config['stepnames']['demultiplex'])
@@ -51,7 +40,7 @@ rule demultiplex:
 rule aggregate_undetermined_filesizes:
     input:
         lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, fastq)
-                           for fastq in get_fastq_filenames("%s%s%s%s_ukd.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run)) if 'Undetermined_L' in fastq]
+                           for fastq in get_fastq_filenames(wildcards.run, SAMPLESHEETS) if 'Undetermined_L' in fastq]
     output:
         sizes="{prefix}%sUndeterminedFilesizes/{run}.txt" % (config['dirs']['aggregation']),
         fp_check="{prefix}%s%s-{run}-aggregate_undetermined_filesizes.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])
