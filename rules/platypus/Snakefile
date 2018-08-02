@@ -2,8 +2,8 @@ rule platypus:
     input:
         bam=rules.gatk_PrintReads.output.bam,
         bai=rules.gatk_PrintReads.output.bai,
-        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, config)),
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, config)['file'], ending) for ending in ['', '.fai', '.dict']],
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, SAMPLESHEETS, config)),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in ['', '.fai', '.dict']],
     output:
         vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
         #idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
@@ -16,7 +16,7 @@ rule platypus:
     threads:
         3
     params:
-        regions=lambda wildcards, input: " --regions=%s" % input.exometrack if get_species(wildcards.sample, config) == 'homo sapiens' else ""
+        regions=lambda wildcards, input: " --regions=%s" % input.exometrack if get_species(wildcards.sample, SAMPLESHEETS) == 'homo sapiens' else ""
     shell:
         "python2"
         " $CONDA_PREFIX/share/platypus-variant-0.8.1.1-2/Platypus.py"

@@ -1,5 +1,5 @@
 def _get_reference(wildcards):
-    return get_xenograft_host(os.path.join(wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], '%s%s' % (wildcards.run, '_ukd.csv')), wildcards.sample, config)
+    return get_xenograft_host(os.path.join(wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], '%s%s' % (wildcards.run, '_ukd.csv')), wildcards.sample, SAMPLESHEETS, config)
 
 import sys
 def _get_input(wildcards):

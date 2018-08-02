@@ -1,14 +1,14 @@
 rule mutect:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.entity, config, 'mutect') for ending in ['', '.idx']],
-        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, config)),
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, config)['file'], ending) for ending in ['', '.fai', '.dict']],
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.entity, SAMPLESHEETS, config, 'mutect') for ending in ['', '.idx']],
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in ['', '.fai', '.dict']],
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         mutect117="%s%smutect-1.1.7.jar" % (config['dirs']['prefix'], config['dirs']['references']),
-        cosmic=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic, ending) for cosmic in [get_reference_genome(wildcards.entity, config)['cosmic']] for ending in ['', '.idx'] if cosmic is not None],
-        tumor=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', config)),
-        healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', config)),
+        cosmic=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic, ending) for cosmic in [get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['cosmic']] for ending in ['', '.idx'] if cosmic is not None],
+        tumor=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
+        healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
     output:
         csv="{prefix}%s%s/{entity}.all_calls.csv" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
         vcf="{prefix}%s%s/{entity}.all_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
@@ -22,8 +22,8 @@ rule mutect:
     threads:
         1
     params:
-        knowns_settings=lambda wildcards: [' --dbsnp %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.entity, config, 'mutect')],
-        cosmic=lambda wildcards: [" --cosmic=%s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic) for cosmic in [get_reference_genome(wildcards.entity, config)['cosmic']] if cosmic is not None]
+        knowns_settings=lambda wildcards: [' --dbsnp %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.entity, SAMPLESHEETS, config, 'mutect')],
+        cosmic=lambda wildcards: [" --cosmic=%s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic) for cosmic in [get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['cosmic']] if cosmic is not None]
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log.mutect}; fi; '
         "java"
