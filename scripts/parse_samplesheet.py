@@ -306,6 +306,20 @@ def get_bwa_mem_header(sample, samplesheets, config):
     return res
 
 
+def get_demux_samples(samplesheets, config):
+    # get projects that require snv vs. reference analysis
+    background_projects = [prj_name for prj_name in config['projects'] if 'demultiplex' in config['projects'][prj_name]['actions']]
+
+    # filter samples to those belonging to tumor vs. normal projects
+    background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
+
+    samples = []
+    for _, sample in background_samples.iterrows():
+        samples.extend(['%s/%s_L%03i_%s_001.fastq.gz' % (sample['run'], sample['fastq-prefix'], sample['Lane'], direction) for direction in config['directions']])
+
+    return samples
+
+
 def get_samples(samplesheets, config):
     # get projects that require snv vs. reference analysis
     background_projects = [prj_name for prj_name in config['projects'] if 'background' in config['projects'][prj_name]['actions']]
