@@ -9,43 +9,50 @@ rule check_complete:
 
 rule demultiplex:
     input:
-        status="%s%s%s-%s-illuminarun_complete.txt" % (config['dirs']['prefix'], config['dirs']['checks'], config['stepnames']['demultiplex'], config['run'])
+        status=lambda wildcards: "%s%s%s-%sXX-illuminarun_complete.txt" % (wildcards.prefix, config['dirs']['checks'], config['stepnames']['demultiplex'], wildcards.run)
     output:
-        fastqs = ["%s%s%s/%s/%s" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], fastq)
-                  for fastq in get_fastq_filenames(config['run'], SAMPLESHEETS)],
-        report="%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], config['run'].split('_')[-1][1:])
-    log:
-        "%s%s%s-%s.log" % (config['dirs']['prefix'], config['dirs']['logs'], config['run'], config['stepnames']['demultiplex'])
-    benchmark:
-        "%s%s%s-%s.benchmark" % (config['dirs']['prefix'], config['dirs']['benchmarks'], config['run'], config['stepnames']['demultiplex'])
+        fastqs=dynamic("{prefix}%s%s/{run}XX/{sample}_L{lane}_R{direction}_001.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+        report=dynamic("{prefix}%s%s/{run}XX/yield_report{sample}{lane}{direction}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex']))
+        #fastqs = ["%s%s%s/%s/%s" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], fastq)
+        #          for fastq in get_fastq_filenames(config['run'], SAMPLESHEETS)],
+        #report="%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], config['run'].split('_')[-1][1:])
+    # log:
+    #     "{prefix}%s{run}XX/{sample}{lane}{direction}-%s.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
+    # benchmark:
+    #     "%s%s%s-%s.benchmark" % (config['dirs']['prefix'], config['dirs']['benchmarks'], config['run'], config['stepnames']['demultiplex'])
     threads:
         16
     params:
-        fp_samplesheet="%s%s%s%s_ukd.csv" % (config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets'], config['run'])
+        fp_samplesheet="{prefix}%s%s{run}XX_ukd.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
+        log="{prefix}%s{run}XX-%s.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
     shell:
-        "uname -a > {log} 2>&1; "
-        "bcl2fastq"
-        " --runfolder-dir {config[dirs][prefix]}{config[dirs][inputs]}{config[dirs][rawillumina]}/{config[run]}/"
-        " --output-dir {config[dirs][prefix]}{config[dirs][intermediate]}/{config[stepnames][demultiplex]}/{config[run]}/"
+        "uname -a > {params.log} 2>&1; "
+        "time bcl2fastq"
+        " --runfolder-dir {wildcards.prefix}{config[dirs][inputs]}{config[dirs][rawillumina]}{wildcards.run}XX/"
+        " --output-dir {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][demultiplex]}/{wildcards.run}XX/"
         " --ignore-missing-bcls"
         " --sample-sheet {params.fp_samplesheet}"
         " --loading-threads {threads}"
         " --processing-threads {threads}"
         " --writing-threads {threads}"
-        " 2>> {log}"
+        " 2>> {params.log}"
+        " 1>&2"
         # rename demux fastq files such that S\d+ are removed from filenames
-        ' ; for f in `find {config[dirs][prefix]}{config[dirs][intermediate]}/{config[stepnames][demultiplex]}/{config[run]}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
+        ' ; for f in `find {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][demultiplex]}/{wildcards.run}XX/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {params.log} >&2; done'
 
 
 rule aggregate_undetermined_filesizes:
     input:
-        lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, fastq)
-                           for fastq in get_fastq_filenames(wildcards.run, SAMPLESHEETS) if 'Undetermined_L' in fastq]
+        dynamic("{prefix}%s%s/{run}/Undetermined_L{lane}_R{direction}_001.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['demultiplex']))
+        # lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, fastq)
+        #                    for fastq in get_fastq_filenames(wildcards.run, SAMPLESHEETS) if 'Undetermined_L' in fastq]
     output:
         sizes="{prefix}%sUndeterminedFilesizes/{run}.txt" % (config['dirs']['aggregation']),
         fp_check="{prefix}%s%s-{run}-aggregate_undetermined_filesizes.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])
+    params:
+        fps_undertermined=lambda wildcards: "%s%s%s/%s/Undetermined_L*_001.fastq.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run)
     shell:
-        "stat -c '%s\t%n\tunknown' {input} > {output.sizes} && "
+        "stat -c '%s\t%n\tunknown' {params.fps_undertermined} > {output.sizes} && "
         "echo 'done.' > {output.fp_check}"
 
 
@@ -61,12 +68,14 @@ rule check_undetermined_filesizes:
 
 rule convert_illumina_report:
     input:
-        demux=rules.demultiplex.output.report,
+        #demux=rules.demultiplex.output.report,
         undetermined=rules.check_undetermined_filesizes.output
     output:
         "{prefix}%s{run}/{run}.yield_report.pdf" % (config['dirs']['reports'])
     conda:
         "envs/spike_report.yaml"
+    params:
+        demux=lambda wildcards: "%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, wildcards.run.split('_')[-1][1:])
     shell:
-        "wkhtmltopdf --orientation Landscape {input.demux} {output}; "
+        "wkhtmltopdf --orientation Landscape {params.demux} {output}; "
         "echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report and some statistics about the file sizes of undetermined reads.\n\nHave a nice day!' | mail -s '[{config[name_program]}] demultiplex report {config[run]}' -A {output} -A {input.undetermined} {config[emails][demultiplexreport]}"
