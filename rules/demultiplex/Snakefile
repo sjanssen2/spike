@@ -42,6 +42,7 @@ rule demultiplex:
         ' ; for f in `find {output.fastqs}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
         ' ; cp -l {output.fastqs}/Reports/html/*/all/all/all/laneBarcode.html {output.fastqs}/laneBarcode.html'
 
+
 rule aggregate_undetermined_filesizes:
     input:
         "{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])
