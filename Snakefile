@@ -3,6 +3,7 @@ import socket
 import glob
 
 from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet, get_sample_names, get_xenograft_host, get_fastq_filenames, get_lanes_for_sampleID, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets
+from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header
 from scripts.utils import exclude_sample
 from scripts.checks import check_illuminarun_complete
 from scripts.reports import report_undertermined_filesizes, report_exome_coverage
@@ -31,27 +32,29 @@ EXCLUDE_SAMPLES = ['Maus_Hauer']
 
 rule all:
     input:
-        # the yield report as one of the checkpoints for the wetlab crew
-        yield_report="%s%s%s/%s.yield_report.pdf" % (config['dirs']['prefix'], config['dirs']['reports'], config['run'], config['run']),
+        # create a yield report per run as one of the checkpoints for the wetlab crew
+        yield_report=["%s%s%s/%s.yield_report.pdf" % (config['dirs']['prefix'], config['dirs']['reports'], run, config['run']) for run in SAMPLESHEETS['run'].unique()],
 
-        # snv calling against background, this is the "main pipeline"
-        snvs_background_ptp=['%s%s%s/%s/%s.ptp.annotated.filtered.indels.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['platypus_filtered'], config['run'], sample)
-                             for sample in get_sample_names(SAMPLESHEETS)
-                             if not exclude_sample(sample, EXCLUDE_SAMPLES)],
-        snvs_background_gatk=['%s%s%s/%s/%s.gatk.%ssnp_indel.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['gatk_CombineVariants'], config['run'], sample, isrelax)
-                              for sample in get_sample_names(SAMPLESHEETS)
-                              for isrelax in ['', 'relax.']
-                              if not exclude_sample(sample, EXCLUDE_SAMPLES)],
+        # create backup for each run
+        backup=["%s%s%s.%s.done" % (config['dirs']['prefix'], config['dirs']['checks'], run, config['stepnames']['backup_validate']) for run in SAMPLESHEETS['run'].unique()],
 
-        coverage_report='%s%s%s/%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], config['run'], config['run']),
+        # check exome coverage per project
+        coverage_report=['%s%s%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], project) for project in config['projects'].keys()],
 
-        trio=['%s%s%s/%s/%s.var2denovo.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['writing_headers'], 'Alps', 'ALPS_66')],
+        # snv calling against background for all samples of all runs (this is the "main pipeline")
+        background_ptp=['%s%s%s/%s.ptp.annotated.filtered.indels.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['platypus_filtered'], sample['sample'])
+                        for sample in get_samples(SAMPLESHEETS, config)],
+        background_gatk=['%s%s%s/%s.gatk.%ssnp_indel.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['gatk_CombineVariants'], sample['sample'], isrelax)
+                         for sample in get_samples(SAMPLESHEETS, config)
+                         for isrelax in ['', 'relax.']],
 
-        somatic_freec=['%s%s%s/%s/%s/tumor.pileup.gz_BAF.txt' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'],         'Fischer_Geron', 'hum_leuk_unknown')],
-        somatic_mutect=['%s%s%s/%s/%s.all_calls.csv'          % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'],        'Fischer_Geron', 'hum_leuk_unknown')],
-        somatic_varscan=['%s%s%s/%s/%s.indel_snp.hc.vcf'      % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['merge_somatic'], 'Fischer_Geron', 'hum_leuk_unknown')],
+        # tumornormal calling for complete tumor/normal pairs of all runs
+        tumornormal_freec=['%s%s%s/%s/%s/tumor.pileup.gz_BAF.txt' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'],         pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+        tumornormal_mutect=['%s%s%s/%s/%s.all_calls.csv'          % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'],        pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+        tumornormal_varscan=['%s%s%s/%s/%s.indel_snp.hc.vcf'      % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['merge_somatic'], pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
 
-        backup="%s%s%s.%s.done" % (config['dirs']['prefix'], config['dirs']['checks'], config['run'], config['stepnames']['backup_validate']),
+        # trio calling for complete trios of all runs
+        trio_calling=['%s%s%s/%s/%s.var2denovo.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['writing_headers'], trio['Sample_Project'], trio['ukd_entity_id']) for trio in get_trios(SAMPLESHEETS, config)],
 
 
 rule all_trim:
