@@ -3,7 +3,7 @@ import socket
 import glob
 
 from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet, get_sample_names, get_xenograft_host, get_fastq_filenames, get_lanes_for_sampleID, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets
-from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header, get_demux_samples
+from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header, get_demux_samples, get_projects_with_exomecoverage
 from scripts.utils import exclude_sample
 from scripts.checks import check_illuminarun_complete
 from scripts.reports import report_undertermined_filesizes, report_exome_coverage
@@ -36,14 +36,14 @@ rule all:
         yield_report=["%s%s%s/%s.yield_report.pdf" % (config['dirs']['prefix'], config['dirs']['reports'], run, run) for run in SAMPLESHEETS['run'].unique()],
 
         # create backup for each run
-        backup=["%s%s%s.%s.done" % (config['dirs']['prefix'], config['dirs']['checks'], run, config['stepnames']['backup_validate']) for run in SAMPLESHEETS['run'].unique()],
+        # backup=["%s%s%s.%s.done" % (config['dirs']['prefix'], config['dirs']['checks'], run, config['stepnames']['backup_validate']) for run in SAMPLESHEETS['run'].unique()],
 
         # demultiplex all samples for projects that ONLY need to demultiplex, e.g. AG_Remke
         demux=['%s%s%s/%s' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], run)
                for run in get_demux_samples(SAMPLESHEETS, config)],
 
         # check exome coverage per project
-        coverage_report=['%s%s%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], project) for project in config['projects'].keys()],
+        coverage_report=['%s%s%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], project) for project in get_projects_with_exomecoverage(config)],
 
         # snv calling against background for all samples of all runs (this is the "main pipeline")
         background_ptp=['%s%s%s/%s.ptp.annotated.filtered.indels.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['platypus_filtered'], sample['sample'])
