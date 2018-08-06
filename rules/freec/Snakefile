@@ -6,11 +6,11 @@ rule samtools_mpileup:
         bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
         pileup="{prefix}%s%s/{entity}.pileup.gz" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
-    benchmark:
-        "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
     log:
-        samtools="{prefix}%s{entity}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
-        pigz="{prefix}%s{entity}.%s.pigz.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup'])
+        samtools="{prefix}%s%s.samtools.{entity}.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
+        pigz="{prefix}%s%s.pigz.{entity}.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup'])
+    benchmark:
+        "{prefix}%s%s.{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
     conda:
         "envs/spike_freec.yaml"
     threads:
@@ -55,11 +55,11 @@ rule freec:
         "{prefix}%s%s/{entity}/healthy.pileup.gz_control.cpn" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         baf="{prefix}%s%s/{entity}/tumor.pileup.gz_BAF.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         config="{prefix}%s%s/{entity}.config" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+    log:
+        freec="{prefix}%s%s.freec.{entity}.log" % (config['dirs']['logs'], config['stepnames']['freec']),
+        gzratio="{prefix}%s%s.gzratio.{entity}.log" % (config['dirs']['logs'], config['stepnames']['freec'])
     benchmark:
         "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['freec'])
-    log:
-        freec="{prefix}%s{entity}.%s.freec.log" % (config['dirs']['logs'], config['stepnames']['freec']),
-        gzratio="{prefix}%s{entity}.%s.gzratio.log" % (config['dirs']['logs'], config['stepnames']['freec'])
     conda:
         "envs/spike_freec.yaml"
     threads:

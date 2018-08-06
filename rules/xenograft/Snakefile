@@ -22,10 +22,10 @@ rule xenograft_bwa_aln:
         fastq="{prefix}%s%s/Paired/{sample}_{direction}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim'])
     output:
         "{prefix}%s%s/Paired/{sample, .*?}_{direction,R1|R2}.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln'])
-    benchmark:
-        "{prefix}%s{sample}_{direction}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_aln'])
     log:
-        "{prefix}%s{sample}_{direction}.%s.log" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_aln'])
+        "{prefix}%s%s.{sample}_{direction}.log" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_aln'])
+    benchmark:
+        "{prefix}%s%s.{sample}_{direction}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_aln'])
     conda:
         "envs/spike_xenograft_bwa_sampe.yaml"
     threads:
@@ -53,12 +53,12 @@ rule xenograft_bwa_sampe:
     output:
         forward="{prefix}%s%s/Paired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_sampe']),
         reverse="{prefix}%s%s/Paired/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_sampe'])
+    log:
+        bwa="{prefix}%s%s.bwa.{sample}.log" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_sampe']),
+        samtools="{prefix}%s%s.samtools.{sample}.log" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_sampe']),
+        sam2fastq="{prefix}%s%s.sam2fastq.{sample}.log" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_sampe'])
     benchmark:
         "{prefix}%s{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_sampe'])
-    log:
-        bwa="{prefix}%s{sample}.%s.bwa.log" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_sampe']),
-        samtools="{prefix}%s{sample}.%s.samtools.log" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_sampe']),
-        sam2fastq="{prefix}%s{sample}.%s.sam2fastq.log" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_sampe'])
     conda:
         "envs/spike_xenograft_bwa_sampe.yaml"
     threads:
@@ -97,10 +97,10 @@ rule xenograft_check:
         fastq=lambda wildcards: '%s%s%s/Paired/%s_%s.fastq.gz' % (wildcards.prefix, config['dirs']['intermediate'], _get_stepname(wildcards.sample, SAMPLESHEETS, config), wildcards.sample, wildcards.direction)
     output:
         "{prefix}%s%s/Paired/{sample, .*?}_{direction,R1|R2}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check'])
-    benchmark:
-        "{prefix}%s{sample}_{direction}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_check'])
     log:
-        "{prefix}%s{sample}_{direction}.%s.log" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_check'])
+        "{prefix}%s%s.{sample}_{direction}.log" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_check'])
+    benchmark:
+        "{prefix}%s%s.{sample}_{direction}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_check'])
     threads:
         1
     shell:

@@ -8,9 +8,9 @@ rule trim:
         pairedreverse="{prefix}%s%s/Paired/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
         unpairedreverse="{prefix}%s%s/Unpaired/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim'])
     log:
-        "{prefix}%s{sample}_trimmomatic.log" % config['dirs']['logs']
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['trim'])
     benchmark:
-        "{prefix}%s{sample}_trimmomatic.benchmark" % config['dirs']['logs']
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['logs'], config['stepnames']['trim'])
     conda:
       "envs/spike_trim.yaml"
     threads:

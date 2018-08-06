@@ -38,10 +38,9 @@ rule all:
         # create backup for each run
         backup=["%s%s%s.%s.done" % (config['dirs']['prefix'], config['dirs']['checks'], run, config['stepnames']['backup_validate']) for run in SAMPLESHEETS['run'].unique()],
 
-        # can't do it like that, because every sample would trigger its own demultiplex process, although we need only one per run!
         # demultiplex all samples for projects that ONLY need to demultiplex, e.g. AG_Remke
-        # demux=['%s%s%s/%s' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], sample)
-        #        for sample in get_demux_samples(SAMPLESHEETS, config)],
+        demux=['%s%s%s/%s' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], run)
+               for run in get_demux_samples(SAMPLESHEETS, config)],
 
         # check exome coverage per project
         coverage_report=['%s%s%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], project) for project in config['projects'].keys()],

@@ -7,10 +7,10 @@ rule platypus:
     output:
         vcf="{prefix}%s%s/{sample}.ptp.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
         #idx="{prefix}%s%s/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
-    benchmark:
-        "{prefix}%s{sample}.platypus.benchmark" % (config['dirs']['benchmarks'])
     log:
-        "{prefix}%s{sample}.platypus.log" % (config['dirs']['logs'])
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_HaplotypeCaller'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_HaplotypeCaller'])
     conda:
         "envs/spike_platypus.yaml"
     threads:
@@ -43,10 +43,10 @@ rule platypus_filtered:
     output:
         vcf="{prefix}%s%s/{sample}.ptp.annotated.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
         #idx="{prefix}%s%s/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
-    benchmark:
-        "{prefix}%s{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['platypus_filtered'])
     log:
-        "{prefix}%s{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['platypus_filtered'])
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['platypus_filtered'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['platypus_filtered'])
     conda:
         "envs/spike_platypus.yaml"
     threads:

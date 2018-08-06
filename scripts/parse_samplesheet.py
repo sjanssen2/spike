@@ -313,11 +313,12 @@ def get_demux_samples(samplesheets, config):
     # filter samples to those belonging to tumor vs. normal projects
     background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
 
-    samples = []
-    for _, sample in background_samples.iterrows():
-        samples.extend(['%s/%s_L%03i_%s_001.fastq.gz' % (sample['run'], sample['fastq-prefix'], sample['Lane'], direction) for direction in config['directions']])
-
-    return samples
+    return list(background_samples['run'].unique())
+    # samples = []
+    # for _, sample in background_samples.iterrows():
+    #     samples.extend(['%s/%s_L%03i_%s_001.fastq.gz' % (sample['run'], sample['fastq-prefix'], sample['Lane'], direction) for direction in config['directions']])
+    #
+    # return samples
 
 
 def get_samples(samplesheets, config):

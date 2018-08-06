@@ -9,11 +9,11 @@ rule varscan_trio:
     output:
         indel="{prefix}%s%s/{trio}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio']),
         snp="{prefix}%s%s/{trio}.snp.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio']),
-    benchmark:
-        "{prefix}%s{trio}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_trio'])
     log:
-        samtools="{prefix}%s{trio}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_trio']),
-        varscan="{prefix}%s{trio}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_trio'])
+        samtools="{prefix}%s%s.samtools.{trio}.log" % (config['dirs']['logs'], config['stepnames']['varscan_trio']),
+        varscan="{prefix}%s%s.varscan.{trio}.log" % (config['dirs']['logs'], config['stepnames']['varscan_trio'])
+    benchmark:
+        "{prefix}%s%s.{trio}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_trio'])
     conda:
         "envs/spike_varscan.yaml"
     threads:
@@ -64,10 +64,10 @@ rule varscan_filter_SNP:
         indel="{prefix}%s%s/{trio}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio'])
     output:
         "{prefix}%s%s/{trio}.snp.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
-    benchmark:
-        "{prefix}%s{trio}_SNP.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_filter']),
     log:
-        "{prefix}%s{trio}_SNP.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+        "{prefix}%s%s.{trio}_SNP.log" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+    benchmark:
+        "{prefix}%s%s.{trio}_SNP.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_filter']),
     conda:
         "envs/spike_varscan.yaml"
     threads:
@@ -105,10 +105,10 @@ rule varscan_filter_INDEL:
         "{prefix}%s%s/{trio}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio'])
     output:
         "{prefix}%s%s/{trio}.indel.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
-    benchmark:
-        "{prefix}%s{trio}_INDEL.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_filter']),
     log:
-        "{prefix}%s{trio}_INDEL.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+        "{prefix}%s%s_INDEL.{trio}.log" % (config['dirs']['logs'], config['stepnames']['varscan_filter']),
+    benchmark:
+        "{prefix}%s%s_INDEL.{trio}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_filter']),
     conda:
         "envs/spike_varscan.yaml"
     threads:
@@ -146,10 +146,10 @@ rule bam_readcount_SNP:
     output:
         var="{prefix}%s%s/{trio}.snp.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
         readcount="{prefix}%s%s/{trio}.snp.readcount" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount'])
-    benchmark:
-        "{prefix}%s{trio}_SNP.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount']),
     log:
-        "{prefix}%s{trio}_SNP.%s.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+        "{prefix}%s%s_SNP.{trio}.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+    benchmark:
+        "{prefix}%s%s_SNP.{trio}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount']),
     conda:
         "envs/spike_bam-readcount.yaml"
     threads:
@@ -188,10 +188,10 @@ rule bam_readcount_INDEL:
     output:
         var="{prefix}%s%s/{trio}.indel.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
         readcount="{prefix}%s%s/{trio}.indel.readcount" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount'])
-    benchmark:
-        "{prefix}%s{trio}_INDEL.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount']),
     log:
-        "{prefix}%s{trio}_INDEL.%s.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+        "{prefix}%s%s_INDEL.{trio}.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount']),
+    benchmark:
+        "{prefix}%s%s_INDEL.{trio}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount']),
     conda:
         "envs/spike_bam-readcount.yaml"
     threads:
@@ -228,10 +228,10 @@ rule varscan_fpfilter:
     output:
         vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.fpfiltered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
         ogus="{prefix}%s%s/{trio}.{snvtype,snp|indel}.ogus.txt" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
-    benchmark:
-        "{prefix}%s{trio}.{snvtype}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_fpfilter'])
     log:
-        "{prefix}%s{trio}.{snvtype}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_fpfilter']),
+        "{prefix}%s%s.{trio}.{snvtype}.log" % (config['dirs']['logs'], config['stepnames']['varscan_fpfilter']),
+    benchmark:
+        "{prefix}%s%s.{trio}.{snvtype}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_fpfilter'])
     conda:
         "envs/spike_varscan.yaml"
     threads:
@@ -289,10 +289,10 @@ rule correct_genotypes:
         "{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
     output:
         vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.corrected.vcf" % (config['dirs']['intermediate'], config['stepnames']['correct_genotypes']),
-    benchmark:
-        "{prefix}%s{trio}.{snvtype}.{suffix}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['correct_genotypes'])
     log:
-        "{prefix}%s{trio}.{snvtype}.{suffix}.%s.log" % (config['dirs']['logs'], config['stepnames']['correct_genotypes']),
+        "{prefix}%s%s.{trio}.{snvtype}.{suffix}.log" % (config['dirs']['logs'], config['stepnames']['correct_genotypes']),
+    benchmark:
+        "{prefix}%s%s.{trio}.{snvtype}.{suffix}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['correct_genotypes'])
     threads:
         1
     run:
@@ -319,10 +319,10 @@ rule correct_genotypes_somatic:
         "{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
     output:
         vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.corrected.vcf" % (config['dirs']['intermediate'], config['stepnames']['correct_genotypes']),
-    benchmark:
-        "{prefix}%s{trio}.{snvtype}.{suffix}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['correct_genotypes'])
     log:
-        "{prefix}%s{trio}.{snvtype}.{suffix}.%s.log" % (config['dirs']['logs'], config['stepnames']['correct_genotypes']),
+        "{prefix}%s%s.{trio}.{snvtype}.{suffix}.log" % (config['dirs']['logs'], config['stepnames']['correct_genotypes']),
+    benchmark:
+        "{prefix}%s%s.{trio}.{snvtype}.{suffix}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['correct_genotypes'])
     threads:
         1
     run:
@@ -349,10 +349,10 @@ rule merge_vcfs:
         indel="{prefix}%s%s/{trio}.indel.fpfiltered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
     output:
         "{prefix}%s%s/{trio}.fpcorr.snp_indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['merge_vcfs']),
-    benchmark:
-        "{prefix}%s{trio}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['merge_vcfs'])
     log:
-        "{prefix}%s{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['merge_vcfs']),
+        "{prefix}%s%s.{trio}.log" % (config['dirs']['logs'], config['stepnames']['merge_vcfs']),
+    benchmark:
+        "{prefix}%s%s.{trio}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['merge_vcfs'])
     conda:
         "envs/spike_vcftools.yaml"
     threads:
@@ -375,10 +375,10 @@ rule writing_headers:
         rules.merge_vcfs.output
     output:
         "{prefix}%s%s/{trio}.var2denovo.vcf" % (config['dirs']['intermediate'], config['stepnames']['writing_headers']),
-    benchmark:
-        "{prefix}%s{trio}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['writing_headers'])
     log:
-        "{prefix}%s{trio}.%s.log" % (config['dirs']['logs'], config['stepnames']['writing_headers']),
+        "{prefix}%s%s.{trio}.log" % (config['dirs']['logs'], config['stepnames']['writing_headers']),
+    benchmark:
+        "{prefix}%s%s.{trio}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['writing_headers'])
     conda:
         "envs/spike_vcftools.yaml"
     threads:
@@ -415,10 +415,10 @@ rule samtools_mpileup_somatic:
         #bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
         "{prefix}%s%s/{entity}.{role,healthy|tumor}.pileup" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'])
-    benchmark:
-        "{prefix}%s{entity}.{role}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
     log:
-        "{prefix}%s{entity}.{role}.%s.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
+        "{prefix}%s%s.{entity}.{role}.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
+    benchmark:
+        "{prefix}%s%s.{entity}.{role}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
     conda:
         "envs/spike_varscan.yaml"
     threads:
@@ -444,10 +444,10 @@ rule varscan_somatic:
     output:
         indel="{prefix}%s%s/{entity}.indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
         snp="{prefix}%s%s/{entity}.snp.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
-    benchmark:
-        "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_somatic'])
     log:
-        "{prefix}%s{entity}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_somatic'])
+        "{prefix}%s%s.{entity}.log" % (config['dirs']['logs'], config['stepnames']['varscan_somatic'])
+    benchmark:
+        "{prefix}%s%s.{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_somatic'])
     conda:
         "envs/spike_varscan.yaml"
     threads:
@@ -482,10 +482,10 @@ rule varscan_processSomatic:
         somatic_lc="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Somatic.lc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
         germline="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Germline.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
         loh="{prefix}%s%s/{entity}.{snvtype,snp|indel}.LOH.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
-    benchmark:
-        "{prefix}%s{entity}.{snvtype}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_processSomatic'])
     log:
-        "{prefix}%s{entity}.{snvtype}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['varscan_processSomatic'])
+        "{prefix}%s%s.{entity}.{snvtype}.log" % (config['dirs']['logs'], config['stepnames']['varscan_processSomatic'])
+    benchmark:
+        "{prefix}%s%s.{entity}.{snvtype}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_processSomatic'])
     conda:
         "envs/spike_varscan.yaml"
     threads:
@@ -513,10 +513,10 @@ rule varscan_fpfilter_somatic:
         "{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
     output:
         "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.vcf.fpfilter.var" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
-    benchmark:
-        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_fpfilter'])
     log:
-        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['logs'], config['stepnames']['varscan_fpfilter']),
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['logs'], config['stepnames']['varscan_fpfilter']),
+    benchmark:
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_fpfilter'])
     threads:
         1
     shell:
@@ -537,10 +537,10 @@ rule bam_readcount_somatic_SNP:
         bam=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
     output:
         "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.vcf.fpfilter.var.readcounts" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount_somatic']),
-    benchmark:
-        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount_somatic']),
     log:
-        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount_somatic']),
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount_somatic']),
+    benchmark:
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount_somatic']),
     conda:
         "envs/spike_bam-readcount.yaml"
     threads:
@@ -567,10 +567,10 @@ rule somatic_FPfilter:
         readcounts="{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.vcf.fpfilter.var.readcounts" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount_somatic']),
     output:
         "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.corrected.fpfilter.tsv" % (config['dirs']['intermediate'], config['stepnames']['somatic_FPfilter']),
-    benchmark:
-        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['somatic_FPfilter']),
     log:
-        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['benchmarks'], config['stepnames']['somatic_FPfilter']),
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['benchmarks'], config['stepnames']['somatic_FPfilter']),
+    benchmark:
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['somatic_FPfilter']),
     threads:
         1
     shell:
@@ -591,10 +591,10 @@ rule somatic_reduce:
         "{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.corrected.fpfilter.tsv" % (config['dirs']['intermediate'], config['stepnames']['somatic_FPfilter']),
     output:
         "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.corrected.fpfilter.reduced.tsv.gz" % (config['dirs']['intermediate'], config['stepnames']['somatic_reduce']),
-    benchmark:
-        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['somatic_reduce']),
     log:
-        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['benchmarks'], config['stepnames']['somatic_reduce']),
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['benchmarks'], config['stepnames']['somatic_reduce']),
+    benchmark:
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['somatic_reduce']),
     threads:
         1
     shell:
@@ -630,10 +630,10 @@ rule vcf_annotate:
         tsv="{prefix}%s%s/{entity}.{snvtype}.{mutationclass}.corrected.fpfilter.reduced.tsv.gz" % (config['dirs']['intermediate'], config['stepnames']['somatic_reduce']),
     output:
         "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.corrected.varscan.somatic.vcf" % (config['dirs']['intermediate'], config['stepnames']['vcf_annotate']),
-    benchmark:
-        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['vcf_annotate']),
     log:
-        "{prefix}%s{entity}.{snvtype}.{mutationclass}.%s.log" % (config['dirs']['benchmarks'], config['stepnames']['vcf_annotate']),
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['benchmarks'], config['stepnames']['vcf_annotate']),
+    benchmark:
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['vcf_annotate']),
     conda:
         "envs/spike_vcftools.yaml"
     threads:
@@ -673,10 +673,10 @@ rule merge_somatic:
         germline="{prefix}%s%s/{entity}.snp.Germline.corrected.varscan.somatic.vcf" % (config['dirs']['intermediate'], config['stepnames']['vcf_annotate']),
     output:
         "{prefix}%s%s/{entity}.indel_snp.hc.vcf" % (config['dirs']['intermediate'], config['stepnames']['merge_somatic']),
-    benchmark:
-        "{prefix}%s%s/{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['merge_somatic']),
     log:
-        "{prefix}%s%s/{entity}.log" % (config['dirs']['logs'], config['stepnames']['merge_somatic']),
+        "{prefix}%s%s.{entity}.log" % (config['dirs']['logs'], config['stepnames']['merge_somatic']),
+    benchmark:
+        "{prefix}%s%s.{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['merge_somatic']),
     conda:
         "envs/spike_vcftools.yaml"
     threads:

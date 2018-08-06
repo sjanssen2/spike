@@ -3,28 +3,27 @@
 # files from demultiplexing if necessary, otherwise we just use soft links
 
 def get_sample_sequences(sample, samplesheets, config):
-    res = []
-    for _, row in samplesheets[samplesheets['fastq-prefix'] == sample].iterrows():
-        res.append('%s/%s_L%03i' % (row['run'], sample, row['Lane']))
-    return res
+    return list(samplesheets[samplesheets['fastq-prefix'] == sample]['run'].unique())
 
 rule rejoin_sample:
     input:
-        lambda wildcards: ["%s%s%s/%s_%s_001.fastq.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], fastq, wildcards.direction) for fastq in get_sample_sequences(wildcards.sample, SAMPLESHEETS, config)]
+        lambda wildcards: ["%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], run) for run in get_sample_sequences(wildcards.sample, SAMPLESHEETS, config)]
     output:
         "{prefix}%s%s/{sample, .*?}_{direction,R[1|2]}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
-    benchmark:
-        "{prefix}%s{sample}_{direction}.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{sample}_{direction}.log" % config['dirs']['logs']
+        "{prefix}%s%s.{sample}_{direction}.log" % (config['dirs']['logs'], config['stepnames']['rejoin_samples'])
+    benchmark:
+        "{prefix}%s%s.{sample}_{direction}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['rejoin_samples'])
     threads:
         1
+    params:
+        single_fastqs=lambda wildcards: ["%s%s%s/%s_%s_001.fastq.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], fastq, wildcards.direction) for fastq in get_sample_sequences(wildcards.sample, SAMPLESHEETS, config)]
     shell:
-        'if [[ $(echo "{input}" | wc -w) -gt 1 ]]; then '
+        'if [[ $(echo "{params.single_fastqs}" | wc -w) -gt 1 ]]; then '
         # you can just concatenate multiple *.gz files into one, while
         # content when decompressed remains the same!
-        'cat {input} > {output} 2> {log};'
+        'cat {params.single_fastqs} > {output} 2> {log};'
         'else '
-        'cp -l -v {input} {output} 2> {log}; '
+        'cp -l -v {params.single_fastqs} {output} 2> {log}; '
         'chmod u+w {output} 2>> {log}; '
         'fi; '

@@ -9,10 +9,10 @@ rule gatk_RealignerTargetCreator:
         knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'RealignerTargetCreator') for ending in ['', '.idx']],
     output:
         "{prefix}%s%s/{sample}.nodup.srt.bam.intervals" % (config['dirs']['intermediate'], config['stepnames']['gatk_RealignerTargetCreator'])
-    benchmark:
-        "{prefix}%s{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_RealignerTargetCreator'])
     log:
-        "{prefix}%s{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['gatk_RealignerTargetCreator'])
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_RealignerTargetCreator'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_RealignerTargetCreator'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -47,10 +47,10 @@ rule gatk_IndelRealigner:
     output:
         bam="{prefix}%s%s/{sample}.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_IndelRealigner']),
         bai="{prefix}%s%s/{sample}.reAl.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['gatk_IndelRealigner'])
-    benchmark:
-        "{prefix}%s{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_IndelRealigner'])
     log:
-        "{prefix}%s{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['gatk_IndelRealigner'])
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_IndelRealigner'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_IndelRealigner'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -85,10 +85,10 @@ rule gatk_BaseRecalibrator:
         bam=rules.gatk_IndelRealigner.output.bam,
     output:
         "{prefix}%s%s/{sample}.reAl.nodup.srt.bam.recal_data.csv" % (config['dirs']['intermediate'], config['stepnames']['gatk_BaseRecalibrator']),
-    benchmark:
-        "{prefix}%s{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_BaseRecalibrator'])
     log:
-        "{prefix}%s{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['gatk_BaseRecalibrator'])
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_BaseRecalibrator'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_BaseRecalibrator'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -125,10 +125,10 @@ rule gatk_PrintReads:
     output:
         bam="{prefix}%s%s/{sample}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads']),
         bai="{prefix}%s%s/{sample}.reCal.reAl.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
-    benchmark:
-        "{prefix}%s{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_PrintReads'])
     log:
-        "{prefix}%s{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['gatk_PrintReads'])
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_PrintReads'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_PrintReads'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -166,11 +166,11 @@ rule exome_coverage:
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, SAMPLESHEETS, config)),
     output:
         csv="{prefix}%s%s/{sample}.exome_coverage.csv" % (config['dirs']['intermediate'], config['stepnames']['exome_coverage']),
-    benchmark:
-        "{prefix}%s{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['exome_coverage'])
     log:
-        bedtools="{prefix}%s{sample}.%s.bedtools.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage']),
-        gawk="{prefix}%s{sample}.%s.gawk.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage'])
+        bedtools="{prefix}%s%s.bedtools.{sample}.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage']),
+        gawk="{prefix}%s%s.gawk.{sample}.log" % (config['dirs']['logs'], config['stepnames']['exome_coverage'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['exome_coverage'])
     conda:
         "envs/spike_bedtools.yaml"
     threads:
@@ -200,10 +200,10 @@ rule gatk_HaplotypeCaller:
     output:
         vcf="{prefix}%s%s/{sample}.gatk.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
         idx="{prefix}%s%s/{sample}.gatk.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
-    benchmark:
-        "{prefix}%s{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_HaplotypeCaller'])
     log:
-        "{prefix}%s{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['gatk_HaplotypeCaller'])
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_HaplotypeCaller'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_HaplotypeCaller'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -245,10 +245,10 @@ rule gatk_SelectVariants:
     output:
         vcf="{prefix}%s%s/{sample}.{program,gatk|ptp}.raw.{snvtype,snps|indels}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_SelectVariants']),
         idx="{prefix}%s%s/{sample}.{program,gatk|ptp}.raw.{snvtype,snps|indels}.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_SelectVariants']),
-    benchmark:
-        "{prefix}%s{sample}.%s.{program}.raw.{snvtype}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_SelectVariants'])
     log:
-        "{prefix}%s{sample}.%s.{program}.raw.{snvtype}.log" % (config['dirs']['logs'], config['stepnames']['gatk_SelectVariants'])
+        "{prefix}%s%s.{program}.raw.{snvtype}.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_SelectVariants'])
+    benchmark:
+        "{prefix}%s%s.{program}.raw.{snvtype}.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_SelectVariants'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -302,10 +302,10 @@ rule gatk_VariantRecalibrator_SNP:
         tranchespdf="{prefix}%s%s/{sample}.{program,gatk|ptp}.raw.{snvtype,snps}.tranches.pdf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         plots="{prefix}%s%s/{sample}.{program,gatk|ptp}.raw.{snvtype,snps}.plots.R" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         plotspdf="{prefix}%s%s/{sample}.{program,gatk|ptp}.raw.{snvtype,snps}.plots.R.pdf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
-    benchmark:
-        "{prefix}%s{sample}.%s_SNP.{program}.{snvtype}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_VariantRecalibrator'])
     log:
-        "{prefix}%s{sample}.%s_SNP.{program}.{snvtype}.log" % (config['dirs']['logs'], config['stepnames']['gatk_VariantRecalibrator'])
+        "{prefix}%s%s_SNP.{program}.{snvtype}.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_VariantRecalibrator'])
+    benchmark:
+        "{prefix}%s%s_SNP.{program}.{snvtype}.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_VariantRecalibrator'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -354,10 +354,10 @@ rule gatk_VariantRecalibrator_INDEL:
         #tranchespdf="{prefix}%s%s/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.tranches.pdf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         plots="{prefix}%s%s/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.plots.R" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         plotspdf="{prefix}%s%s/{sample}.{program,gatk|ptp}.raw.{snvtype,indels}.plots.R.pdf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
-    benchmark:
-        "{prefix}%s{sample}.%s_INDEL.{program}.{snvtype}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_VariantRecalibrator'])
     log:
-        "{prefix}%s{sample}.%s_INDEL.{program}.{snvtype}.log" % (config['dirs']['logs'], config['stepnames']['gatk_VariantRecalibrator'])
+        "{prefix}%s%s_INDEL.{program}.{snvtype}.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_VariantRecalibrator'])
+    benchmark:
+        "{prefix}%s%s_INDEL.{program}.{snvtype}.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_VariantRecalibrator'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -402,10 +402,10 @@ rule gatk_ApplyRecalibration:
     output:
         vcf="{prefix}%s%s/{sample}.{program,gatk}{isrelax,\.relax|}.recal.{snvtype,snps|indels}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_ApplyRecalibration']),
         idx="{prefix}%s%s/{sample}.{program,gatk}{isrelax,\.relax|}.recal.{snvtype,snps|indels}.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_ApplyRecalibration']),
-    benchmark:
-        "{prefix}%s{sample}.%s.{program}{isrelax}.{snvtype}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_ApplyRecalibration'])
     log:
-        "{prefix}%s{sample}.%s.{program}{isrelax}.{snvtype}.log" % (config['dirs']['logs'], config['stepnames']['gatk_ApplyRecalibration'])
+        "{prefix}%s%s.{program}{isrelax}.{snvtype}.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_ApplyRecalibration'])
+    benchmark:
+        "{prefix}%s%s.{program}{isrelax}.{snvtype}.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_ApplyRecalibration'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -461,10 +461,10 @@ rule gatk_VariantFiltration_SNP:
     output:
         vcf="{prefix}%s%s/{sample}.{program,gatk}{isrelax,\.relax|}.hf.recal.{snvtype,snps}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
         idx="{prefix}%s%s/{sample}.{program,gatk}{isrelax,\.relax|}.hf.recal.{snvtype,snps}.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
-    benchmark:
-        "{prefix}%s{sample}.%s_SNP.{program}{isrelax}.{snvtype}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_VariantFiltration'])
     log:
-        "{prefix}%s{sample}.%s_SNP.{program}{isrelax}.{snvtype}.log" % (config['dirs']['logs'], config['stepnames']['gatk_VariantFiltration'])
+        "{prefix}%s%s_SNP.{program}{isrelax}.{snvtype}.{sample}log" % (config['dirs']['logs'], config['stepnames']['gatk_VariantFiltration'])
+    benchmark:
+        "{prefix}%s%s_SNP.{program}{isrelax}.{snvtype}.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_VariantFiltration'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -513,10 +513,10 @@ rule gatk_VariantFiltration_INDEL:
     output:
         vcf="{prefix}%s%s/{sample}.{program,gatk|ptp}{isrelax,.{0}}.filtered.{snvtype,indels}.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
         idx="{prefix}%s%s/{sample}.{program,gatk|ptp}{isrelax,.{0}}.filtered.{snvtype,indels}.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
-    benchmark:
-        "{prefix}%s{sample}.%s_INDEL.{program}{isrelax}.{snvtype}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_VariantFiltration'])
     log:
-        "{prefix}%s{sample}.%s_INDEL.{program}{isrelax}.{snvtype}.log" % (config['dirs']['logs'], config['stepnames']['gatk_VariantFiltration'])
+        "{prefix}%s%s_INDEL.{program}{isrelax}.{snvtype}.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_VariantFiltration'])
+    benchmark:
+        "{prefix}%s%s_INDEL.{program}{isrelax}.{snvtype}.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_VariantFiltration'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
@@ -562,10 +562,10 @@ rule gatk_CombineVariants:
     output:
         vcf="{prefix}%s%s/{sample}.{program,gatk}{isrelax,\.relax|}.snp_indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_CombineVariants']),
         idx="{prefix}%s%s/{sample}.{program,gatk}{isrelax,\.relax|}.snp_indel.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_CombineVariants']),
-    benchmark:
-        "{prefix}%s{sample}.%s.{program}{isrelax}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_VariantFiltration'])
     log:
-        "{prefix}%s{sample}.%s.{program}{isrelax}.log" % (config['dirs']['logs'], config['stepnames']['gatk_VariantFiltration'])
+        "{prefix}%s%s.{program}{isrelax}.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_VariantFiltration'])
+    benchmark:
+        "{prefix}%s%s.{program}{isrelax}.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_VariantFiltration'])
     conda:
         "envs/spike_gatk.yaml"
     threads:

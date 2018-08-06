@@ -12,11 +12,11 @@ rule mutect:
     output:
         csv="{prefix}%s%s/{entity}.all_calls.csv" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
         vcf="{prefix}%s%s/{entity}.all_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+    log:
+        mutect="{prefix}%s%s.mutect.{entity}.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
+        post="{prefix}%s%s.post.{entity}.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
     benchmark:
         "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['mutect'])
-    log:
-        mutect="{prefix}%s{entity}.%s.mutect.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
-        post="{prefix}%s{entity}.%s.post.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
     conda:
         "envs/spike_mutect.yaml"
     threads:

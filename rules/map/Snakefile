@@ -6,10 +6,10 @@ rule bwa:
         reference=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'])
     output:
         "{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
-    benchmark:
-        "{prefix}%s{sample}.bwa.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{sample}.bwa.log" % config['dirs']['logs']
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['map'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['map'])
     conda:
         "envs/spike_map.yaml"
     threads:
@@ -45,10 +45,10 @@ rule remove_pcr_duplicates:
         bam="{prefix}%s%s/{sample}.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
         bai="{prefix}%s%s/{sample}.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
         metric="{prefix}%s%s/{sample}.nodup.srt.bam.metrics" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
-    benchmark:
-        "{prefix}%s{sample}.remove_pcr_duplicates.benchmark" % config['dirs']['benchmarks']
     log:
-        "{prefix}%s{sample}.remove_pcr_duplicates.log" % config['dirs']['logs']
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['nodup'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['nodup'])
     conda:
         "envs/spike_map.yaml"
     threads:
