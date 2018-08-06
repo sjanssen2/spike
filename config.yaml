@@ -106,6 +106,14 @@ projects:
       - background
       - tumornormal
     species: mus musculus
+  AG_Remke:
+    actions:
+      - demultiplex
+  Keimbahn:
+    actions:
+      - background
+      - tumornormal
+    species: homo sapiens
 
 
 references:
