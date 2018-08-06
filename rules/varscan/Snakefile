@@ -286,7 +286,7 @@ rule varscan_fpfilter:
 rule correct_genotypes:
     #correct genotypes
     input:
-        "{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
+        "{prefix}%s%s/{trio}.{snvtype}.{suffix}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
     output:
         vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.corrected.vcf" % (config['dirs']['intermediate'], config['stepnames']['correct_genotypes']),
     log:
@@ -316,7 +316,7 @@ rule correct_genotypes:
 rule correct_genotypes_somatic:
     #correct genotypes
     input:
-        "{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        "{prefix}%s%s/{trio}.{snvtype}.{suffix}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
     output:
         vcf="{prefix}%s%s/{trio}.{snvtype,snp|indel}.{suffix}.corrected.vcf" % (config['dirs']['intermediate'], config['stepnames']['correct_genotypes']),
     log:
