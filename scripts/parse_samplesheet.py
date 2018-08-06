@@ -209,7 +209,7 @@ def get_role(ukd_project, ukd_entity_id, ukd_entity_role, samplesheets):
     else:
         samples = x
 
-    res = {join(sample['run'], sample['fastq-prefix']) for idx, sample in samples.iterrows()}
+    res = {sample['fastq-prefix'] for idx, sample in samples.iterrows()}
     if len(res) > 1:
         raise ValueError("Stefan, check if use cases can occour with more than one result!")
 
@@ -254,47 +254,57 @@ def get_xenograft_host(fp_samplesheet, sample, samplesheets, config):
     return res
 
 
-def get_species(sample, samplesheets):
-    #ss = get_global_samplesheets(config)
-    ss = samplesheets
+def get_species(sample, samplesheets, config):
+    # sample can be a single sample ...
+    projects = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].unique()
 
-    # test if a "sample" can be found
-    species = list(ss[ss['fastq-prefix'] == sample]['ukd_species'].dropna().unique())
-    # test if an entity for a project can be found
-    if len(species) == 0:
-        species = list(ss[ss['Sample_Project']+'/'+ss['ukd_entity_id'] == sample]['ukd_species'].dropna().unique())
-    # maybe the run is prefixed, remove and check if sample can be found
-    if len(species) == 0:
-        species = list(ss[ss['fastq-prefix'] == '/'.join(sample.split('/')[1:])]['ukd_species'].dropna().unique())
+    # ... or an entity
+    if len(projects) == 0:
+        projects = samplesheets[(samplesheets['Sample_Project'] == sample.split('/')[0]) & (samplesheets['ukd_entity_id'] == sample.split('/')[-1])]['Sample_Project'].unique()
 
-    if len(species) == 0:
-        raise ValueError('Sample "%s" not found' % sample)
-    if len(species) > 1:
-        raise ValueError('Ambiguous species given!')
+    if len(projects) > 1:
+        raise ValueError("Ambiguous projects: '%s' for sample '%s'" % (projects, sample))
 
-    return species[0]
+    return config['projects'][projects[0]]['species']
 
 
 def get_reference_genome(sample, samplesheets, config):
-    return config['references']['genomes'][get_species(sample, samplesheets)]
+    return config['references']['genomes'][get_species(sample, samplesheets, config)]
 
 def get_reference_knowns(sample, samplesheets, config, _key):
-    return [k for k in config['references']['knowns'][get_species(sample, samplesheets)] if _key in k]
+    return [k for k in config['references']['knowns'][get_species(sample, samplesheets, config)] if _key in k]
 
 def get_reference_exometrack(sample, samplesheets, config):
-    return config['references']['exometrack'][get_species(sample, samplesheets)]
+    return config['references']['exometrack'][get_species(sample, samplesheets, config)]['file']
 
 def get_reference_varscan_somatic(sample, samplesheets, config):
-    return config['references']['varscan_somatic'][get_species(sample, samplesheets)]
+    return config['references']['varscan_somatic'][get_species(sample, samplesheets, config)]
 
 def get_reference_DBSNP(sample, samplesheets, config):
-    res = config['references']['DBSNP'][get_species(sample, samplesheets)]
+    res = config['references']['DBSNP'][get_species(sample, samplesheets, config)]
     if res is None:
         res = []
     return res
 
 
 ######## avoid run
+def _run2date(run):
+    date='%04i/%02i/%02i' % (
+        int(run.split('_')[0][:2])+2000,
+        int(run.split('_')[0][3:4]),
+        int(run.split('_')[0][5:6]))
+    return date
+
+def get_bwa_mem_header(sample, samplesheets, config):
+    samples = samplesheets[samplesheets['fastq-prefix'] == sample]
+    res = ' -R "@RG\\tID:%s\\tCN:Department_of_Pediatric_Oncology_Dusseldorf\\tPU:%s\\tDT:%s\\tPL:ILLUMINA\\tLB:%s\\tSM:readgroups.info"' % (
+        ' and '.join(samples['run'].dropna().unique()),
+        ' and '.join(list(map(lambda x: x.split('_')[-1], samples['run'].dropna().unique()))),
+        ' and '.join(list(map(_run2date, samples['run'].dropna().unique()))),
+        config['references']['exometrack'][get_species(sample, samplesheets, config)]['protocol_name']
+        )
+    return res
+
 
 def get_samples(samplesheets, config):
     # get projects that require snv vs. reference analysis
@@ -304,9 +314,9 @@ def get_samples(samplesheets, config):
     background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
 
     samples = []
-    for sample, g in background_samples.groupby(['Sample_Project', 'ukd_entity_id']):
+    for sample, g in background_samples.groupby(['Sample_Project', 'fastq-prefix']):
         samples.append({'Sample_Project': sample[0],
-                        'ukd_entity_id': sample[1]})
+                        'sample': sample[1]})
 
     return samples
 
