@@ -1,54 +1,54 @@
-[Header],,,,,,,,,,,,
-IEMFileVersion,5,,,,,,,,,,,
-Date,07/11/18,,,,,,,,,,,
-Workflow,GenerateFASTQ,,,,,,,,,,,
-Application,HiSeq FASTQ Only,,,,,,,,,,,
-Instrument Type,HiSeq 1500/2500,,,,,,,,,,,
-Assay,Agilent_Sure_SelectXT,,,,,,,,,,,
-Index Adapters,Agilent_Sure_SelectXT,,,,,,,,,,,
-Description,sample sheet hacked by Stefan Janssen with data from Frauke Meyer,,,,,,,,,,,
-Chemistry,Default,,,,,,,,,,,
-,,,,,,,,,,,,
-[Reads],,,,,,,,,,,,
-101,,,,,,,,,,,,
-101,,,,,,,,,,,,
-,,,,,,,,,,,,
-[Settings],,,,,,,,,,,,
-ReverseComplement,0,,,,,,,,,,,
-Adapter,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,,
-AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,,
-,,,,,,,,,,,,
-[Data],,,,,,,,,,,,
-Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,ukd_entity_id,ukd_entity_role,ukd_xenograft_species,ukd_action
-1,mAID_292_N,,,,A02,AGCAGGAA,Mouse_Spain,Pool 1,mAID_292,healthy,,somatic
-1,mAID_292_T,,,,B02,GAGCTGAA,Mouse_Spain,Pool 1,mAID_292,tumor,,somatic
-1,mAID_293_N,,,,C02,AAACATCG,Mouse_Spain,Pool 1,mAID_293,healthy,,somatic
-1,mAID_293_T,,,,D02,GAGTTAGC,Mouse_Spain,Pool 1,mAID_293,tumor,,somatic
-2,mMicro295_N,,,,A02,AGCAGGAA,Mouse_Spain,Pool 2,mMicro295,healthy,,somatic
-2,mMicro295_T,,,,B02,GAGCTGAA,Mouse_Spain,Pool 2,mMicro295,tumor,,somatic
-2,mMicro296_N,,,,C02,AAACATCG,Mouse_Spain,Pool 2,mMicro296,healthy,,somatic
-2,mMicro296_T,,,,D02,GAGTTAGC,Mouse_Spain,Pool 2,mMicro296,tumor,,somatic
-3,mMicro297_N,,,,A02,AGCAGGAA,Mouse_Spain,Pool 3,mMicro297,healthy,,somatic
-3,mMicro297_T,,,,B02,GAGCTGAA,Mouse_Spain,Pool 3,mMicro297,tumor,,somatic
-3,mMicro298_N,,,,C02,AAACATCG,Mouse_Spain,Pool 3,mMicro298,healthy,,somatic
-3,mMicro298_T,,,,D02,GAGTTAGC,Mouse_Spain,Pool 3,mMicro298,tumor,,somatic
-4,NPTH_2,282,,,12,CTTGTA,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_2,,,demux
-4,NPTH_3,283,,,13,AGTCAA,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_3,,,demux
-4,NPTH_4,284,,,14,AGTTCC,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_4,,,demux
-4,NPTH_16,296,,,6,GCCAAT,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_16,,,demux
-5,Dpau_03,333,,,5,ACAGTG,AG_Remke,"Lauf20, Lane5 2,39nm 7pM",Dpau_03,,,demux
-5,Dpau_04,334,,,6,GCCAAT,AG_Remke,"Lauf20, Lane5 2,39nm 7pM",Dpau_04,,,demux
-5,Dpau_05,335,,,7,CAGATC,AG_Remke,"Lauf20, Lane5 2,39nm 7pM",Dpau_05,,,demux
-5,Dpau_06,336,,,12,CTTGTA,AG_Remke,"Lauf20, Lane5 2,39nm 7pM",Dpau_06,,,demux
-6,Dpau_01,331,,,18,GTCCGC,AG_Remke,"Lauf20, Lane6, 2,35nm 7pM",Dpau_01,,,demux
-6,Dpau_02,332,,,19,GTGAAA,AG_Remke,"Lauf20, Lane6, 2,35nm 7pM",Dpau_02,,,demux
-6,NPTH_40,322,,,4,TGACCA,AG_Remke,"Lauf20, Lane6, 2,35nm 7pM",NPTH_40,,,demux
-6,NPTH_41,323,,,5,ACAGTG,AG_Remke,"Lauf20, Lane6, 2,35nm 7pM",NPTH_41,,,demux
-7,NPTH_19,301,,,6,GCCAAT,AG_Remke,"Lauf20, Lane7, 2,29nm 7pM",NPTH_19,,,demux
-7,NPTH_20,302,,,7,CAGATC,AG_Remke,"Lauf20, Lane7, 2,29nm 7pM",NPTH_20,,,demux
-7,NPTH_21,303,,,12,CTTGTA,AG_Remke,"Lauf20, Lane7, 2,29nm 7pM",NPTH_21,,,demux
-7,NPTH_22,304,,,13,AGTCAA,AG_Remke,"Lauf20, Lane7, 2,29nm 7pM",NPTH_22,,,demux
-8,NPTH_23,305,,,14,AGTTCC,AG_Remke,"Lauf20, Lane8, 2,827nm, 6,5pm",NPTH_23,,,demux
-8,NPTH_24,306,,,15,ATGTCA,AG_Remke,"Lauf20, Lane8, 2,827nm, 6,5pm",NPTH_24,,,demux
-8,NPTH_29,311,,,4,TGACCA,AG_Remke,"Lauf20, Lane8, 2,827nm, 6,5pm",NPTH_29,,,demux
-8,NPTH_30,312,,,5,ACAGTG,AG_Remke,"Lauf20, Lane8, 2,827nm, 6,5pm",NPTH_30,,,demux
+[Header],,,,,,,,,,
+IEMFileVersion,5,,,,,,,,,
+Date,07/11/18,,,,,,,,,
+Workflow,GenerateFASTQ,,,,,,,,,
+Application,HiSeq FASTQ Only,,,,,,,,,
+Instrument Type,HiSeq 1500/2500,,,,,,,,,
+Assay,Agilent_Sure_SelectXT,,,,,,,,,
+Index Adapters,Agilent_Sure_SelectXT,,,,,,,,,
+Description,sample sheet hacked by Stefan Janssen with data from Frauke Meyer,,,,,,,,,
+Chemistry,Default,,,,,,,,,
+,,,,,,,,,,
+[Reads],,,,,,,,,,
+101,,,,,,,,,,
+101,,,,,,,,,,
+,,,,,,,,,,
+[Settings],,,,,,,,,,
+ReverseComplement,0,,,,,,,,,
+Adapter,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,
+AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,
+,,,,,,,,,,
+[Data],,,,,,,,,,
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,ukd_entity_id,ukd_entity_role
+1,mAID_292_N,,,,A02,AGCAGGAA,Mouse_Spain,Pool 1,mAID_292,healthy
+1,mAID_292_T,,,,B02,GAGCTGAA,Mouse_Spain,Pool 1,mAID_292,tumor
+1,mAID_293_N,,,,C02,AAACATCG,Mouse_Spain,Pool 1,mAID_293,healthy
+1,mAID_293_T,,,,D02,GAGTTAGC,Mouse_Spain,Pool 1,mAID_293,tumor
+2,mMicro295_N,,,,A02,AGCAGGAA,Mouse_Spain,Pool 2,mMicro295,healthy
+2,mMicro295_T,,,,B02,GAGCTGAA,Mouse_Spain,Pool 2,mMicro295,tumor
+2,mMicro296_N,,,,C02,AAACATCG,Mouse_Spain,Pool 2,mMicro296,healthy
+2,mMicro296_T,,,,D02,GAGTTAGC,Mouse_Spain,Pool 2,mMicro296,tumor
+3,mMicro297_N,,,,A02,AGCAGGAA,Mouse_Spain,Pool 3,mMicro297,healthy
+3,mMicro297_T,,,,B02,GAGCTGAA,Mouse_Spain,Pool 3,mMicro297,tumor
+3,mMicro298_N,,,,C02,AAACATCG,Mouse_Spain,Pool 3,mMicro298,healthy
+3,mMicro298_T,,,,D02,GAGTTAGC,Mouse_Spain,Pool 3,mMicro298,tumor
+4,NPTH_2,282,,,12,CTTGTA,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_2,
+4,NPTH_3,283,,,13,AGTCAA,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_3,
+4,NPTH_4,284,,,14,AGTTCC,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_4,
+4,NPTH_16,296,,,6,GCCAAT,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_16,
+5,Dpau_03,333,,,5,ACAGTG,AG_Remke,"Lauf20, Lane5 2,39nm 7pM",Dpau_03,
+5,Dpau_04,334,,,6,GCCAAT,AG_Remke,"Lauf20, Lane5 2,39nm 7pM",Dpau_04,
+5,Dpau_05,335,,,7,CAGATC,AG_Remke,"Lauf20, Lane5 2,39nm 7pM",Dpau_05,
+5,Dpau_06,336,,,12,CTTGTA,AG_Remke,"Lauf20, Lane5 2,39nm 7pM",Dpau_06,
+6,Dpau_01,331,,,18,GTCCGC,AG_Remke,"Lauf20, Lane6, 2,35nm 7pM",Dpau_01,
+6,Dpau_02,332,,,19,GTGAAA,AG_Remke,"Lauf20, Lane6, 2,35nm 7pM",Dpau_02,
+6,NPTH_40,322,,,4,TGACCA,AG_Remke,"Lauf20, Lane6, 2,35nm 7pM",NPTH_40,
+6,NPTH_41,323,,,5,ACAGTG,AG_Remke,"Lauf20, Lane6, 2,35nm 7pM",NPTH_41,
+7,NPTH_19,301,,,6,GCCAAT,AG_Remke,"Lauf20, Lane7, 2,29nm 7pM",NPTH_19,
+7,NPTH_20,302,,,7,CAGATC,AG_Remke,"Lauf20, Lane7, 2,29nm 7pM",NPTH_20,
+7,NPTH_21,303,,,12,CTTGTA,AG_Remke,"Lauf20, Lane7, 2,29nm 7pM",NPTH_21,
+7,NPTH_22,304,,,13,AGTCAA,AG_Remke,"Lauf20, Lane7, 2,29nm 7pM",NPTH_22,
+8,NPTH_23,305,,,14,AGTTCC,AG_Remke,"Lauf20, Lane8, 2,827nm, 6,5pm",NPTH_23,
+8,NPTH_24,306,,,15,ATGTCA,AG_Remke,"Lauf20, Lane8, 2,827nm, 6,5pm",NPTH_24,
+8,NPTH_29,311,,,4,TGACCA,AG_Remke,"Lauf20, Lane8, 2,827nm, 6,5pm",NPTH_29,
+8,NPTH_30,312,,,5,ACAGTG,AG_Remke,"Lauf20, Lane8, 2,827nm, 6,5pm",NPTH_30,
