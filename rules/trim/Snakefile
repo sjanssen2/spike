@@ -1,16 +1,16 @@
 rule trim:
     input:
-        forward="{prefix}%s%s/{run,[^\/]+XX}/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
-        reverse="{prefix}%s%s/{run,[^\/]+XX}/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
+        forward="{prefix}%s%s/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
+        reverse="{prefix}%s%s/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
     output:
-        pairedforward="{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
-        unpairedforward="{prefix}%s%s/{run,[^\/]+XX}/Unpaired/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
-        pairedreverse="{prefix}%s%s/{run,[^\/]+XX}/Paired/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
-        unpairedreverse="{prefix}%s%s/{run,[^\/]+XX}/Unpaired/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim'])
+        pairedforward="{prefix}%s%s/Paired/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
+        unpairedforward="{prefix}%s%s/Unpaired/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
+        pairedreverse="{prefix}%s%s/Paired/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
+        unpairedreverse="{prefix}%s%s/Unpaired/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim'])
     log:
-        "{prefix}%s{run}/{sample}_trimmomatic.log" % config['dirs']['logs']
+        "{prefix}%s{sample}_trimmomatic.log" % config['dirs']['logs']
     benchmark:
-        "{prefix}%s{run}/{sample}_trimmomatic.benchmark" % config['dirs']['logs']
+        "{prefix}%s{sample}_trimmomatic.benchmark" % config['dirs']['logs']
     conda:
       "envs/spike_trim.yaml"
     threads:
