@@ -20,18 +20,18 @@ AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,
 ,,,,,,,,,,
 [Data],,,,,,,,,,
 Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,ukd_entity_id,ukd_entity_role
-1,mAID_292_N,,,,A02,AGCAGGAA,Mouse_Spain,Pool 1,mAID_292,healthy
-1,mAID_292_T,,,,B02,GAGCTGAA,Mouse_Spain,Pool 1,mAID_292,tumor
-1,mAID_293_N,,,,C02,AAACATCG,Mouse_Spain,Pool 1,mAID_293,healthy
-1,mAID_293_T,,,,D02,GAGTTAGC,Mouse_Spain,Pool 1,mAID_293,tumor
-2,mMicro295_N,,,,A02,AGCAGGAA,Mouse_Spain,Pool 2,mMicro295,healthy
-2,mMicro295_T,,,,B02,GAGCTGAA,Mouse_Spain,Pool 2,mMicro295,tumor
-2,mMicro296_N,,,,C02,AAACATCG,Mouse_Spain,Pool 2,mMicro296,healthy
-2,mMicro296_T,,,,D02,GAGTTAGC,Mouse_Spain,Pool 2,mMicro296,tumor
-3,mMicro297_N,,,,A02,AGCAGGAA,Mouse_Spain,Pool 3,mMicro297,healthy
-3,mMicro297_T,,,,B02,GAGCTGAA,Mouse_Spain,Pool 3,mMicro297,tumor
-3,mMicro298_N,,,,C02,AAACATCG,Mouse_Spain,Pool 3,mMicro298,healthy
-3,mMicro298_T,,,,D02,GAGTTAGC,Mouse_Spain,Pool 3,mMicro298,tumor
+1,mAID_292_N,,,,A02,AGCAGGAA,Maus_Hauer,Pool 1,mAID_292,healthy
+1,mAID_292_T,,,,B02,GAGCTGAA,Maus_Hauer,Pool 1,mAID_292,tumor
+1,mAID_293_N,,,,C02,AAACATCG,Maus_Hauer,Pool 1,mAID_293,healthy
+1,mAID_293_T,,,,D02,GAGTTAGC,Maus_Hauer,Pool 1,mAID_293,tumor
+2,mMicro295_N,,,,A02,AGCAGGAA,Maus_Hauer,Pool 2,mMicro295,healthy
+2,mMicro295_T,,,,B02,GAGCTGAA,Maus_Hauer,Pool 2,mMicro295,tumor
+2,mMicro296_N,,,,C02,AAACATCG,Maus_Hauer,Pool 2,mMicro296,healthy
+2,mMicro296_T,,,,D02,GAGTTAGC,Maus_Hauer,Pool 2,mMicro296,tumor
+3,mMicro297_N,,,,A02,AGCAGGAA,Maus_Hauer,Pool 3,mMicro297,healthy
+3,mMicro297_T,,,,B02,GAGCTGAA,Maus_Hauer,Pool 3,mMicro297,tumor
+3,mMicro298_N,,,,C02,AAACATCG,Maus_Hauer,Pool 3,mMicro298,healthy
+3,mMicro298_T,,,,D02,GAGTTAGC,Maus_Hauer,Pool 3,mMicro298,tumor
 4,NPTH_2,282,,,12,CTTGTA,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_2,
 4,NPTH_3,283,,,13,AGTCAA,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_3,
 4,NPTH_4,284,,,14,AGTTCC,AG_Remke,"Lauf19, Lane4, 2,888nm 6,5pM",NPTH_4,
