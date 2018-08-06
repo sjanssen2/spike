@@ -368,3 +368,11 @@ def get_trios(samplesheets, config):
                           'ukd_entity_id': trio[1]})
 
     return trios
+
+
+def get_projects_with_exomecoverage(config):
+    res = []
+    for name in config['projects']:
+        if ('actions' in config['projects'][name]) and (len(set(config['projects'][name]['actions']) & set(['background', 'trio', 'tumornormal'])) > 0):
+            res.append(name)
+    return res
