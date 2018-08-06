@@ -76,9 +76,9 @@ rule convert_illumina_report:
     output:
         "{prefix}%s{run}/{run}.yield_report.pdf" % (config['dirs']['reports'])
     log:
-        "{prefix}%s.convert_illumina_report.{run}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
+        "{prefix}%s.convert_illumina_report.{run}.log" % (config['dirs']['logs'])
     benchmark:
-        "{prefix}%s.convert_illumina_report.{run}.benchmark" % (config['dirs']['benchmarks'], config['run'])
+        "{prefix}%s.convert_illumina_report.{run}.benchmark" % (config['dirs']['benchmarks'])
     conda:
         "envs/spike_report.yaml"
     params:
