@@ -65,7 +65,7 @@ rule freec:
     threads:
         8
     params:
-        minCNAlength=lambda wildcards: 'echo "minCNAlength = 4" >> {output.config}; ' if get_species(wildcards.sample, SAMPLESHEETS) == 'mus musculus' else ""
+        minCNAlength=lambda wildcards: 'echo "minCNAlength = 4" >> {output.config}; ' if get_species(wildcards.entity, SAMPLESHEETS) == 'mus musculus' else ""
     shell:
         'echo "[general]" > {output.config}; '
         'echo "chrLenFile = {input.reference_len}" >> {output.config}; '

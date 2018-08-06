@@ -292,3 +292,54 @@ def get_reference_DBSNP(sample, samplesheets, config):
     if res is None:
         res = []
     return res
+
+
+######## avoid run
+
+def get_samples(samplesheets, config):
+    # get projects that require snv vs. reference analysis
+    background_projects = [prj_name for prj_name in config['projects'] if 'background' in config['projects'][prj_name]['actions']]
+
+    # filter samples to those belonging to tumor vs. normal projects
+    background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
+
+    samples = []
+    for sample, g in background_samples.groupby(['Sample_Project', 'ukd_entity_id']):
+        samples.append({'Sample_Project': sample[0],
+                        'ukd_entity_id': sample[1]})
+
+    return samples
+
+
+def get_tumorNormalPairs(samplesheets, config):
+    # get projects that require tumor vs. normal analysis
+    tumornormal_projects = [prj_name for prj_name in config['projects'] if 'tumornormal' in config['projects'][prj_name]['actions']]
+
+    # filter samples to those belonging to tumor vs. normal projects
+    tumornormal_samples = samplesheets[samplesheets['Sample_Project'].isin(tumornormal_projects)]
+
+    pairs = []
+    for pair, g in tumornormal_samples.groupby(['Sample_Project', 'ukd_entity_id']):
+        # only choose comlete pairs
+        if set(g['ukd_entity_role'].unique()) == {'healthy','tumor'}:
+            pairs.append({'Sample_Project': pair[0],
+                          'ukd_entity_id': pair[1]})
+
+    return pairs
+
+
+def get_trios(samplesheets, config):
+    # get projects that require trio analysis
+    trio_projects = [prj_name for prj_name in config['projects'] if 'trio' in config['projects'][prj_name]['actions']]
+
+    # filter samples to those belonging to trio projects
+    trio_samples = samplesheets[samplesheets['Sample_Project'].isin(trio_projects)]
+
+    trios = []
+    for trio, g in trio_samples.groupby(['Sample_Project', 'ukd_entity_id']):
+        # only choose comlete trios
+        if set(g['ukd_entity_role'].unique()) == {'patient', 'mother', 'father'}:
+            trios.append({'Sample_Project': trio[0],
+                          'ukd_entity_id': trio[1]})
+
+    return trios

@@ -88,6 +88,22 @@ xenograft:
     mus musculus: 'GRCm'
     homo sapiens: 'GRCh'
 
+
+projects:
+  Alps:
+    actions:
+      - background
+      - trio
+  Fischer_Geron:
+    actions:
+      - background
+      - tumornormal
+  Maus_Hauer:
+    actions:
+      - background
+      - tumornormal
+
+
 references:
   genomes:
     homo sapiens:
