@@ -27,7 +27,7 @@ rule demultiplex:
         config['num_threads']
     shell:
         "uname -a > {log} 2>&1; "
-        "time bcl2fastq"
+        "bcl2fastq"
         " --runfolder-dir {input.raw}/"
         " --output-dir {output.fastqs}/"
         " --ignore-missing-bcls"
@@ -39,7 +39,7 @@ rule demultiplex:
         " 1>&2"
         # rename demux fastq files such that S\d+ are removed from filenames
         ' ; for f in `find {output.fastqs}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
-        ' ; cp -l {output.fastqs}/Reports/html/*/all/all/all/laneBarcode.html {output.fastqs}/laneBarcode.html'
+        ' ; cp -l {output.fastqs}/Reports/html/*/all/all/all/laneBarcode.html {output.fastqs}/laneBarcode.html 2>> {log} >&2'
 
 
 rule aggregate_undetermined_filesizes:
