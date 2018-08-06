@@ -1,7 +1,7 @@
 rule trim:
     input:
-        forward="{prefix}%s%s/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
-        reverse="{prefix}%s%s/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
+        forward="{prefix}%s%s/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
+        reverse="{prefix}%s%s/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
     output:
         pairedforward="{prefix}%s%s/Paired/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
         unpairedforward="{prefix}%s%s/Unpaired/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
