@@ -376,3 +376,10 @@ def get_projects_with_exomecoverage(config):
         if ('actions' in config['projects'][name]) and (len(set(config['projects'][name]['actions']) & set(['background', 'trio', 'tumornormal'])) > 0):
             res.append(name)
     return res
+
+
+def get_rejoin_fastqs(sample, samplesheets, config):
+    res = []
+    for _, row in samplesheets[samplesheets['fastq-prefix'] == sample].iterrows():
+        res.append('%s/%s_%i03' % (row['run'], row['fastq-prefix'], row['Lane']))
+    return res
