@@ -25,7 +25,7 @@ rule demultiplex:
     benchmark:
         "{prefix}%s%s.{run}.benchmark" % (config['dirs']['benchmarks'], config['run'])
     threads:
-        16
+        config['num_threads']
     shell:
         "uname -a > {log} 2>&1; "
         "time bcl2fastq"
