@@ -381,5 +381,5 @@ def get_projects_with_exomecoverage(config):
 def get_rejoin_fastqs(sample, samplesheets, config):
     res = []
     for _, row in samplesheets[samplesheets['fastq-prefix'] == sample].iterrows():
-        res.append('%s/%s_%i03' % (row['run'], row['fastq-prefix'], row['Lane']))
+        res.append('%s/%s_%03i' % (row['run'], row['fastq-prefix'], row['Lane']))
     return res
