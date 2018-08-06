@@ -15,7 +15,6 @@ rule demultiplex:
     output:
         fastqs=directory("{prefix}%s%s/{run,[^/]+XX}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
         report="{prefix}%s%s/{run,[^/]+XX}/laneBarcode.html" % (config['dirs']['intermediate'], config['stepnames']['demultiplex']),
-        firstbase="{prefix}%s%s/{run,[^/]+XX}/First_Base_Report.htm" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])
         #fastqs=dynamic("{prefix}%s%s/{run}XX/{sample}_L{lane}_R{direction}_001.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
         #fastqs = ["%s%s%s/%s/%s" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], fastq)
         #          for fastq in get_fastq_filenames(config['run'], SAMPLESHEETS)],
@@ -71,7 +70,7 @@ rule check_undetermined_filesizes:
 rule convert_illumina_report:
     input:
         demux=rules.demultiplex.output.report,
-        firstbase=rules.demultiplex.output.firstbase,
+        firstbase="{prefix}%s%s/{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['stepnames']['rawillumina']),
         undetermined=rules.check_undetermined_filesizes.output
     output:
         "{prefix}%s{run}/{run}.yield_report.pdf" % (config['dirs']['reports'])
