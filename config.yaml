@@ -94,14 +94,18 @@ projects:
     actions:
       - background
       - trio
+    species: homo sapiens
   Fischer_Geron:
     actions:
       - background
       - tumornormal
+    species: homo sapiens
+    xenograft: "GRCh_GRCm_filtering_hybrid.fa"
   Maus_Hauer:
     actions:
       - background
       - tumornormal
+    species: mus musculus
 
 
 references:
@@ -210,8 +214,12 @@ references:
       - file: "CBAJDBA2.genoc7.ref.snp.recode.vcf.gz"
         VariantRecalibrator_SNP: "CBAJDBA2_snps,VCF,known=false,training=true,truth=true,prior=12.0"
   exometrack:
-    homo sapiens: "Agilent_SureSelect_V5plusUTR.bed"
-    mus musculus: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
+    homo sapiens:
+      file: "Agilent_SureSelect_V5plusUTR.bed"
+      protocol_name: "SureSelectXTV5plusUTRautomated"
+    mus musculus:
+      file: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
+      protocol_name: "SureSelectXTmouse"
   varscan_somatic:
     homo sapiens: " --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 "
     mus musculus: " --min-coverage-normal 6 --min-coverage-tumor 8 "
