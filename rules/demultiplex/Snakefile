@@ -14,7 +14,7 @@ rule demultiplex:
         samplesheet="{prefix}%s%s{run}_ukd.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
     output:
         fastqs=directory("{prefix}%s%s/{run,[^/]+XX}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
-        report="{prefix}%s%s/{run,[^/]+XX}/laneBarcode.html" % (config['dirs']['intermediate'], config['stepnames']['demultiplex']),
+        #report="{prefix}%s%s/{run,[^/]+XX}/laneBarcode.html" % (config['dirs']['intermediate'], config['stepnames']['demultiplex']),
         #fastqs=dynamic("{prefix}%s%s/{run}XX/{sample}_L{lane}_R{direction}_001.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
         #fastqs = ["%s%s%s/%s/%s" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], fastq)
         #          for fastq in get_fastq_filenames(config['run'], SAMPLESHEETS)],
@@ -69,13 +69,20 @@ rule check_undetermined_filesizes:
 
 rule convert_illumina_report:
     input:
-        demux=rules.demultiplex.output.report,
-        firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
+        #demux=rules.demultiplex.output.report,
+        rules.demultiplex.output.fastqs,
+        #firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
         undetermined=rules.check_undetermined_filesizes.output
     output:
         "{prefix}%s{run}/{run}.yield_report.pdf" % (config['dirs']['reports'])
     conda:
         "envs/spike_report.yaml"
+    params:
+        yield_report=lambda wildcards: "%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], config['run'].split('_')[-1][1:]),
+        firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
     shell:
-        "wkhtmltopdf --orientation Landscape {input.demux} {output}; "
-        "echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nDemultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report, some statistics about the file sizes of undetermined reads and the first base report.\n\nHave a nice day!' | mail -s '[{config[name_program]}] demultiplex report {config[run]}' -A {output} -A {input.undetermined} -A {input.firstbase} {config[emails][demultiplexreport]}"
+        "wkhtmltopdf --orientation Landscape {params.yield_report} {output}; "
+        "echo 'Hi there,\n\n"
+        "this is an automated message from {config[name_program]}.\n\n"
+        "Demultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report, some statistics about the file sizes of undetermined reads and the first base report.\n\n"
+        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' -A {output} -A {input.undetermined} -A {params.firstbase} {config[emails][demultiplexreport]}"
