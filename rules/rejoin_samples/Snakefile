@@ -21,6 +21,6 @@ rule rejoin_sample:
         # content when decompressed remains the same!
         'cat {params.single_fastqs} > {output} 2> {log};'
         'else '
-        'cp -l -v {params.single_fastqs} {output} 2> {log}; '
+        'cp -l -v {params.single_fastqs} {output} 2> {log}; 1>&2'
         'chmod u+w {output} 2>> {log}; '
         'fi; '
