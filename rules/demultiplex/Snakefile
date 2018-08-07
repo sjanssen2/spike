@@ -39,7 +39,7 @@ rule demultiplex:
         " 1>&2"
         # rename demux fastq files such that S\d+ are removed from filenames
         ' ; for f in `find {output.fastqs}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
-        ' ; cp -l {output.fastqs}/Reports/html/*/all/all/all/laneBarcode.html {output.fastqs}/laneBarcode.html 2>> {log} >&2'
+        ' ; cp -l -v {output.fastqs}/Reports/html/*/all/all/all/laneBarcode.html {output.fastqs}/laneBarcode.html 2>> {log} >&2'
 
 
 rule aggregate_undetermined_filesizes:
@@ -76,9 +76,9 @@ rule convert_illumina_report:
     output:
         "{prefix}%s{run}/{run}.yield_report.pdf" % (config['dirs']['reports'])
     log:
-        "{prefix}%s.convert_illumina_report.{run}.log" % (config['dirs']['logs'])
+        "{prefix}%sconvert_illumina_report.{run}.log" % (config['dirs']['logs'])
     benchmark:
-        "{prefix}%s.convert_illumina_report.{run}.benchmark" % (config['dirs']['benchmarks'])
+        "{prefix}%sconvert_illumina_report.{run}.benchmark" % (config['dirs']['benchmarks'])
     conda:
         "envs/spike_report.yaml"
     params:
