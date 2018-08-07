@@ -3,7 +3,7 @@ rule bwa:
     input:
         forward="{prefix}%s%s/Paired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check']),
         reverse="{prefix}%s%s/Paired/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check']),
-        reference=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in ['', '.amb', '.ann', '.bwt', '.fai', '.pac', '.sa']]
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']]
     output:
         "{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
     log:
@@ -19,7 +19,7 @@ rule bwa:
     shell:
         'bwa mem -t {threads} -v 2 -M'
         '{params.header}'
-        ' {input.reference[0]}'
+        ' {input.references[0]}'
         ' {input.forward} {input.reverse} 2> {log}.bwa_mem'
         ' | samtools view -bSu -F 0x04 - 2> {log}.samtools_view'
         ' | samtools sort -m 1G -@ {threads} - {output} 2> {log}.samtools_sort'

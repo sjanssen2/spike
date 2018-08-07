@@ -2,7 +2,7 @@ rule samtools_mpileup:
     # Preprocessing to do a realignment of the reads with GATK
     input:
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in ['', '.fai', '.dict']],
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
         pileup="{prefix}%s%s/{entity}.pileup.gz" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),

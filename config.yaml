@@ -3,6 +3,15 @@ run: '180614_SN737_0438_BCC7MCACXX'
 directions:
   - 'R1'
   - 'R2'
+endings_bwa:
+  - '.fa'
+  - '.dict'
+  - '.fa.amb'
+  - '.fa.ann'
+  - '.fa.bwt'
+  - '.fa.fai'
+  - '.fa.pac'
+  - '.fa.sa'
 
 emails:
   demultiplexreport: "stefan.m.janssen@gmail.com"
@@ -119,7 +128,7 @@ projects:
 references:
   genomes:
     homo sapiens:
-      file: 'hGRC37.fa'
+      file: 'hGRC37'  # without .fa!
       lengths: 'hGRC37.len'
       gemMappabilityFile: 'hGRC37.mappability.mappability'
       chromosomes:
@@ -150,7 +159,7 @@ references:
       SNPfile: "hg19_deCHRd_snp137.SingleDiNucl.1based.txt"
       cosmic: "CosmicCodingMuts_v63_300113.vcf"
     mus musculus:
-      file: 'Mus_musculus.GRCm38.71.dna.fa'
+      file: 'Mus_musculus.GRCm38.71.dna'  # without .fa!
       lengths: 'GRCm38.71.len'
       gemMappabilityFile: 'Mus_musculus.GRCm38.71.dna.fa.index.gem.mappability.mappability'
       chromosomes:

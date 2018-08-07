@@ -3,7 +3,7 @@ rule mutect:
     input:
         knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.entity, SAMPLESHEETS, config, 'mutect') for ending in ['', '.idx']],
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in ['', '.fai', '.dict']],
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         mutect117="%s%smutect-1.1.7.jar" % (config['dirs']['prefix'], config['dirs']['references']),
         cosmic=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic, ending) for cosmic in [get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['cosmic']] for ending in ['', '.idx'] if cosmic is not None],
