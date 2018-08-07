@@ -3,7 +3,7 @@ rule bwa:
     input:
         forward="{prefix}%s%s/Paired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check']),
         reverse="{prefix}%s%s/Paired/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check']),
-        reference=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'])
+        reference=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in ['', '.amb', '.ann', '.bwt', '.fai', '.pac', '.sa']]
     output:
         "{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
     log:
