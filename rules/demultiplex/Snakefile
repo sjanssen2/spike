@@ -82,7 +82,7 @@ rule convert_illumina_report:
     conda:
         "envs/spike_report.yaml"
     params:
-        yield_report=lambda wildcards: "%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], config['run'], config['run'].split('_')[-1][1:]),
+        yield_report=lambda wildcards: "%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, wildcards.run.split('_')[-1][1:]),
         firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
     shell:
         "wkhtmltopdf --orientation Landscape {params.yield_report} {output} 2> {log}; "
