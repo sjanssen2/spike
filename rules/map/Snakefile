@@ -13,7 +13,7 @@ rule bwa:
     conda:
         "envs/spike_map.yaml"
     threads:
-        4
+        config['num_threads']
     params:
         header=lambda wildcards: get_bwa_mem_header(wildcards.sample, SAMPLESHEETS, config)
     shell:
