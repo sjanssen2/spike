@@ -10,11 +10,11 @@ rule trim:
     log:
         "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['trim'])
     benchmark:
-        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['logs'], config['stepnames']['trim'])
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['trim'])
     conda:
       "envs/spike_trim.yaml"
     threads:
-        4
+        config['num_threads']
     shell:
         "java"
         " -Xmx4g"
