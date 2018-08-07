@@ -19,7 +19,7 @@ rule bwa:
     shell:
         'bwa mem -t {threads} -v 2 -M'
         '{params.header}'
-        ' {input.reference}'
+        ' {input.reference[0]}'
         ' {input.forward} {input.reverse} 2> {log}.bwa_mem'
         ' | samtools view -bSu -F 0x04 - 2> {log}.samtools_view'
         ' | samtools sort -m 1G -@ {threads} - {output} 2> {log}.samtools_sort'
