@@ -19,7 +19,7 @@ rule platypus:
         regions=lambda wildcards, input: " --regions=%s" % input.exometrack if get_species(wildcards.sample, SAMPLESHEETS, config) == 'homo sapiens' else ""
     shell:
         "python2"
-        " $CONDA_PREFIX/share/platypus-variant-0.8.1.1-2/Platypus.py"
+        " $CONDA_PREFIX/share/platypus-variant-0.8.1*/Platypus.py"
         " callVariants"
         "{params.regions}"
         " --refFile={input.references[0]}"
