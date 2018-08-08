@@ -4,3 +4,4 @@ channels:
   - bioconda
 dependencies:
   - platypus-variant =0.8.1
+  - vcftools =0.1.15
