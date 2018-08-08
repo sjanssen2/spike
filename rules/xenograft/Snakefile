@@ -1,24 +1,6 @@
-def _get_reference(sample, samplesheets, config):
-    project = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].dropna().unique()
-    if len(project) != 1:
-        raise ValueError("_get_reference: Sample '%s' has ambiguous or missing project!" % sample)
-    return config['projects'][project[0]]['xenograft']
-
-import sys
-def _get_stepname(sample, samplesheets, config):
-    project = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].dropna().unique()
-    if len(project) != 1:
-        sys.stderr.write('%s\n' % (project))
-        raise ValueError("_get_stepname: Sample '%s' has ambiguous or missing project!" % sample)
-    if 'xenograft' in config['projects'][project[0]] and config['projects'][project[0]]['xenograft'] != "":
-        return config['stepnames']['xenograft_bwa_sampe']
-    else:
-        return config['stepnames']['trim']
-
-
 rule xenograft_bwa_aln:
     input:
-        hybridreference=lambda wildcards: ['%s%s%s%s' % (wildcards.prefix, config['dirs']['references'], _get_reference(wildcards.sample, SAMPLESHEETS, config), ending) for ending in ['', '.amb', '.ann', '.bwt', '.pac', '.sa']],
+        hybridreference=lambda wildcards: ['%s%s%s%s' % (wildcards.prefix, config['dirs']['references'], get_xenograft_hybridreference(wildcards.sample, SAMPLESHEETS, config), ending) for ending in ['', '.amb', '.ann', '.bwt', '.pac', '.sa']],
         fastq="{prefix}%s%s/Paired/{sample}_{direction}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim'])
     output:
         "{prefix}%s%s/Paired/{sample, .*?}_{direction,R1|R2}.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln'])
@@ -44,8 +26,8 @@ rule xenograft_bwa_aln:
 
 rule xenograft_bwa_sampe:
     input:
-        hybridreference=lambda wildcards: ['%s%s%s%s' % (wildcards.prefix, config['dirs']['references'], _get_reference(wildcards.sample, SAMPLESHEETS, config), ending) for ending in ['', '.amb', '.ann', '.bwt', '.pac', '.sa']],
-        bed=lambda wildcards: '%s%s%s.bed' % (wildcards.prefix, config['dirs']['references'], _get_reference(wildcards.sample, SAMPLESHEETS, config).split('_')[0]),
+        hybridreference=lambda wildcards: ['%s%s%s%s' % (wildcards.prefix, config['dirs']['references'], get_xenograft_hybridreference(wildcards.sample, SAMPLESHEETS, config), ending) for ending in ['', '.amb', '.ann', '.bwt', '.pac', '.sa']],
+        bed=lambda wildcards: '%s%s%s.bed' % (wildcards.prefix, config['dirs']['references'], get_xenograft_hybridreference(wildcards.sample, SAMPLESHEETS, config).split('_')[0]),
         sai_forward="{prefix}%s%s/Paired/{sample}_R1.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln']),
         sai_reverse="{prefix}%s%s/Paired/{sample}_R2.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln']),
         fastq_forward="{prefix}%s%s/Paired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
@@ -95,7 +77,7 @@ rule xenograft_bwa_sampe:
 
 rule xenograft_check:
     input:
-        fastq=lambda wildcards: '%s%s%s/Paired/%s_%s.fastq.gz' % (wildcards.prefix, config['dirs']['intermediate'], _get_stepname(wildcards.sample, SAMPLESHEETS, config), wildcards.sample, wildcards.direction)
+        fastq=lambda wildcards: '%s%s%s/Paired/%s_%s.fastq.gz' % (wildcards.prefix, config['dirs']['intermediate'], get_xenograft_stepname(wildcards.sample, SAMPLESHEETS, config), wildcards.sample, wildcards.direction)
     output:
         "{prefix}%s%s/Paired/{sample, .*?}_{direction,R1|R2}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check'])
     log:

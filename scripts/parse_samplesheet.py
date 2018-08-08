@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from os.path import join
 import glob
+import sys
 
 
 DIRECTIONS = ['R1', 'R2']
@@ -237,3 +238,21 @@ def get_rejoin_fastqs(sample, samplesheets, config):
     for _, row in samplesheets[samplesheets['fastq-prefix'] == sample].iterrows():
         res.append('%s/%s_L%03i' % (row['run'], row['fastq-prefix'], row['Lane']))
     return res
+
+
+def get_xenograft_hybridreference(sample, samplesheets, config):
+    project = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].dropna().unique()
+    if len(project) != 1:
+        raise ValueError("_get_reference: Sample '%s' has ambiguous or missing project!" % sample)
+    return config['projects'][project[0]]['xenograft']
+
+
+def get_xenograft_stepname(sample, samplesheets, config):
+    project = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].dropna().unique()
+    if len(project) != 1:
+        sys.stderr.write('%s\n' % (project))
+        raise ValueError("_get_stepname: Sample '%s' has ambiguous or missing project!" % sample)
+    if 'xenograft' in config['projects'][project[0]] and config['projects'][project[0]]['xenograft'] != "":
+        return config['stepnames']['xenograft_bwa_sampe']
+    else:
+        return config['stepnames']['trim']
