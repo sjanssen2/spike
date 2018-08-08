@@ -28,7 +28,7 @@ include: "rules/varscan/Snakefile"
 include: "rules/freec/Snakefile"
 include: "rules/mutect/Snakefile"
 
-EXCLUDE_SAMPLES = ['Maus_Hauer']
+localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage
 
 rule all:
     input:
