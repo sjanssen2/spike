@@ -299,7 +299,7 @@ def get_bwa_mem_header(sample, samplesheets, config):
     samples = samplesheets[samplesheets['fastq-prefix'] == sample]
     res = ' -R "@RG\\tID:%s\\tCN:Department_of_Pediatric_Oncology_Dusseldorf\\tPU:%s\\tDT:%s\\tPL:ILLUMINA\\tLB:%s\\tSM:readgroups.info"' % (
         ' and '.join(samples['run'].dropna().unique()),
-        ' and '.join(list(map(lambda x: x.split('_')[-1], samples['run'].dropna().unique()))),
+        ' and '.join(list(map(lambda x: x.split('_')[-1][1:], samples['run'].dropna().unique()))),
         ' and '.join(list(map(_run2date, samples['run'].dropna().unique()))),
         config['references']['exometrack'][get_species(sample, samplesheets, config)]['protocol_name']
         )
