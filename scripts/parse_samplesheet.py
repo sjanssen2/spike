@@ -6,8 +6,6 @@ import glob
 import sys
 
 
-DIRECTIONS = ['R1', 'R2']
-
 def parse_samplesheet(fp_samplesheet):
     ss = pd.read_csv(fp_samplesheet, sep=",", skiprows=21, dtype={'Sample_Name': str, 'Sample_ID': str})
 
@@ -39,6 +37,9 @@ def parse_samplesheet(fp_samplesheet):
                 row['Sample_Name'] if pd.notnull(
                     row['Sample_Name']) else row['Sample_ID'])))
     ss['fastq-prefix'] = fp_fastqs
+
+    # remove samples that are marked to be ignored
+    ss = ss[pd.isnull(ss['ukd_ignore_sample'])]
 
     return ss
 
