@@ -14,11 +14,11 @@ def parse_qstat(lines):
         if line.startswith(' '):
             entry = line.rstrip()
             m = p.match(entry.rstrip())
-            q_dict[m.groups()[0]] = m.groups()[1]
+            q_dict[m.groups()[0].lower()] = m.groups()[1]
         elif line.startswith('\t'):
             entry += line.strip()
             m = p.match(entry.rstrip())
-            q_dict[m.groups()[0]] = m.groups()[1]
+            q_dict[m.groups()[0].lower()] = m.groups()[1]
 
     return(q_dict)
 
@@ -28,9 +28,9 @@ def get_status(q_dict):
             status = "running"
         elif q_dict['job_state'] == 'Q':
             status = "running"
-        elif q_dict['job_state'] == 'C' and q_dict['exit_status'] == '0':
+        elif q_dict['job_state'] == 'F' and q_dict['exit_status'] == '0':
             status = "success"
-        elif q_dict['job_state'] == 'C' and q_dict['exit_status'] != '0':
+        elif q_dict['job_state'] == 'F' and q_dict['exit_status'] != '0':
             status = "failed"
         else:
             status = "failed"
@@ -45,7 +45,7 @@ def main():
     TRY_TIMES = 3
 
     for i in range(TRY_TIMES):
-        cmd = "qstat -f {}".format(jobid)
+        cmd = "qstat -f {} -x".format(jobid)
         p1 = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE, shell=True)
         out, err = p1.communicate()
