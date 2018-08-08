@@ -2,7 +2,7 @@ import os
 import socket
 import glob
 
-from scripts.parse_samplesheet import get_sample_fastqprefixes, parse_samplesheet, get_sample_names, get_xenograft_host, get_fastq_filenames, get_lanes_for_sampleID, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets
+from scripts.parse_samplesheet import parse_samplesheet, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets
 from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header, get_demux_samples, get_projects_with_exomecoverage, get_rejoin_fastqs
 from scripts.utils import exclude_sample
 from scripts.checks import check_illuminarun_complete

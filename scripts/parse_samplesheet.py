@@ -42,112 +42,6 @@ def parse_samplesheet(fp_samplesheet):
     return ss
 
 
-def get_fastq_filenames(run, samplesheets):
-    """Returns list of fastq.gz filepaths parsed from given sample sheet.
-
-    Parameters
-    ----------
-    fp_samplesheet : str
-        Filepath of sample sheet
-
-    Returns
-    -------
-    List of filepaths.
-    """
-    ss = samplesheets[samplesheets['run'] == run]
-
-    fp_fastqs = []
-    for idx, row in ss.iterrows():
-        fp_fastq = row['fastq-prefix']
-        for direction in DIRECTIONS:
-            fp_fastqs.append(
-                '%s_L%03i_%s_001.fastq.gz' % (
-                    fp_fastq,
-                    int(row['Lane']),
-                    direction))
-
-    # add fps for undetermined reads
-    for lane in ss['Lane'].unique():
-        for direction in DIRECTIONS:
-            fp_fastqs.append(
-                'Undetermined_L%03i_%s_001.fastq.gz' % (lane, direction))
-
-    return fp_fastqs
-
-
-def get_sample_fastqprefixes(run, samplesheets):
-    ss = samplesheets[samplesheets['run'] == run]
-    return list(ss['fastq-prefix'].unique())
-
-
-def get_lanes_for_sampleID(sample, samplesheets):
-    """Return lanes a given sample is spread across.
-
-    Parameters
-    ----------
-    fp_samplesheet : str
-        Filepath to Sample Sheet
-    sampleName : str
-        The name of the sample for which lanes should be looked up.
-    sampleID : str
-        The ID of the sample for which lanes should be looked up.
-    sidx : str
-        The running index of the sample for which lanes should be looked up.
-
-    Returns
-    -------
-    [str] : Lane numbers on which to find the given sample.
-    """
-    ss = samplesheets.copy()
-    ss['tmp-id'] = ['%s/%s%s' % (row['Sample_Project'], row['Sample_ID'], '/'+row['Sample_Name'] if pd.notnull(row['Sample_Name']) else "") for _, row in ss.iterrows()]
-    res = ss[ss['tmp-id'] == sample]['Lane'].unique()
-
-    return res
-
-
-def get_laneSplitInputs(wildcards, dir_input_samplesheets, dir_intermediate_demultiplex):
-    """Given targeted joined output fastq.gz file, obtain fastq.gz files eventually split across lanes."""
-    #params must contain at least
-    #{'prefix': '/home/jansses/gpfs/', 'run': '180614_SN737_0438_BCC7MCACXX', 'sample': 'Alps/ALPS_66_a_S18', 'direction': 'R1'}
-    params = dict(wildcards)
-    fp_samplesheet = join(params['prefix'], dir_input_samplesheets, params['run']) + '_ukd.csv'
-    print("params", params)
-    print("fp_samplesheet", fp_samplesheet)
-    ss = parse_samplesheet(fp_samplesheet)
-    ss['tmp-id'] = ['%s/%s%s_S%s' % (row['Sample_Project'], row['Sample_ID'], '/'+row['Sample_Name'] if pd.notnull(row['Sample_Name']) else "", row['s-idx']) for _, row in ss.iterrows()]
-
-    lanes = ss[ss['tmp-id'] == params['sample']]['Lane'].unique()
-
-    res = ["%s_L%03i_%s_001.fastq.gz" % (
-        join(params['prefix'], dir_intermediate_demultiplex, params['run'], params['sample']),
-        int(lane),
-        params['direction']) for lane in lanes]
-    # print(params, res, ss['tmp-id'])
-    return res
-
-
-def get_sample_names(samplesheets, ukd_actions={'trio', 'somatic'}):
-    """Get unique list of full sample names, i.e. with Project-Name, Sample-Group-Name and s-idx.
-
-    Parameters
-    ----------
-    fp_samplesheet : str
-        Filepath to SampleSheet
-    ukd_action : set(str)
-        Default: {'trio', 'somatic'}.
-        Limit returned samples to those having one of the ukd_actions assigned
-
-    Returns
-    -------
-    [str] the unique full qualified sample names."""
-
-    ss = samplesheets
-    samples = []
-    for n, g in ss[ss['ukd_action'].isin(ukd_actions)].fillna('').groupby(['Sample_Project', 'Sample_Name', 'Sample_ID', 's-idx']):
-        samples.append(g['fastq-prefix'].unique()[0])
-    return samples
-
-
 def get_global_samplesheets(dir_samplesheets):
     # parse all available sample sheets
     fps_samplesheets = glob.glob('%s*XX_ukd.csv' % dir_samplesheets)
@@ -216,44 +110,6 @@ def get_role(ukd_project, ukd_entity_id, ukd_entity_role, samplesheets):
     return list(res)[0]
 
 
-def get_xenograft_host(fp_samplesheet, sample, samplesheets, config):
-    """Returns xenograft host genome name for given sample.
-
-    Parameters
-    ----------
-    fp_samplesheet : str
-        Filepath to sample sheet.
-    sample : str
-        Fastq prefix for sample, e.g. Alps/ALPS_66_a
-
-    Returns
-    -------
-    str : empty string if no xenograft, otherwise name of host species name.
-
-    Raises
-    ------
-    ValueError if:
-        a) sample sheet lists conflicting host species names.
-        b) an unknown xenograft host species is listed in sample sheet.
-    """
-    ss = samplesheets
-
-    host_species = list(ss[ss['fastq-prefix'] == sample]['ukd_xenograft_species'].dropna().unique())
-    if len(host_species) > 1:
-        raise ValueError("Ambiguous xenograft host species in sample sheet!")
-    if len(host_species) == 0:
-        return ""
-
-    res = ""
-    try:
-        res += config['xenograft']['references']['homo sapiens']
-        res += '_' + config['xenograft']['references'][host_species[0]]
-    except KeyError:
-        raise ValueError("Unknown xenograft host species!")
-
-    return res
-
-
 def get_species(sample, samplesheets, config):
     # sample can be a single sample ...
     projects = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].unique()
@@ -271,20 +127,17 @@ def get_species(sample, samplesheets, config):
 def get_reference_genome(sample, samplesheets, config):
     return config['references']['genomes'][get_species(sample, samplesheets, config)]
 
+
 def get_reference_knowns(sample, samplesheets, config, _key):
     return [k for k in config['references']['knowns'][get_species(sample, samplesheets, config)] if _key in k]
+
 
 def get_reference_exometrack(sample, samplesheets, config):
     return config['references']['exometrack'][get_species(sample, samplesheets, config)]['file']
 
+
 def get_reference_varscan_somatic(sample, samplesheets, config):
     return config['references']['varscan_somatic'][get_species(sample, samplesheets, config)]
-
-def get_reference_DBSNP(sample, samplesheets, config):
-    res = config['references']['DBSNP'][get_species(sample, samplesheets, config)]
-    if res is None:
-        res = []
-    return res
 
 
 ######## avoid run
@@ -294,6 +147,7 @@ def _run2date(run):
         int(run.split('_')[0][3:4]),
         int(run.split('_')[0][5:6]))
     return date
+
 
 def get_bwa_mem_header(sample, samplesheets, config):
     samples = samplesheets[samplesheets['fastq-prefix'] == sample]
