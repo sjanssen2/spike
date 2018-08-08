@@ -6,7 +6,7 @@ rule gatk_RealignerTargetCreator:
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, SAMPLESHEETS, config)),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
-        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'RealignerTargetCreator') for ending in ['', '.idx']],
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'RealignerTargetCreator') for ending in ['', ('.tbi' if known['file'].endswith('.gz') else '.idx')]],
     output:
         "{prefix}%s%s/{sample}.nodup.srt.bam.intervals" % (config['dirs']['intermediate'], config['stepnames']['gatk_RealignerTargetCreator'])
     log:
@@ -78,7 +78,7 @@ rule gatk_IndelRealigner:
 rule gatk_BaseRecalibrator:
     # Preprocessing to do a base quality score recalibration with GATK
     input:
-        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in (get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'BaseRecalibrator')) for ending in ['', '.idx']],
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in (get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'BaseRecalibrator')) for ending in ['', ('.tbi' if known['file'].endswith('.gz') else '.idx')]],
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, SAMPLESHEETS, config)),
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
@@ -294,7 +294,7 @@ rule gatk_VariantRecalibrator_SNP:
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         vcf=rules.gatk_SelectVariants.output.vcf,
-        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'VariantRecalibrator_SNP') for ending in ['', '.idx']],
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'VariantRecalibrator_SNP') for ending in ['', ('.tbi' if known['file'].endswith('.gz') else '.idx')]],
     output:
         recal="{prefix}%s%s/{sample}.{program,gatk|ptp}.raw.{snvtype,snps}.recal" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
         recalidx="{prefix}%s%s/{sample}.{program,gatk|ptp}.raw.{snvtype,snps}.recal.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantRecalibrator']),
@@ -342,7 +342,7 @@ rule gatk_VariantRecalibrator_INDEL:
     # 3 snp.model <- BuildErrorModelWithVQSR(raw.snps.vcf)
     # SNP Variant recalibration Step 1 of 2: Compute VSQLOD Score for the SNPs
     input:
-        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'VariantRecalibrator_INDEL') for ending in ['', '.idx']],
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'VariantRecalibrator_INDEL') for ending in ['', ('.tbi' if known['file'].endswith('.gz') else '.idx')]],
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
         vcf=rules.gatk_SelectVariants.output.vcf,
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
