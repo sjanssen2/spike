@@ -12,6 +12,7 @@ endings_bwa:
   - '.fa.fai'
   - '.fa.pac'
   - '.fa.sa'
+  - '.fa.bwt'
 
 emails:
   demultiplexreport: "stefan.m.janssen@gmail.com"
