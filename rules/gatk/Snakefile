@@ -135,7 +135,7 @@ rule gatk_PrintReads:
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        3
+        config['num_threads']
     params:
         disable=lambda wildcards: " --disable_indel_quals" if get_species(wildcards.sample, SAMPLESHEETS, config) == 'homo sapiens' else ""
     shell:
@@ -179,7 +179,7 @@ rule exome_coverage:
     conda:
         "envs/spike_bedtools.yaml"
     threads:
-        3
+        1
     shell:
         'echo "#coverage\tnumber_bases\ttotal_bases\tpercent_cumulative" > {output}; '
         'bedtools'
