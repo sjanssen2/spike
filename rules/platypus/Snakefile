@@ -26,7 +26,7 @@ rule platypus:
         " --bamFiles={input.bam}"
         " --nCPU {threads}"
         " --output {output.vcf}"
-        " 2> {log};"
+        " 2> {log}"
         ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # " mv -v {output.vcf}.tmp {output.vcf} 2>> {log}"
