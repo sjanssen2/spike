@@ -139,7 +139,7 @@ rule gatk_PrintReads:
     params:
         disable=lambda wildcards: " --disable_indel_quals" if get_species(wildcards.sample, SAMPLESHEETS, config) == 'homo sapiens' else ""
     shell:
-        'uname -a; uname -a 2>> {log} 1>&2'
+        'uname -a; uname -a 2>> {log} 1>&2; '
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
         " -Xmx16g -XX:ParallelGCThreads={threads}"
