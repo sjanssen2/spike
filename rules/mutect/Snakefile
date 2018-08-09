@@ -23,7 +23,7 @@ rule mutect:
         1
     params:
         knowns_settings=lambda wildcards: [' --dbsnp %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.entity, SAMPLESHEETS, config, 'mutect')],
-        cosmic=lambda wildcards: [" --cosmic=%s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic) for cosmic in [get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['cosmic']] if cosmic is not None]
+        cosmic=lambda wildcards: [" --cosmic %s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic) for cosmic in [get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['cosmic']] if cosmic is not None]
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log.mutect}; fi; '
         "java"
