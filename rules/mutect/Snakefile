@@ -54,6 +54,7 @@ rule mutect:
         " && bgzip {output.vcf}"
         " && tabix -p vcf {output.vcf}.gz"
         " 2>> {log.post}"
+        ' ; echo "rule exit status: `echo $?`" >> {log.post}'
 
         # COMMAND="/opt/Oracle_Java/jre1.7.0_51/bin/java $GATK_OPTS -jar $MUTECTJAR \
         # --analysis_type MuTect \

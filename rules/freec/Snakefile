@@ -27,6 +27,7 @@ rule samtools_mpileup:
         " | pigz"
         " > {output.pileup}"
         " 2> {log.pigz}"
+        ' ; echo "rule exit status: `echo $?`" >> {log.pigz}'
 
         # /data/biotools/src/samtools-1.3/samtools mpileup -C50 -Q20 -f /data/biotools/reference/hGRC37/hGRC37.fa  -l $EXOME_TRACK $SAMPLE_BAM | pigz > $SAMPLE_PREFIX.pileup.gz & \
         # /data/biotools/src/samtools-1.3/samtools mpileup -C50 -Q20 -f /data/biotools/reference/hGRC37/hGRC37.fa  -l $EXOME_TRACK $CONTROL_BAM | pigz > $CONTROL_PREFIX.pileup.gz & \
@@ -116,5 +117,6 @@ rule freec:
         ' 2>> {log.gzratio}'
         '; mv *.pileup.gz_control.cpn healthy.pileup.gz_control.cpn'
         '; for ending in `echo "pileup.gz_BAF.txt pileup.gz_CNVs pileup.gz_normal_BAF.txt pileup.gz_normal_CNVs pileup.gz_normal_ratio.txt pileup.gz_ratio.txt pileup.gz_ratio.txt.log2.png pileup.gz_ratio.txt.png pileup.gz_sample.cpn"`; do mv *.$ending tumor.$ending; done;'
+        ' ; echo "rule exit status: `echo $?`" >> {log.gzratio}'
 
         # freec -conf $CONFIG_FILE && cd $OUTPUT_DIR && cat /data/biotools/src/freec_6.6/makeGraph.R | R --slave --args 2 $SAMPLE_PREFIX.pileup.gz_ratio.txt"

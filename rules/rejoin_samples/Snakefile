@@ -22,5 +22,7 @@ rule rejoin_sample:
         ' cat {params.single_fastqs} > {output} 2> {log};'
         ' else'
         ' cp -l -v {params.single_fastqs} {output} 2> {log} 1>&2;'
+        ' sleep 5;'  # for cluster latency
         ' chmod u+w {output} 2>> {log};'
         ' fi;'
+        ' ; echo "rule exit status: `echo $?`" >> {log}'

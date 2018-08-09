@@ -27,6 +27,8 @@ rule platypus:
         " --nCPU {threads}"
         " --output {output.vcf}"
         " 2> {log};"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
+
         # " mv -v {output.vcf}.tmp {output.vcf} 2>> {log}"
 
         # #now for the new 2015 magic with platypus
@@ -72,6 +74,7 @@ rule platypus_filtered:
         ' -p "#{{FORMAT:NV[0]}}"'
         ' -o {output.vcf}'
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
         # %.ptp.annotated.filtered.indels.vcf: %.ptp.filtered.indels.vcf
         # 	@echo "$(DATE) ######### Do a hard filtering of the indels in '$<'. #########"
         # 	cat $< |vcf-mapper -a map -f "FORMAT:NR[0]" -t "FORMAT:DP" | vcf-mapper -a map -f "FORMAT:NR" -t "FORMAT:AD[0]" | vcf-mapper -a map -f "FORMAT:NV" -t "FORMAT:AD[1]" | vcf-mapper -a transform -f "FORMAT:AD[0]" -c "substract" -p "#{FORMAT:NV[0]}" -o $@.tmp\

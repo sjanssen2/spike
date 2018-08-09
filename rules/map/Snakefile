@@ -25,6 +25,7 @@ rule bwa:
         ' | samtools sort -m 1G -@ {threads} - {output} 2> {log}.samtools_sort'
         # samtools appends .bam to given filename, which is different from snakemakes assumption and thus must be fixed here manually
         '; mv {output}.bam {output}'
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         #"@RG\tID:180614_SN737_0438_BCC7MCACXX\tCN:Department_of_Pediatric_Oncology_Dusseldorf\tPU:BCC7MCACXX\tDT:2018/06/14\tPL:ILLUMINA\tLB:SureSelectXTV5plusUTRautomated\tSM:readgroups.info"
         #bwa mem -t $(NT_MINUS_ONE) -v 1 -M $(shell getReadGroupStringFromFilename_2015.pl $*) $(REF) $*_R1.fastq.gz $*_R2.fastq.gz |
@@ -67,6 +68,7 @@ rule remove_pcr_duplicates:
         " CREATE_INDEX=true"
         " OUTPUT={output.bam}"
         " > {log} 2>&1"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # %.nodup.srt.bam: %.srt.bam
         # 	@echo "$(DATE) ######### Alignment: Removing PCR duplicates in '$<'"

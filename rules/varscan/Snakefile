@@ -47,6 +47,7 @@ rule varscan_trio:
         " -adj-p-value 0.15"
         " 2> {log.varscan}"
         " && rmdir -v {params.workdir} >> {log.varscan}"
+        ' ; echo "rule exit status: `echo $?`" >> {log.varscan}'
 
         # ##################################
         # # STEP PRODUCING MPILEUP FOR TRIOS
@@ -90,6 +91,7 @@ rule varscan_filter_SNP:
         " --indel-file {input.indel}"
         " --output-file {output}"
         " 2> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # ################
         # # STEP FILTER
@@ -129,6 +131,7 @@ rule varscan_filter_INDEL:
         " --min-var-freq 0.2"
         " --output-file {output}"
         " 2> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # ################
         # # STEP FILTER
@@ -170,6 +173,7 @@ rule bam_readcount_SNP:
         ' {input.patient}'
         ' > {output.readcount}'
         ' 2>> {log}'
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # echo prepare variant list for fpfilter for $OUTPUTBASENAME
         # cat $OUTPUTBASENAME.snp.filtered.vcf | grep -v "#"| cut -f1,2 | awk '{ print $1, $2, $2 }' > $OUTPUTBASENAME.snp.filtered.var
@@ -210,6 +214,7 @@ rule bam_readcount_INDEL:
         ' {input.patient}'
         ' > {output.readcount}'
         ' 2>> {log}'
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # #now do the same for the indels
         # #taken from the varscan website
@@ -263,6 +268,7 @@ rule varscan_fpfilter:
         " --output-file {output.vcf}"
         " --filtered-file {output.ogus}"
         ' 2>> {log}'
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # #The fpfilter parameters resemble what the varscan team did in the dream3-challenge
         # # With the following changes:
@@ -363,6 +369,7 @@ rule merge_vcfs:
         " {input.indel}"
         ' > {output}'
         " 2> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # #merge the vcfs
         # echo merging vcfs for $OUTPUTBASENAME
@@ -396,6 +403,7 @@ rule writing_headers:
         ' -k2,2 -n'
         ' >> {output}'
         " 2> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # #writing the final header
         # echo limiting to denovos and sorting for $OUTPUTBASENAME
@@ -431,6 +439,7 @@ rule samtools_mpileup_somatic:
         " -B {input.bam}"
         " > {output}"
         " 2> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # /data/biotools/src/samtools-1.3/samtools mpileup -f $REF -q1 -l $EXOME_TRACK -B $NORMAL_BAM > $NORMAL_PILEUP || usage "error ($?) reading normal bam file with samtools: $NORMAL_BAM"
         # /data/biotools/src/samtools-1.3/samtools mpileup -f $REF -q1 -l $EXOME_TRACK -B $TUMOR_BAM > $TUMOR_PILEUP || usage "error ($?) reading normal bam file with samtools: $TUMOR_BAM"
@@ -469,6 +478,7 @@ rule varscan_somatic:
         " --strand-filter 1"
         " --output-vcf 1"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # java -Xmx3g -XX:ParallelGCThreads=1 -Djava.io.tmpdir=$TEMPPATH -jar $VARSCAN2JAR  somatic $NORMAL_PILEUP $TUMOR_PILEUP $OUTPUTBASENAME --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 --min-var-freq 0.1 --normal-purity 0.95 --strand-filter 1 --output-vcf 1 -- $*
 
@@ -496,6 +506,7 @@ rule varscan_processSomatic:
         " processSomatic"
         " $(dirname {output.somatic_hc})"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.snp.vcf ;
         # java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.indel.vcf
@@ -525,6 +536,7 @@ rule varscan_fpfilter_somatic:
         ' \'print join("\t",@F[0,1,1])."\n" unless(m/^#/)\'"'
         " {input}"
         " > {output}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # perl -ane 'print join("\t",@F[0,1,1])."\n" unless(m/^#/)' $OUTPUTBASENAME.snp.Somatic.hc.vcf > $OUTPUTBASENAME.snp.Somatic.hc.vcf.fpfilter.var
         # perl -ane 'print join("\t",@F[0,1,1])."\n" unless(m/^#/)' $OUTPUTBASENAME.snp.Germline.hc.vcf > $OUTPUTBASENAME.snp.Germline.hc.vcf.fpfilter.var
@@ -555,6 +567,7 @@ rule bam_readcount_somatic_SNP:
         ' {input.bam}'
         ' > {output}'
         ' 2>> {log}'
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # /data/biotools/bin/bam-readcount -q1 -b15 -w1 -l $OUTPUTBASENAME.snp.Somatic.hc.vcf.fpfilter.var -f $REF $TUMOR_BAM >$OUTPUTBASENAME.snp.Somatic.hc.vcf.fpfilter.var.readcounts
         # /data/biotools/bin/bam-readcount -q1 -b15 -w1 -l $OUTPUTBASENAME.snp.Germline.hc.vcf.fpfilter.var -f $REF $TUMOR_BAM >$OUTPUTBASENAME.snp.Germline.hc.vcf.fpfilter.var.readcounts
@@ -580,6 +593,8 @@ rule somatic_FPfilter:
         " --readcount-file {input.readcounts}"
         " --output-file {output}"
         " 2> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
+
         # ## [SNV] Execute FP filter
         # perl /data/Michael/software/variant-filter-master/fpfilter.pl --var-file $OUTPUTBASENAME.snp.Somatic.hc.fixed.vcf --readcount-file $OUTPUTBASENAME.snp.Somatic.hc.vcf.fpfilter.var.readcounts --output-file $OUTPUTBASENAME.snp.hc.corrected.fpfilter.tsv
         # ## [SNV] Execute FP filter on germline SNVs
@@ -611,6 +626,7 @@ rule somatic_reduce:
         " -e 2"
         " {output}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # ## Use FP Filter output to annotate the FILTER column
         # ### [SNV] Reduce FP Filter output to neccessary columns
@@ -650,6 +666,7 @@ rule vcf_annotate:
         ' | grep -e "^#" -e "SS=2"'
         ' | grep -e "^#" -e "PASS"'
         " > {output}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # ### [SNV] Actually use vcf-annotate to add the annotation to the filter field
         # ### [SNV] ALSO: Filter SOMATIC and PASS variants for final VCF output
@@ -687,6 +704,7 @@ rule merge_somatic:
         " {input.germline}"
         ' > {output}'
         " 2> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # # Use vcf-concat to combine SNP, INDEL and LOH calls
         # vcf-concat $OUTPUTBASENAME.snp.hc.corrected.varscan.somatic.vcf $OUTPUTBASENAME.snp.Germline.hc.corrected.varscan.somatic.vcf > "$OUTPUTBASENAME.indel_snp.hc.vcf" # $OUTPUTBASENAME.loh.corrected.varscan.somatic.vcf

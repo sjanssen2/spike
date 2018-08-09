@@ -32,6 +32,7 @@ rule gatk_RealignerTargetCreator:
         "{params.knowns_settings}"
         " --out {output}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         #       gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(REF)       -known $(GATKRES_PATH_2k15)/Mills_and_1000G_gold_standard.indels.b37.vcf -known $(GATKRES_PATH_2k15)/1000G_phase1.indels.b37.vcf --out $@.tmp  $(OUTPUT_TO_LOG) \
 	    #MOUSE: gatk_2015.sh GenomeAnalysisTK.jar -T RealignerTargetCreator -nt $(NUM_THREADS) -L $(EXOME_TRACK) -I $< -R $(MOUSE_REF) -known /data/biotools/reference/mgp_indels/C57BL6NJ_CBAJDBA2.indels.vcf.gz                                                       --out $@.tmp  $(OUTPUT_TO_LOG) \
@@ -66,6 +67,7 @@ rule gatk_IndelRealigner:
         " -targetIntervals {input.intervals}"
         " --out {output.bam}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # %.reAl.nodup.srt.bam: %.nodup.srt.bam.intervals
         # 	@echo "$(DATE) ######### Alignment: Realigning BAM file to $@ #########"
@@ -108,6 +110,7 @@ rule gatk_BaseRecalibrator:
         "{params.knowns_settings}"
         " -o {output}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # %.reAl.nodup.srt.bam.recal_data.csv: %.reAl.nodup.srt.bam
         # 	@echo "$(DATE) ######### Alignment: Count covariates. First step of base quality score recalibration for '$<' #########"
@@ -148,6 +151,7 @@ rule gatk_PrintReads:
         " -I {input.bam}"
         " -o {output.bam}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # # Do the quality score recalibration
         # # added disable_indel_quals for better file sizes according to GATK recommendations
@@ -186,6 +190,7 @@ rule exome_coverage:
         ' | gawk \'BEGIN {{ FS="\t";OFS="\t"}} $1~"^all" {{print $2,$3,$4,(($4-sum)/($4+1)*100); sum+=$3}}\''
         ' >> {output}'
         " 2> {log.gawk}"
+        ' ; echo "rule exit status: `echo $?`" >> {log.gawk}'
         # 	-exome_coverage.sh $@ $(EXOME_TRACK)
 
 
@@ -222,6 +227,7 @@ rule gatk_HaplotypeCaller:
         " {config[gatk][HaplotypeCallerQualityArguments]}"
         " --out {output.vcf}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # ####Call the SNPs
         # #Call SNPs and Indels (using --genotype_likelihoods_model BOTH )
@@ -265,6 +271,7 @@ rule gatk_SelectVariants:
         " -R {input.references[0]}"
         " --out {output.vcf}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # %.gatk.raw.snps.vcf : %.gatk.raw_calls.vcf
         # 	@echo "$(DATE) ######### Separate SNPs and Indels from '$<'. #########"
@@ -329,6 +336,7 @@ rule gatk_VariantRecalibrator_SNP:
         " --rscript_file {output.plots}"
         " --maxGaussians 6"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # %.gatk.raw.snps.recal: %.gatk.raw.snps.vcf
         # 	@echo "$(DATE) ######### Create variant recalibration files for '$<'. This is step 1 of 2 for SNP variant recalibration #########"
@@ -380,6 +388,7 @@ rule gatk_VariantRecalibrator_INDEL:
         " --tranches_file {output.tranches}"
         " --rscript_file {output.plots}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # %.gatk.raw.indels.recal: %.gatk.raw.indels.vcf
         # 	@echo "$(DATE) ######### Create recalibration files for '$<'. This is step 1 of 2 for indel recalibration #########"
@@ -424,6 +433,7 @@ rule gatk_ApplyRecalibration:
         " -nt {threads}"
         " --out {output.vcf}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # #### 4 recalibratedSNPs.vcf <- ApplyRecalibration(raw.snps.vcf, snp.model)
         # # Apply SNP Variant recalibration Step 2 of 2
@@ -480,6 +490,7 @@ rule gatk_VariantFiltration_SNP:
         ' --filterName "LC_SB_MQ_Reapos_Filter"'
         " --out {output.vcf}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # %.gatk.hf.recal.snps.vcf: %.gatk.recal.snps.vcf
         # 	@echo "$(DATE) ######### Hard filtering SNPs at end of read or with strand bias for '$@'.  #########"
@@ -536,6 +547,7 @@ rule gatk_VariantFiltration_INDEL:
         ' --filterName FSFilter'
         " --out {output.vcf}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # #### 5 filteredIndels.vcf <- Filter(raw.indels.vcf)
         # %.gatk.filtered.indels.vcf: %.gatk.recal.indels.vcf
@@ -581,6 +593,7 @@ rule gatk_CombineVariants:
         " --variant {input.snps}"
         " --out {output.vcf}"
         " 2>> {log}"
+        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # #### 6 analysisReady.vcf <- CombineTogether(recalibratedSNPs.vcf, filteredIndels.vcf)
         # %.gatk.snp_indel.vcf: %.gatk.filtered.indels.vcf %.gatk.hf.recal.snps.vcf
@@ -650,5 +663,9 @@ rule check_coverage:
                            if sample['Sample_Project'] == wildcards.project]
     output:
         "{prefix}%s{project}.exome_coverage.pdf" % config['dirs']['reports']
+    log:
+        "{prefix}%s%s.{project}.log" % (config['dirs']['logs'], 'check_coverage')
+    benchmark:
+        "{prefix}%s%s.{project}.benchmark" % (config['dirs']['benchmarks'], 'check_coverage')
     run:
         report_exome_coverage(input, output[0])
