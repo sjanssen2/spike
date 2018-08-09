@@ -550,7 +550,7 @@ rule bam_readcount_somatic_SNP:
     output:
         "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.vcf.fpfilter.var.readcounts" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount_somatic']),
     log:
-        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount_somatic']),
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['logs'], config['stepnames']['bam_readcount_somatic']),
     benchmark:
         "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['bam_readcount_somatic']),
     conda:
@@ -581,7 +581,7 @@ rule somatic_FPfilter:
     output:
         "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.corrected.fpfilter.tsv" % (config['dirs']['intermediate'], config['stepnames']['somatic_FPfilter']),
     log:
-        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['benchmarks'], config['stepnames']['somatic_FPfilter']),
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['logs'], config['stepnames']['somatic_FPfilter']),
     benchmark:
         "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['somatic_FPfilter']),
     threads:
@@ -607,7 +607,7 @@ rule somatic_reduce:
     output:
         "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.corrected.fpfilter.reduced.tsv.gz" % (config['dirs']['intermediate'], config['stepnames']['somatic_reduce']),
     log:
-        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['benchmarks'], config['stepnames']['somatic_reduce']),
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['logs'], config['stepnames']['somatic_reduce']),
     benchmark:
         "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['somatic_reduce']),
     threads:
@@ -647,7 +647,7 @@ rule vcf_annotate:
     output:
         "{prefix}%s%s/{entity}.{snvtype,snp}.{mutationclass,Somatic\.hc|Germline}.corrected.varscan.somatic.vcf" % (config['dirs']['intermediate'], config['stepnames']['vcf_annotate']),
     log:
-        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['benchmarks'], config['stepnames']['vcf_annotate']),
+        "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.log" % (config['dirs']['logs'], config['stepnames']['vcf_annotate']),
     benchmark:
         "{prefix}%s%s.{entity}.{snvtype}.{mutationclass}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['vcf_annotate']),
     conda:
