@@ -12,6 +12,7 @@ from scripts.reports import report_undertermined_filesizes, report_exome_coverag
 if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith("murks"):
     # this loads a highly parallelized version of bcl2fastq compiled by HHU-HPC's guys
     shell.prefix("module load bcl2fastq;")
+    shell.prefix("module load R;")
 
 configfile: "config.yaml"
 SAMPLESHEETS = get_global_samplesheets(os.path.join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets']))
