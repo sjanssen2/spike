@@ -17,7 +17,7 @@ rule varscan_trio:
     conda:
         "envs/spike_varscan.yaml"
     threads:
-        3
+        1  # since samtools doesn't support multithreading
     params:
         workdir="{prefix}%s%s/{trio}" % (config['dirs']['intermediate'], config['stepnames']['varscan_trio'])
     shell:

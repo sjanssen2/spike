@@ -55,7 +55,7 @@ rule gatk_IndelRealigner:
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        3
+        1  # since this GATK tool does not support multithreading
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"
@@ -212,7 +212,7 @@ rule gatk_HaplotypeCaller:
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        3
+        1  # since this tool is known to crash when using in parallel
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi; '
         "java"

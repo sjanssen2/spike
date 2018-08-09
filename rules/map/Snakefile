@@ -53,7 +53,7 @@ rule remove_pcr_duplicates:
     conda:
         "envs/spike_map.yaml"
     threads:
-        1
+        1  # since this picard tools function doesn't support multithreading :-(
     shell:
         "java"
         " -Xmx4g"
