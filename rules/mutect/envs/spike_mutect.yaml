@@ -4,3 +4,4 @@ channels:
   - conda-forge
 dependencies:
   - openjdk =7.0
+  - gatk =3.5
