@@ -116,7 +116,7 @@ rule freec:
         ' *.pileup.gz_ratio.txt'
         ' 2>> {log.gzratio}'
         '; mv *.pileup.gz_control.cpn healthy.pileup.gz_control.cpn'
-        '; for ending in `echo "pileup.gz_BAF.txt pileup.gz_CNVs pileup.gz_normal_BAF.txt pileup.gz_normal_CNVs pileup.gz_normal_ratio.txt pileup.gz_ratio.txt pileup.gz_ratio.txt.log2.png pileup.gz_ratio.txt.png pileup.gz_sample.cpn"`; do mv *.$ending tumor.$ending; done;'
+        '; for ending in `echo "pileup.gz_BAF.txt pileup.gz_CNVs pileup.gz_normal_BAF.txt pileup.gz_normal_CNVs pileup.gz_normal_ratio.txt pileup.gz_ratio.txt pileup.gz_ratio.txt.log2.png pileup.gz_ratio.txt.png pileup.gz_sample.cpn"`; do mv *.$ending tumor.$ending; done'
         ' ; echo "rule exit status: `echo $?`" >> {log.gzratio}'
 
         # freec -conf $CONFIG_FILE && cd $OUTPUT_DIR && cat /data/biotools/src/freec_6.6/makeGraph.R | R --slave --args 2 $SAMPLE_PREFIX.pileup.gz_ratio.txt"
