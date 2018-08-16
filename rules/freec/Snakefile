@@ -66,14 +66,14 @@ rule freec:
     threads:
         8
     params:
-        minCNAlength=lambda wildcards: 'echo "minCNAlength = 4" >> {output.config}; ' if get_species(wildcards.entity, SAMPLESHEETS, config) == 'mus musculus' else ""
+        minCNAlength=lambda wildcards: '"minCNAlength = 4"' if get_species(wildcards.entity, SAMPLESHEETS, config) == 'mus musculus' else ""
     shell:
         'echo "[general]" > {output.config}; '
         'echo "chrLenFile = {input.reference_len}" >> {output.config}; '
         'echo "window = 50000" >> {output.config}; '
         'echo "step = 10000" >> {output.config}; '
         'echo "ploidy = 2" >> {output.config}; '
-        "{params.minCNAlength}"
+        'echo "{params.minCNAlength}" >> {output.config}; '
         'echo "outputDir = $(dirname {output.baf})" >> {output.config}; '
         'echo "contaminationAdjustment = TRUE" >> {output.config}; '
         'echo "maxThreads = {threads}" >> {output.config}; '
