@@ -25,7 +25,7 @@ rule mutect:
         knowns_settings=lambda wildcards: [' --dbsnp %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.entity, SAMPLESHEETS, config, 'mutect')],
         cosmic=lambda wildcards: [" --cosmic %s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic) for cosmic in [get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['cosmic']] if cosmic is not None]
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log.mutect}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log.mutect}; fi && '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar {input.mutect117}"
@@ -54,7 +54,6 @@ rule mutect:
         " && bgzip {output.vcf}"
         " && tabix -p vcf {output.vcf}.gz"
         " 2>> {log.post}"
-        ' ; echo "rule exit status: `echo $?`" >> {log.post}'
 
         # COMMAND="/opt/Oracle_Java/jre1.7.0_51/bin/java $GATK_OPTS -jar $MUTECTJAR \
         # --analysis_type MuTect \

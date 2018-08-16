@@ -25,4 +25,3 @@ rule rejoin_sample:
         ' sleep 5;'  # for cluster latency
         ' chmod u+w {output} 2>> {log};'
         ' fi;'
-        ' ; echo "rule exit status: `echo $?`" >> {log}'

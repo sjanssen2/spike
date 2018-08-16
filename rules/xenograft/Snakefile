@@ -20,7 +20,6 @@ rule xenograft_bwa_aln:
         " {input.fastq}"
         " > {output}"
         " 2> {log}"
-        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # bwa aln -t 4 /data/biotools/reference/GRCh_GRCm_filter_hybrid/GRCh_GRCm_filtering_hybrid.fa 42_R1.fastq.gz > 42_R1.sai &
 
@@ -71,7 +70,6 @@ rule xenograft_bwa_sampe:
         " FASTQ={output.forward}"
         " SECOND_END_FASTQ={output.reverse}"
         " 2> {log.sam2fastq}"
-        ' ; echo "rule exit status: `echo $?`" >> {log.sam2fastq}'
 
         # bwa sampe /data/biotools/reference/GRCh_GRCm_filter_hybrid/GRCh_GRCm_filtering_hybrid.fa 42_R1.sai 42_R2.sai 42_R1.fastq.gz 42_R2.fastq.gz | samtools view -S -L GRCh.bed - | java -Xmx6g -jar /data/Michael/software/picard-tools-1.89/picard-tools-1.89/SamToFastq.jar I=/dev/stdin VALIDATION_STRINGENCY=SILENT FASTQ=42_cln_R1.fastq.gz SECOND_END_FASTQ=42_cln_R2.fastq.gz &
         # bwa sampe /data/biotools/reference/GRCh_GRCm_filter_hybrid/GRCh_GRCm_filtering_hybrid.fa F49_R1.sai F49_R2.sai F49_R1.fastq.gz F49_R2.fastq.gz | samtools view -S -L GRCh.bed - | java -Xmx6g -jar /data/Michael/software/picard-tools-1.89/picard-tools-1.89/SamToFastq.jar I=/dev/stdin VALIDATION_STRINGENCY=SILENT FASTQ=F49_cln_R1.fastq.gz SECOND_END_FASTQ=F49_cln_R2.fastq.gz
@@ -90,4 +88,3 @@ rule xenograft_check:
         1
     shell:
         'cp -l -v {input} {output} 2> {log} 1>&2'
-        ' ; echo "rule exit status: `echo $?`" >> {log}'

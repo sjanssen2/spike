@@ -25,7 +25,7 @@ rule demultiplex:
     threads:
         config['num_threads']
     shell:
-        "uname -a > {log} 2>&1; "
+        "uname -a > {log} 2>&1 &&"
         "bcl2fastq"
         " --runfolder-dir {input.raw}/"
         " --output-dir {output.fastqs}/"
@@ -37,9 +37,8 @@ rule demultiplex:
         " 2>> {log}"
         " 1>&2"
         # rename demux fastq files such that S\d+ are removed from filenames
-        ' ; for f in `find {output.fastqs}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
-        ' ; cp -l -v {output.fastqs}/Reports/html/*/all/all/all/laneBarcode.html {output.fastqs}/laneBarcode.html 2>> {log} >&2'
-        ' ; echo "rule exit status: `echo $?`" >> {log}'
+        ' && for f in `find {output.fastqs}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
+        ' && cp -l -v {output.fastqs}/Reports/html/*/all/all/all/laneBarcode.html {output.fastqs}/laneBarcode.html 2>> {log} >&2'
 
 
 rule aggregate_undetermined_filesizes:
@@ -57,7 +56,6 @@ rule aggregate_undetermined_filesizes:
     shell:
         "stat -c '%s\t%n\tunknown' {params.fps_undertermined} > {output.sizes} && "
         "echo 'done.' > {output.fp_check}"
-        ' ; echo "rule exit status: `echo $?`" >> {log}'
 
 
 rule check_undetermined_filesizes:
@@ -89,10 +87,9 @@ rule convert_illumina_report:
         yield_report=lambda wildcards: "%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, wildcards.run.split('_')[-1][1:]),
         firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
     shell:
-        "wkhtmltopdf --orientation Landscape {params.yield_report} {output} 2> {log}; "
+        "wkhtmltopdf --orientation Landscape {params.yield_report} {output} 2> {log} &&"
         "echo 'Hi there,\n\n"
         "this is an automated message from {config[name_program]}.\n\n"
         "Demultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report, some statistics about the file sizes of undetermined reads and the first base report.\n\n"
         "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' -A {output} -A {input.undetermined} -A {params.firstbase} {config[emails][demultiplexreport]}"
         " 2>> {log}"
-        ' ; echo "rule exit status: `echo $?`" >> {log}'
