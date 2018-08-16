@@ -42,6 +42,7 @@ rule platypus:
 rule platypus_filtered:
     input:
         vcf="{prefix}%s%s/{sample}.ptp.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
+        gem="{prefix}%svcf-mapper-0.0.1.gem" % (config['dirs']['references'])
     output:
         vcf="{prefix}%s%s/{sample}.ptp.annotated.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
         #idx="{prefix}%s%s/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
@@ -54,7 +55,8 @@ rule platypus_filtered:
     threads:
         3
     shell:
-        'cat {input.vcf}'
+        'if [ $(gem list vcf-mapper -i) == "false" ]; then gem install --rdoc --ri {input.gem}; fi;'
+        ' cat {input.vcf}'
         ' | vcf-mapper'
         ' -a map'
         ' -f "FORMAT:NR[0]"'
@@ -75,6 +77,7 @@ rule platypus_filtered:
         ' -o {output.vcf}'
         " 2>> {log}"
         ' ; echo "rule exit status: `echo $?`" >> {log}'
+
         # %.ptp.annotated.filtered.indels.vcf: %.ptp.filtered.indels.vcf
         # 	@echo "$(DATE) ######### Do a hard filtering of the indels in '$<'. #########"
         # 	cat $< |vcf-mapper -a map -f "FORMAT:NR[0]" -t "FORMAT:DP" | vcf-mapper -a map -f "FORMAT:NR" -t "FORMAT:AD[0]" | vcf-mapper -a map -f "FORMAT:NV" -t "FORMAT:AD[1]" | vcf-mapper -a transform -f "FORMAT:AD[0]" -c "substract" -p "#{FORMAT:NV[0]}" -o $@.tmp\
