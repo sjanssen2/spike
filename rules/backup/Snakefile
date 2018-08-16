@@ -84,7 +84,7 @@ rule backup_validate:
     threads:
         1
     shell:
-        "tmpdir=$(mktemp -d);"
+        "tmpdir=$(mktemp -d --tmpdir {config[dirs][tmpdir]});"
         "tmpfile=$(mktemp);"
         ' echo "quote USER {config[backup][username]}" > $tmpfile;'
         ' echo "quote PASS {config[pwd_backup]}" >> $tmpfile;'
