@@ -55,7 +55,7 @@ rule platypus_filtered:
     threads:
         3
     shell:
-        'if [ $(gem list vcf-mapper -i) == "false" ]; then gem install --rdoc --ri {input.gem}; fi;'
+        'if [ $(gem list vcf-mapper -i) == "false" ]; then gem install --rdoc --ri {input.gem}; gem install trollop; fi;'
         ' cat {input.vcf}'
         ' | vcf-mapper'
         ' -a map'
