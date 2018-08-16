@@ -61,6 +61,6 @@ rule all:
         # trio calling for complete trios of all runs
         trio_calling=['%s%s%s/%s/%s.var2denovo.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['writing_headers'], trio['Sample_Project'], trio['ukd_entity_id']) for trio in get_trios(SAMPLESHEETS, config)],
 
-onerror:
-    print("An error occurred")
-    shell("mail -s 'an error occurred' stefan.m.janssen@gmail.com < {log}")
+# onerror:
+#     print("An error occurred")
+#     shell("mail -s 'an error occurred' stefan.m.janssen@gmail.com < {log}")
