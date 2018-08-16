@@ -84,7 +84,7 @@ rule backup_validate:
     threads:
         1
     shell:
-        "tmpdir=$(mktemp -d);"
+        "tmpdir=$(mktemp --tmpdir={config[dirs][tmpdir]} -d);"
         "tmpfile=$(mktemp);"
         ' echo "quote USER {config[backup][username]}" > $tmpfile;'
         ' echo "quote PASS {config[pwd_backup]}" >> $tmpfile;'
@@ -102,7 +102,7 @@ rule backup_validate:
         " && echo 'backup of {wildcards.run} validated' > {output}"
         " ; rm -f $tmpfile"
         " ; rm -rf $tmpdir"
-        " ; echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nIllumina raw data for run {wildcards.run} have been succesfully transferred to the backup NAS {config[backup][host]} and double checked.\nYou can now safely delete those data from the sequencing PC to free up space for the next run.\n\nHave a nice day!' | mail -s '[{config[name_program]}] backup complete for {config[run]}' {config[emails][backup_validated]}"
+        " ; echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nIllumina raw data for run {wildcards.run} have been succesfully transferred to the backup NAS {config[backup][host]} and double checked.\nYou can now safely delete those data from the sequencing PC to free up space for the next run.\n\nHave a nice day!' | mail -s '[{config[name_program]}] backup complete for {wildcards.run}' {config[emails][backup_validated]}"
         ' ; echo "rule exit status: `echo $?`" >> {log}'
 
         # BACKUP_CHECK=$(mktemp -d -p . -t ${RUNNAME}_backup_check.XXXXXX)

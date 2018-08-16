@@ -22,6 +22,7 @@ name_program: "spike"
 
 dirs:
   prefix: "/data/Spike_data/"
+  tmpdir: "/data/tmp/"
 
   intermediate: "Intermediate/"
   inputs: "Inputs/"
