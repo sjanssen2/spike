@@ -453,7 +453,8 @@ rule varscan_somatic:
     threads:
         1
     params:
-        speciesParams=lambda wildcards: get_reference_varscan_somatic(wildcards.entity, SAMPLESHEETS, config)
+        speciesParams=lambda wildcards: get_reference_varscan_somatic(wildcards.entity, SAMPLESHEETS, config),
+        outdir=lambda wildcards: "%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['varscan_somatic'], wildcards.entity)
     shell:
         "java"
         " -Xmx3g"
@@ -462,8 +463,8 @@ rule varscan_somatic:
         " somatic"
         " {input.healthy}"
         " {input.tumor}"
-        " $(dirname {output.indel})"
-        "{params.speciesParams}"
+        " {params.outdir}"
+        " {params.speciesParams}"
         " --min-var-freq 0.1"
         " --normal-purity 0.95"
         " --strand-filter 1"
@@ -479,8 +480,10 @@ rule varscan_processSomatic:
         "{prefix}%s%s/{entity}.{snvtype}.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_somatic']),
     output:
         somatic_hc="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Somatic.hc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
-        somatic_lc="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Somatic.lc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        somatic="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Somatic.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        germline_hc="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Germline.hc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
         germline="{prefix}%s%s/{entity}.{snvtype,snp|indel}.Germline.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
+        loh_hc="{prefix}%s%s/{entity}.{snvtype,snp|indel}.LOH.hc.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
         loh="{prefix}%s%s/{entity}.{snvtype,snp|indel}.LOH.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_processSomatic']),
     log:
         "{prefix}%s%s.{entity}.{snvtype}.log" % (config['dirs']['logs'], config['stepnames']['varscan_processSomatic'])
@@ -491,11 +494,15 @@ rule varscan_processSomatic:
     threads:
         1
     shell:
-        "java"
+        # first move input file, to output directory, because output directory cannot be defined for this command and I don't want to mess up the real input directory
+        "cp -v -l {input} $(dirname {output.somatic_hc}) 2>> {log} 1>&2"
+        " && java"
         " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
         " processSomatic"
-        " $(dirname {output.somatic_hc})"
+        " $(dirname {output.somatic_hc})/$(basename {input})"
         " 2>> {log}"
+        # delete moved input file after process finished
+        " && rm -v -f $(dirname {output.somatic_hc})/$(basename {input}) 2>> {log} 1>&2"
 
         # java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.snp.vcf ;
         # java -jar $VARSCAN2JAR processSomatic $OUTPUTBASENAME.indel.vcf
