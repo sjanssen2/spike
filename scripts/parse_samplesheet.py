@@ -10,8 +10,9 @@ def parse_samplesheet(fp_samplesheet):
     ss = pd.read_csv(fp_samplesheet, sep=",", skiprows=21, dtype={'Sample_Name': str, 'Sample_ID': str})
 
     # bcl2fasta automatically changes - into _ char in output filenames
+    idx_rawilluminainput = ss[pd.notnull(ss['Lane'])].index
     for f in ['Sample_ID', 'Sample_Name', 'Sample_Project']:
-        ss[f] = ss[f].apply(lambda x: x.replace('-', '_') if type(x) != float else x)
+        ss.loc[idx_rawilluminainput, f] = ss.loc[idx_rawilluminainput, f].apply(lambda x: x.replace('-', '_') if type(x) != float else x)
 
     # bcl2fastq uses a S%03i index to address samples.
     # They are numbered as occuring in the samplesheet order starting with 1.
@@ -40,6 +41,9 @@ def parse_samplesheet(fp_samplesheet):
 
     # remove samples that are marked to be ignored
     ss = ss[pd.isnull(ss['ukd_ignore_sample'])]
+
+    # set Lane to 0 if not defined, as in Macrogen samples
+    ss['Lane'] = ss['Lane'].fillna(0)
 
     return ss
 
@@ -178,11 +182,21 @@ def get_demux_samples(samplesheets, config):
     background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
 
     return list(background_samples['run'].unique())
-    # samples = []
-    # for _, sample in background_samples.iterrows():
-    #     samples.extend(['%s/%s_L%03i_%s_001.fastq.gz' % (sample['run'], sample['fastq-prefix'], sample['Lane'], direction) for direction in config['directions']])
-    #
-    # return samples
+
+
+def get_persamplefastq_samples(samplesheets, config, get='runs'):
+    # get projects that require snv vs. reference analysis
+    background_projects = [prj_name for prj_name in config['projects'] if 'persamplefastq' in config['projects'][prj_name]['actions']]
+
+    # filter samples to those belonging to per sample fastq projects
+    background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
+
+    if get=='samples':
+        return list(background_samples['fastq-prefix'].unique())
+    elif get=='projects':
+        return background_projects
+
+    return list(background_samples['run'].unique())
 
 
 def get_samples(samplesheets, config):
