@@ -134,8 +134,16 @@ def get_reference_knowns(sample, samplesheets, config, _key):
     return [k for k in config['references']['knowns'][get_species(sample, samplesheets, config)] if _key in k]
 
 
-def get_reference_exometrack(sample, samplesheets, config):
-    return config['references']['exometrack'][get_species(sample, samplesheets, config)]['file']
+def get_reference_exometrack(sample, samplesheets, config, returnfield='file'):
+    # there might be a project specific exome track, like for samples we got sequenced by macrogen:
+    projects = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].unique()
+    if len(projects) != 1:
+        raise ValueError('Ambigious or missing project for sample "%s"!' % sample)
+    if 'exometrack' in config['projects'][projects[0]]:
+        return config['projects'][projects[0]]['exometrack'][returnfield]
+
+    # by default, we return the species specific exome track
+    return config['references']['exometrack'][get_species(sample, samplesheets, config)][returnfield]
 
 
 def get_reference_varscan_somatic(sample, samplesheets, config):
@@ -157,7 +165,7 @@ def get_bwa_mem_header(sample, samplesheets, config):
         ' and '.join(samples['run'].dropna().unique()),
         ' and '.join(list(map(lambda x: x.split('_')[-1][1:], samples['run'].dropna().unique()))),
         ' and '.join(list(map(_run2date, samples['run'].dropna().unique()))),
-        config['references']['exometrack'][get_species(sample, samplesheets, config)]['protocol_name']
+        get_reference_exometrack(sample, samplesheets, config, returnfield='protocol_name')
         )
     return res
 
