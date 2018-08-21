@@ -326,8 +326,8 @@ rule correct_genotypes_somatic:
     threads:
         1
     run:
-        with open(input, 'r') as f_in:
-            with open(output, 'w') as f_out:
+        with open(input[0], 'r') as f_in:
+            with open(output[0], 'w') as f_out:
                 for line in f_in:
                     if not line or line[0] is "#":
                         f_out.write(line)
