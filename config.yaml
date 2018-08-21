@@ -125,7 +125,13 @@ projects:
       - background
       - tumornormal
     species: homo sapiens
-
+  ALL_family_LB:
+    actions:
+      - background
+    species: homo sapiens
+    exometrack:
+      file: "Agilent_SureSelect_Human_AllExon_V6_r2.hGRC37.Covered.bed"
+      protocol_name: "SureSelectHumanAllExonV6r2"
 
 references:
   genomes:
