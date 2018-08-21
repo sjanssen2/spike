@@ -2,6 +2,10 @@ name: spike_gatk
 
 channels:
   - bioconda
+  - anaconda
+  - conda-forge
 dependencies:
   - control-freec =11.4
   - samtools =1.3
+  - pigz =2.4
+  - xvfbwrapper =0.2.9
