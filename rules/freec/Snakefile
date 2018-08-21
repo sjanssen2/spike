@@ -109,7 +109,7 @@ rule freec:
         ' 1>&2'
         ' && cd $(dirname {output.baf})'
         ' && cat $CONDA_PREFIX/bin/makeGraph.R'
-        ' | R '
+        ' | xvfb-run R '
         ' --slave'
         ' --args 2'
         ' *.pileup.gz_ratio.txt'
