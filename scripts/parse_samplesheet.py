@@ -3,9 +3,8 @@ import pandas as pd
 import numpy as np
 from os.path import join
 import glob
+import sys
 
-
-DIRECTIONS = ['R1', 'R2']
 
 def parse_samplesheet(fp_samplesheet):
     ss = pd.read_csv(fp_samplesheet, sep=",", skiprows=21, dtype={'Sample_Name': str, 'Sample_ID': str})
@@ -39,113 +38,10 @@ def parse_samplesheet(fp_samplesheet):
                     row['Sample_Name']) else row['Sample_ID'])))
     ss['fastq-prefix'] = fp_fastqs
 
+    # remove samples that are marked to be ignored
+    ss = ss[pd.isnull(ss['ukd_ignore_sample'])]
+
     return ss
-
-
-def get_fastq_filenames(run, samplesheets):
-    """Returns list of fastq.gz filepaths parsed from given sample sheet.
-
-    Parameters
-    ----------
-    fp_samplesheet : str
-        Filepath of sample sheet
-
-    Returns
-    -------
-    List of filepaths.
-    """
-    ss = samplesheets[samplesheets['run'] == run]
-
-    fp_fastqs = []
-    for idx, row in ss.iterrows():
-        fp_fastq = row['fastq-prefix']
-        for direction in DIRECTIONS:
-            fp_fastqs.append(
-                '%s_L%03i_%s_001.fastq.gz' % (
-                    fp_fastq,
-                    int(row['Lane']),
-                    direction))
-
-    # add fps for undetermined reads
-    for lane in ss['Lane'].unique():
-        for direction in DIRECTIONS:
-            fp_fastqs.append(
-                'Undetermined_L%03i_%s_001.fastq.gz' % (lane, direction))
-
-    return fp_fastqs
-
-
-def get_sample_fastqprefixes(run, samplesheets):
-    ss = samplesheets[samplesheets['run'] == run]
-    return list(ss['fastq-prefix'].unique())
-
-
-def get_lanes_for_sampleID(sample, samplesheets):
-    """Return lanes a given sample is spread across.
-
-    Parameters
-    ----------
-    fp_samplesheet : str
-        Filepath to Sample Sheet
-    sampleName : str
-        The name of the sample for which lanes should be looked up.
-    sampleID : str
-        The ID of the sample for which lanes should be looked up.
-    sidx : str
-        The running index of the sample for which lanes should be looked up.
-
-    Returns
-    -------
-    [str] : Lane numbers on which to find the given sample.
-    """
-    ss = samplesheets.copy()
-    ss['tmp-id'] = ['%s/%s%s' % (row['Sample_Project'], row['Sample_ID'], '/'+row['Sample_Name'] if pd.notnull(row['Sample_Name']) else "") for _, row in ss.iterrows()]
-    res = ss[ss['tmp-id'] == sample]['Lane'].unique()
-
-    return res
-
-
-def get_laneSplitInputs(wildcards, dir_input_samplesheets, dir_intermediate_demultiplex):
-    """Given targeted joined output fastq.gz file, obtain fastq.gz files eventually split across lanes."""
-    #params must contain at least
-    #{'prefix': '/home/jansses/gpfs/', 'run': '180614_SN737_0438_BCC7MCACXX', 'sample': 'Alps/ALPS_66_a_S18', 'direction': 'R1'}
-    params = dict(wildcards)
-    fp_samplesheet = join(params['prefix'], dir_input_samplesheets, params['run']) + '_ukd.csv'
-    print("params", params)
-    print("fp_samplesheet", fp_samplesheet)
-    ss = parse_samplesheet(fp_samplesheet)
-    ss['tmp-id'] = ['%s/%s%s_S%s' % (row['Sample_Project'], row['Sample_ID'], '/'+row['Sample_Name'] if pd.notnull(row['Sample_Name']) else "", row['s-idx']) for _, row in ss.iterrows()]
-
-    lanes = ss[ss['tmp-id'] == params['sample']]['Lane'].unique()
-
-    res = ["%s_L%03i_%s_001.fastq.gz" % (
-        join(params['prefix'], dir_intermediate_demultiplex, params['run'], params['sample']),
-        int(lane),
-        params['direction']) for lane in lanes]
-    # print(params, res, ss['tmp-id'])
-    return res
-
-
-def get_sample_names(samplesheets, ukd_actions={'trio', 'somatic'}):
-    """Get unique list of full sample names, i.e. with Project-Name, Sample-Group-Name and s-idx.
-
-    Parameters
-    ----------
-    fp_samplesheet : str
-        Filepath to SampleSheet
-    ukd_action : set(str)
-        Default: {'trio', 'somatic'}.
-        Limit returned samples to those having one of the ukd_actions assigned
-
-    Returns
-    -------
-    [str] the unique full qualified sample names."""
-
-    ss = samplesheets
-    samples = []
-    for n, g in ss[ss['ukd_action'].isin(ukd_actions)].fillna('').groupby(['Sample_Project', 'Sample_Name', 'Sample_ID', 's-idx']):
-        samples.append(g['fastq-prefix'].unique()[0])
-    return samples
 
 
 def get_global_samplesheets(dir_samplesheets):
@@ -209,86 +105,155 @@ def get_role(ukd_project, ukd_entity_id, ukd_entity_role, samplesheets):
     else:
         samples = x
 
-    res = {join(sample['run'], sample['fastq-prefix']) for idx, sample in samples.iterrows()}
+    res = {sample['fastq-prefix'] for idx, sample in samples.iterrows()}
     if len(res) > 1:
         raise ValueError("Stefan, check if use cases can occour with more than one result!")
 
     return list(res)[0]
 
 
-def get_xenograft_host(fp_samplesheet, sample, samplesheets, config):
-    """Returns xenograft host genome name for given sample.
+def get_species(sample, samplesheets, config):
+    # sample can be a single sample ...
+    projects = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].unique()
 
-    Parameters
-    ----------
-    fp_samplesheet : str
-        Filepath to sample sheet.
-    sample : str
-        Fastq prefix for sample, e.g. Alps/ALPS_66_a
+    # ... or an entity
+    if len(projects) == 0:
+        projects = samplesheets[(samplesheets['Sample_Project'] == sample.split('/')[0]) & (samplesheets['ukd_entity_id'] == sample.split('/')[-1])]['Sample_Project'].unique()
 
-    Returns
-    -------
-    str : empty string if no xenograft, otherwise name of host species name.
+    if len(projects) > 1:
+        raise ValueError("Ambiguous projects: '%s' for sample '%s'" % (projects, sample))
 
-    Raises
-    ------
-    ValueError if:
-        a) sample sheet lists conflicting host species names.
-        b) an unknown xenograft host species is listed in sample sheet.
-    """
-    ss = samplesheets
-
-    host_species = list(ss[ss['fastq-prefix'] == sample]['ukd_xenograft_species'].dropna().unique())
-    if len(host_species) > 1:
-        raise ValueError("Ambiguous xenograft host species in sample sheet!")
-    if len(host_species) == 0:
-        return ""
-
-    res = ""
-    try:
-        res += config['xenograft']['references']['homo sapiens']
-        res += '_' + config['xenograft']['references'][host_species[0]]
-    except KeyError:
-        raise ValueError("Unknown xenograft host species!")
-
-    return res
-
-
-def get_species(sample, samplesheets):
-    #ss = get_global_samplesheets(config)
-    ss = samplesheets
-
-    # test if a "sample" can be found
-    species = list(ss[ss['fastq-prefix'] == sample]['ukd_species'].dropna().unique())
-    # test if an entity for a project can be found
-    if len(species) == 0:
-        species = list(ss[ss['Sample_Project']+'/'+ss['ukd_entity_id'] == sample]['ukd_species'].dropna().unique())
-    # maybe the run is prefixed, remove and check if sample can be found
-    if len(species) == 0:
-        species = list(ss[ss['fastq-prefix'] == '/'.join(sample.split('/')[1:])]['ukd_species'].dropna().unique())
-
-    if len(species) == 0:
-        raise ValueError('Sample "%s" not found' % sample)
-    if len(species) > 1:
-        raise ValueError('Ambiguous species given!')
-
-    return species[0]
+    return config['projects'][projects[0]]['species']
 
 
 def get_reference_genome(sample, samplesheets, config):
-    return config['references']['genomes'][get_species(sample, samplesheets)]
+    return config['references']['genomes'][get_species(sample, samplesheets, config)]
+
 
 def get_reference_knowns(sample, samplesheets, config, _key):
-    return [k for k in config['references']['knowns'][get_species(sample, samplesheets)] if _key in k]
+    return [k for k in config['references']['knowns'][get_species(sample, samplesheets, config)] if _key in k]
+
 
 def get_reference_exometrack(sample, samplesheets, config):
-    return config['references']['exometrack'][get_species(sample, samplesheets)]
+    return config['references']['exometrack'][get_species(sample, samplesheets, config)]['file']
+
 
 def get_reference_varscan_somatic(sample, samplesheets, config):
-    return config['references']['varscan_somatic'][get_species(sample, samplesheets)]
+    return config['references']['varscan_somatic'][get_species(sample, samplesheets, config)]
 
-def get_reference_DBSNP(sample, samplesheets, config):
-    res = config['references']['DBSNP'][get_species(sample, samplesheets)]
-    if res is None:
-        res = []
+
+######## avoid run
+def _run2date(run):
+    date='%04i/%02i/%02i' % (
+        int(run.split('_')[0][:2])+2000,
+        int(run.split('_')[0][3:4]),
+        int(run.split('_')[0][5:6]))
+    return date
+
+
+def get_bwa_mem_header(sample, samplesheets, config):
+    samples = samplesheets[samplesheets['fastq-prefix'] == sample]
+    res = ' -R "@RG\\tID:%s\\tCN:Department_of_Pediatric_Oncology_Dusseldorf\\tPU:%s\\tDT:%s\\tPL:ILLUMINA\\tLB:%s\\tSM:readgroups.info"' % (
+        ' and '.join(samples['run'].dropna().unique()),
+        ' and '.join(list(map(lambda x: x.split('_')[-1][1:], samples['run'].dropna().unique()))),
+        ' and '.join(list(map(_run2date, samples['run'].dropna().unique()))),
+        config['references']['exometrack'][get_species(sample, samplesheets, config)]['protocol_name']
+        )
     return res
+
+
+def get_demux_samples(samplesheets, config):
+    # get projects that require snv vs. reference analysis
+    background_projects = [prj_name for prj_name in config['projects'] if 'demultiplex' in config['projects'][prj_name]['actions']]
+
+    # filter samples to those belonging to tumor vs. normal projects
+    background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
+
+    return list(background_samples['run'].unique())
+    # samples = []
+    # for _, sample in background_samples.iterrows():
+    #     samples.extend(['%s/%s_L%03i_%s_001.fastq.gz' % (sample['run'], sample['fastq-prefix'], sample['Lane'], direction) for direction in config['directions']])
+    #
+    # return samples
+
+
+def get_samples(samplesheets, config):
+    # get projects that require snv vs. reference analysis
+    background_projects = [prj_name for prj_name in config['projects'] if 'background' in config['projects'][prj_name]['actions']]
+
+    # filter samples to those belonging to tumor vs. normal projects
+    background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
+
+    samples = []
+    for sample, g in background_samples.groupby(['Sample_Project', 'fastq-prefix']):
+        samples.append({'Sample_Project': sample[0],
+                        'sample': sample[1]})
+
+    return samples
+
+
+def get_tumorNormalPairs(samplesheets, config):
+    # get projects that require tumor vs. normal analysis
+    tumornormal_projects = [prj_name for prj_name in config['projects'] if 'tumornormal' in config['projects'][prj_name]['actions']]
+
+    # filter samples to those belonging to tumor vs. normal projects
+    tumornormal_samples = samplesheets[samplesheets['Sample_Project'].isin(tumornormal_projects)]
+
+    pairs = []
+    for pair, g in tumornormal_samples.groupby(['Sample_Project', 'ukd_entity_id']):
+        # only choose comlete pairs
+        if set(g['ukd_entity_role'].unique()) == {'healthy','tumor'}:
+            pairs.append({'Sample_Project': pair[0],
+                          'ukd_entity_id': pair[1]})
+
+    return pairs
+
+
+def get_trios(samplesheets, config):
+    # get projects that require trio analysis
+    trio_projects = [prj_name for prj_name in config['projects'] if 'trio' in config['projects'][prj_name]['actions']]
+
+    # filter samples to those belonging to trio projects
+    trio_samples = samplesheets[samplesheets['Sample_Project'].isin(trio_projects)]
+
+    trios = []
+    for trio, g in trio_samples.groupby(['Sample_Project', 'ukd_entity_id']):
+        # only choose comlete trios
+        if set(g['ukd_entity_role'].unique()) == {'patient', 'mother', 'father'}:
+            trios.append({'Sample_Project': trio[0],
+                          'ukd_entity_id': trio[1]})
+
+    return trios
+
+
+def get_projects_with_exomecoverage(config):
+    res = []
+    for name in config['projects']:
+        if ('actions' in config['projects'][name]) and (len(set(config['projects'][name]['actions']) & set(['background', 'trio', 'tumornormal'])) > 0):
+            res.append(name)
+    return res
+
+
+def get_rejoin_fastqs(sample, samplesheets, config):
+    res = []
+    for _, row in samplesheets[samplesheets['fastq-prefix'] == sample].iterrows():
+        res.append('%s/%s_L%03i' % (row['run'], row['fastq-prefix'], row['Lane']))
+    return res
+
+
+def get_xenograft_hybridreference(sample, samplesheets, config):
+    project = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].dropna().unique()
+    if len(project) != 1:
+        raise ValueError("_get_reference: Sample '%s' has ambiguous or missing project!" % sample)
+    return config['projects'][project[0]]['xenograft']
+
+
+def get_xenograft_stepname(sample, samplesheets, config):
+    project = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].dropna().unique()
+    if len(project) != 1:
+        sys.stderr.write('%s\n' % (project))
+        raise ValueError("_get_stepname: Sample '%s' has ambiguous or missing project!" % sample)
+    if 'xenograft' in config['projects'][project[0]] and config['projects'][project[0]]['xenograft'] != "":
+        return config['stepnames']['xenograft_bwa_sampe']
+    else:
+        return config['stepnames']['trim']

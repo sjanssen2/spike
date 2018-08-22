@@ -2,9 +2,11 @@
     "__default__" :
     {
       "account" : "ngsukdkohi",
-      "queue" : "Rendering",
+      "queue" : "default",
       "nodes" : 1,
       "time" : "00:59:59",
+      "mem" : "12GB",
+      "ppn" : "12"
     },
 
     "demultiplex" :
@@ -14,12 +16,107 @@
     },
 
     "rejoin_sample":
-    { "mem" : "2GB",
-      "ppn" : "1",
+    { "mem" : "1GB",
+      "ppn" : "2",
     },
 
     "trim":
     { "mem" : "4GB",
       "ppn" : "16",
-    }
+      "time" : "01:59:59",
+    },
+
+    "xenograft_bwa_aln":
+    {
+      "mem" : "8GB",
+    },
+
+    "xenograft_bwa_sampe":
+    { "ppn" : "2",
+      "time" : "03:59:50",
+    },
+
+    "bwa":
+    {
+      "ppn" : "16",
+      "mem" : "32GB",
+      "time" : "01:59:59",
+    },
+
+    "remove_pcr_duplicates":
+    {
+      "time" : "01:59:59",
+      "ppn" : "2",
+    },
+
+    "gatk_RealignerTargetCreator":
+    {
+      "mem" : "4GB",
+    },
+
+    "gatk_IndelRealigner":
+    {
+      "mem" : "5GB",
+      "ppn" : "2",
+      "time" : "01:59:59",
+    },
+
+    "gatk_BaseRecalibrator":
+    {
+      "mem" : "8GB",
+      "time" : "01:59:59",
+    },
+
+    "gatk_PrintReads":
+    {
+      "time" : "02:59:59",
+      "mem" : "16GB",
+    },
+
+    "gatk_HaplotypeCaller":
+    {
+      "ppn" : "2",
+      "time" : "02:59:59",
+      "mem" : "8GB",
+    },
+
+    "varscan_trio":
+    {
+      "ppn": "2",
+      "time" : "04:59:59",
+    },
+
+    "exome_coverage":
+    {
+      "ppn": "2",
+    },
+
+    "mutect":
+    {
+      "ppn": "2",
+      "time" : "14:59:59",
+    },
+
+    "samtools_mpileup":
+    {
+      "ppn": "2",
+      "time" : "04:59:59",
+    },
+
+    "samtools_mpileup_somatic":
+    {
+      "ppn": "2",
+      "time" : "01:59:59",
+    },
+
+    "varscan_somatic":
+    {
+      "time" : "01:59:59",
+    },
+
+    "varscan_processSomatic":
+    {
+      "ppn": "2",
+    },
+
 }

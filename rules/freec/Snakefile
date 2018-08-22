@@ -2,15 +2,15 @@ rule samtools_mpileup:
     # Preprocessing to do a realignment of the reads with GATK
     input:
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in ['', '.fai', '.dict']],
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
         pileup="{prefix}%s%s/{entity}.pileup.gz" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
-    benchmark:
-        "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
     log:
-        samtools="{prefix}%s{entity}.%s.samtools.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
-        pigz="{prefix}%s{entity}.%s.pigz.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup'])
+        samtools="{prefix}%s%s.samtools.{entity}.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
+        pigz="{prefix}%s%s.pigz.{entity}.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup'])
+    benchmark:
+        "{prefix}%s%s.{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
     conda:
         "envs/spike_freec.yaml"
     threads:
@@ -35,86 +35,105 @@ rule samtools_mpileup:
 rule freec:
     # Preprocessing to do a realignment of the reads with GATK
     input:
+        tumor=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
+        healthy=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
         freec="%s%sfreec" % (config['dirs']['prefix'], config['dirs']['references']),
         reference_len=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['lengths']),
         reference_mappability=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['gemMappabilityFile']),
         reference_chromosomes=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], chr) for chr in get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['chromosomes']],
         known_snps=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['SNPfile']),
-        tumor=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
-        healthy=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
     output:
         "{prefix}%s%s/{entity}/tumor.pileup.gz_CNVs" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         "{prefix}%s%s/{entity}/tumor.pileup.gz_normal_BAF.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         "{prefix}%s%s/{entity}/tumor.pileup.gz_normal_CNVs" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         "{prefix}%s%s/{entity}/tumor.pileup.gz_normal_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         "{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        "{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt.log2.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        "{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        #"{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt.log2.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        #"{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         "{prefix}%s%s/{entity}/tumor.pileup.gz_sample.cpn" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         "{prefix}%s%s/{entity}/healthy.pileup.gz_control.cpn" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         baf="{prefix}%s%s/{entity}/tumor.pileup.gz_BAF.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         config="{prefix}%s%s/{entity}.config" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+    log:
+        "{prefix}%s%s.freec.{entity}.log" % (config['dirs']['logs'], config['stepnames']['freec'])
     benchmark:
         "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['freec'])
-    log:
-        freec="{prefix}%s{entity}.%s.freec.log" % (config['dirs']['logs'], config['stepnames']['freec']),
-        gzratio="{prefix}%s{entity}.%s.gzratio.log" % (config['dirs']['logs'], config['stepnames']['freec'])
     conda:
         "envs/spike_freec.yaml"
     threads:
-        8
+        config['num_threads']
     params:
-        minCNAlength=lambda wildcards: 'echo "minCNAlength = 4" >> {output.config}; ' if get_species(wildcards.sample, SAMPLESHEETS) == 'mus musculus' else ""
+        minCNAlength=lambda wildcards: '"minCNAlength = 4"' if get_species(wildcards.entity, SAMPLESHEETS, config) == 'mus musculus' else ""
     shell:
-        'echo "[general]" > {output.config}; '
-        'echo "chrLenFile = {input.reference_len}" >> {output.config}; '
-        'echo "window = 50000" >> {output.config}; '
-        'echo "step = 10000" >> {output.config}; '
-        'echo "ploidy = 2" >> {output.config}; '
-        "{params.minCNAlength}"
-        'echo "outputDir = $(dirname {output.baf})" >> {output.config}; '
-        'echo "contaminationAdjustment = TRUE" >> {output.config}; '
-        'echo "maxThreads = {threads}" >> {output.config}; '
-        'echo "#sex=XY" >> {output.config}; '
-        'echo "breakPointType=4" >> {output.config}; '
-        'echo "gemMappabilityFile = {input.reference_mappability}" >> {output.config}; '
-        'echo "chrFiles = $(dirname {input.reference_chromosomes[0]})/" >> {output.config}; '
-        'echo "breakPointThreshold=1.5" >> {output.config}; '
-        'echo "noisyData=TRUE" >> {output.config}; '
-        'echo "printNA=FALSE" >> {output.config}; '
-        'echo "" >> {output.config}; '
-        'echo "[sample]" >> {output.config}; '
-        'echo "mateFile = {input.tumor}" >> {output.config}; '
-        'echo "inputFormat = pileup" >> {output.config}; '
-        'echo "mateOrientation = 0" >> {output.config}; '
-        'echo "" >> {output.config}; '
-        'echo "[control]" >> {output.config}; '
-        'echo "mateFile = {input.healthy}" >> {output.config}; '
-        'echo "inputFormat = pileup" >> {output.config}; '
-        'echo "mateOrientation = 0" >> {output.config}; '
-        'echo "" >> {output.config}; '
-        'echo "[BAF]" >> {output.config}; '
-        'echo "SNPfile = {input.known_snps}" >> {output.config}; '
-        'echo "minimalCoveragePerPosition = 5" >> {output.config}; '
-        'echo "" >> {output.config}; '
-        'echo "[target]" >> {output.config}; '
-        'echo "captureRegions = {input.exometrack}" >> {output.config}; '
+        'echo "[general]" > {output.config} && '
+        'echo "chrLenFile = {input.reference_len}" >> {output.config} && '
+        'echo "window = 50000" >> {output.config} && '
+        'echo "step = 10000" >> {output.config} && '
+        'echo "ploidy = 2" >> {output.config} && '
+        'echo "{params.minCNAlength}" >> {output.config} && '
+        'echo "outputDir = $(dirname {output.baf})" >> {output.config} && '
+        'echo "contaminationAdjustment = TRUE" >> {output.config} && '
+        'echo "maxThreads = {threads}" >> {output.config} && '
+        'echo "#sex=XY" >> {output.config} && '
+        'echo "breakPointType=4" >> {output.config} && '
+        'echo "gemMappabilityFile = {input.reference_mappability}" >> {output.config} && '
+        'echo "chrFiles = $(dirname {input.reference_chromosomes[0]})/" >> {output.config} && '
+        'echo "breakPointThreshold=1.5" >> {output.config} && '
+        'echo "noisyData=TRUE" >> {output.config} && '
+        'echo "printNA=FALSE" >> {output.config} && '
+        'echo "" >> {output.config} && '
+        'echo "[sample]" >> {output.config} && '
+        'echo "mateFile = {input.tumor}" >> {output.config} && '
+        'echo "inputFormat = pileup" >> {output.config} && '
+        'echo "mateOrientation = 0" >> {output.config} && '
+        'echo "" >> {output.config} && '
+        'echo "[control]" >> {output.config} && '
+        'echo "mateFile = {input.healthy}" >> {output.config} && '
+        'echo "inputFormat = pileup" >> {output.config} && '
+        'echo "mateOrientation = 0" >> {output.config} && '
+        'echo "" >> {output.config} && '
+        'echo "[BAF]" >> {output.config} && '
+        'echo "SNPfile = {input.known_snps}" >> {output.config} && '
+        'echo "minimalCoveragePerPosition = 5" >> {output.config} && '
+        'echo "" >> {output.config} && '
+        'echo "[target]" >> {output.config} && '
+        'echo "captureRegions = {input.exometrack}" >> {output.config} && '
         # create output dir
-        ' mkdir -p $(dirname {output.baf});'
+        ' mkdir -p $(dirname {output.baf}) &&'
         # actual command
         ' {input.freec}'
         ' -conf {output.config}'
-        ' 2> {log.freec}'
+        ' 2> {log}'
         ' 1>&2'
         ' && cd $(dirname {output.baf})'
+        ' && mv *.pileup.gz_control.cpn healthy.pileup.gz_control.cpn'
+        ' && for ending in `echo "pileup.gz_BAF.txt pileup.gz_CNVs pileup.gz_normal_BAF.txt pileup.gz_normal_CNVs pileup.gz_normal_ratio.txt pileup.gz_ratio.txt pileup.gz_sample.cpn"`; do mv *.$ending tumor.$ending; done'
+
+rule freec_render:
+    # this poses the issue of missing X11 server on HPC at HHU :-/
+    # Do we really need those plots?
+    input:
+        "{prefix}%s%s/{tumorsample}/tumor.pileup.gz_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec'])
+    output:
+        linear="{prefix}%s%s/{tumorsample}/tumor.pileup.gz_ratio.txt.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        log="{prefix}%s%s/{tumorsample}/tumor.pileup.gz_ratio.txt.log2.png" % (config['dirs']['intermediate'], config['stepnames']['freec'])
+    log:
+        "{prefix}%s%s.gzratio.{tumorsample}.log" % (config['dirs']['logs'], config['stepnames']['freec'])
+    benchmark:
+        "{prefix}%s{tumorsample}.%s-plot.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['freec'])
+    conda:
+        "envs/spike_freec.yaml"
+    threads:
+        1
+    shell:
+        'cd $(dirname {input})'
         ' && cat $CONDA_PREFIX/bin/makeGraph.R'
         ' | R '
         ' --slave'
         ' --args 2'
-        ' *.pileup.gz_ratio.txt'
-        ' 2>> {log.gzratio}'
-        '; mv *.pileup.gz_control.cpn healthy.pileup.gz_control.cpn'
-        '; for ending in `echo "pileup.gz_BAF.txt pileup.gz_CNVs pileup.gz_normal_BAF.txt pileup.gz_normal_CNVs pileup.gz_normal_ratio.txt pileup.gz_ratio.txt pileup.gz_ratio.txt.log2.png pileup.gz_ratio.txt.png pileup.gz_sample.cpn"`; do mv *.$ending tumor.$ending; done;'
+        ' {input}'
+        ' 2>> {log}'
+        #' && for ending in `echo "pileup.gz_ratio.txt.log2.png pileup.gz_ratio.txt.png"`; do mv *.$ending tumor.$ending; done'
 
         # freec -conf $CONFIG_FILE && cd $OUTPUT_DIR && cat /data/biotools/src/freec_6.6/makeGraph.R | R --slave --args 2 $SAMPLE_PREFIX.pileup.gz_ratio.txt"

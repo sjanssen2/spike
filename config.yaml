@@ -3,6 +3,16 @@ run: '180614_SN737_0438_BCC7MCACXX'
 directions:
   - 'R1'
   - 'R2'
+endings_bwa:
+  - '.fa'
+  - '.dict'
+  - '.fa.amb'
+  - '.fa.ann'
+  - '.fa.bwt'
+  - '.fa.fai'
+  - '.fa.pac'
+  - '.fa.sa'
+  - '.fa.bwt'
 
 emails:
   demultiplexreport: "stefan.m.janssen@gmail.com"
@@ -12,6 +22,7 @@ name_program: "spike"
 
 dirs:
   prefix: "/data/Spike_data/"
+  tmpdir: "/data/tmp/"
 
   intermediate: "Intermediate/"
   inputs: "Inputs/"
@@ -88,10 +99,38 @@ xenograft:
     mus musculus: 'GRCm'
     homo sapiens: 'GRCh'
 
+
+projects:
+  Alps:
+    actions:
+      - background
+      - trio
+    species: homo sapiens
+  Fischer_Geron:
+    actions:
+      - background
+      - tumornormal
+    species: homo sapiens
+    xenograft: "GRCh_GRCm_filtering_hybrid.fa"
+  Maus_Hauer:
+    actions:
+      - background
+      - tumornormal
+    species: mus musculus
+  AG_Remke:
+    actions:
+      - demultiplex
+  Keimbahn:
+    actions:
+      - background
+      - tumornormal
+    species: homo sapiens
+
+
 references:
   genomes:
     homo sapiens:
-      file: 'hGRC37.fa'
+      file: 'hGRC37'  # without .fa!
       lengths: 'hGRC37.len'
       gemMappabilityFile: 'hGRC37.mappability.mappability'
       chromosomes:
@@ -122,7 +161,7 @@ references:
       SNPfile: "hg19_deCHRd_snp137.SingleDiNucl.1based.txt"
       cosmic: "CosmicCodingMuts_v63_300113.vcf"
     mus musculus:
-      file: 'Mus_musculus.GRCm38.71.dna.fa'
+      file: 'Mus_musculus.GRCm38.71.dna'  # without .fa!
       lengths: 'GRCm38.71.len'
       gemMappabilityFile: 'Mus_musculus.GRCm38.71.dna.fa.index.gem.mappability.mappability'
       chromosomes:
@@ -194,8 +233,12 @@ references:
       - file: "CBAJDBA2.genoc7.ref.snp.recode.vcf.gz"
         VariantRecalibrator_SNP: "CBAJDBA2_snps,VCF,known=false,training=true,truth=true,prior=12.0"
   exometrack:
-    homo sapiens: "Agilent_SureSelect_V5plusUTR.bed"
-    mus musculus: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
+    homo sapiens:
+      file: "Agilent_SureSelect_V5plusUTR.bed"
+      protocol_name: "SureSelectXTV5plusUTRautomated"
+    mus musculus:
+      file: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
+      protocol_name: "SureSelectXTmouse"
   varscan_somatic:
     homo sapiens: " --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 "
     mus musculus: " --min-coverage-normal 6 --min-coverage-tumor 8 "

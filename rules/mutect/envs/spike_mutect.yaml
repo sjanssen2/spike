@@ -1,6 +1,7 @@
 name: spike_gatk
 
 channels:
-  - conda-forge
+  - bioconda
 dependencies:
-  - openjdk =7.0
+  - gatk =3.5
+  - tabix =0.2.5

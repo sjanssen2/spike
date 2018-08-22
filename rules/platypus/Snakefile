@@ -3,30 +3,31 @@ rule platypus:
         bam=rules.gatk_PrintReads.output.bam,
         bai=rules.gatk_PrintReads.output.bai,
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, SAMPLESHEETS, config)),
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in ['', '.fai', '.dict']],
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
     output:
-        vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
-        #idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
-    benchmark:
-        "{prefix}%s{run}/{sample}.platypus.benchmark" % (config['dirs']['benchmarks'])
+        vcf="{prefix}%s%s/{sample}.ptp.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
+        #idx="{prefix}%s%s/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
     log:
-        "{prefix}%s{run}/{sample}.platypus.log" % (config['dirs']['logs'])
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_HaplotypeCaller'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_HaplotypeCaller'])
     conda:
         "envs/spike_platypus.yaml"
     threads:
         3
     params:
-        regions=lambda wildcards, input: " --regions=%s" % input.exometrack if get_species(wildcards.sample, SAMPLESHEETS) == 'homo sapiens' else ""
+        regions=lambda wildcards, input: " --regions=%s" % input.exometrack if get_species(wildcards.sample, SAMPLESHEETS, config) == 'homo sapiens' else ""
     shell:
         "python2"
-        " $CONDA_PREFIX/share/platypus-variant-0.8.1.1-2/Platypus.py"
+        " $CONDA_PREFIX/share/platypus-variant-0.8.1*/Platypus.py"
         " callVariants"
         "{params.regions}"
         " --refFile={input.references[0]}"
         " --bamFiles={input.bam}"
         " --nCPU {threads}"
         " --output {output.vcf}"
-        " 2> {log};"
+        " 2> {log}"
+
         # " mv -v {output.vcf}.tmp {output.vcf} 2>> {log}"
 
         # #now for the new 2015 magic with platypus
@@ -39,20 +40,22 @@ rule platypus:
 
 rule platypus_filtered:
     input:
-        vcf="{prefix}%s%s/{run}/{sample}.ptp.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
+        vcf="{prefix}%s%s/{sample}.ptp.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
+        gem="{prefix}%svcf-mapper-0.0.1.gem" % (config['dirs']['references'])
     output:
-        vcf="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.annotated.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
-        #idx="{prefix}%s%s/{run,[^/]+XX}/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered'])
-    benchmark:
-        "{prefix}%s{run}/{sample}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['platypus_filtered'])
+        vcf="{prefix}%s%s/{sample}.ptp.annotated.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
+        #idx="{prefix}%s%s/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
     log:
-        "{prefix}%s{run}/{sample}.%s.log" % (config['dirs']['logs'], config['stepnames']['platypus_filtered'])
+        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['platypus_filtered'])
+    benchmark:
+        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['platypus_filtered'])
     conda:
         "envs/spike_platypus.yaml"
     threads:
         3
     shell:
-        'cat {input.vcf}'
+        'if [ $(gem list vcf-mapper -i) == "false" ]; then gem install --rdoc --ri {input.gem}; gem install trollop; fi && '
+        ' cat {input.vcf}'
         ' | vcf-mapper'
         ' -a map'
         ' -f "FORMAT:NR[0]"'
@@ -72,6 +75,7 @@ rule platypus_filtered:
         ' -p "#{{FORMAT:NV[0]}}"'
         ' -o {output.vcf}'
         " 2>> {log}"
+
         # %.ptp.annotated.filtered.indels.vcf: %.ptp.filtered.indels.vcf
         # 	@echo "$(DATE) ######### Do a hard filtering of the indels in '$<'. #########"
         # 	cat $< |vcf-mapper -a map -f "FORMAT:NR[0]" -t "FORMAT:DP" | vcf-mapper -a map -f "FORMAT:NR" -t "FORMAT:AD[0]" | vcf-mapper -a map -f "FORMAT:NV" -t "FORMAT:AD[1]" | vcf-mapper -a transform -f "FORMAT:AD[0]" -c "substract" -p "#{FORMAT:NV[0]}" -o $@.tmp\

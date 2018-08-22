@@ -1,56 +1,59 @@
 rule mutect:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.entity, SAMPLESHEETS, config, 'mutect') for ending in ['', '.idx']],
+        knowns=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], known['file'], ending) for known in get_reference_knowns(wildcards.entity, SAMPLESHEETS, config, 'mutect') for ending in ['', ('.tbi' if known['file'].endswith('.gz') else '.idx')]],
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in ['', '.fai', '.dict']],
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         gatkpackage="%s%sgatk-3.5.tar.bz2" % (config['dirs']['prefix'], config['dirs']['references']),
-        mutect117="%s%smutect-1.1.7.jar" % (config['dirs']['prefix'], config['dirs']['references']),
+        #mutect117="%s%smutect-1.1.7.jar" % (config['dirs']['prefix'], config['dirs']['references']),
         cosmic=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic, ending) for cosmic in [get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['cosmic']] for ending in ['', '.idx'] if cosmic is not None],
         tumor=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
         healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
     output:
-        csv="{prefix}%s%s/{entity}.all_calls.csv" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
-        vcf="{prefix}%s%s/{entity}.all_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+        #csv="{prefix}%s%s/{entity}.all_calls.csv" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+        vcf="{prefix}%s%s/{entity}.all_calls.vcf.gz" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+        tbi="{prefix}%s%s/{entity}.all_calls.vcf.gz.tbi" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+        idx="{prefix}%s%s/{entity}.all_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+    log:
+        mutect="{prefix}%s%s.mutect.{entity}.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
+        post="{prefix}%s%s.post.{entity}.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
     benchmark:
         "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['mutect'])
-    log:
-        mutect="{prefix}%s{entity}.%s.mutect.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
-        post="{prefix}%s{entity}.%s.post.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
     conda:
         "envs/spike_mutect.yaml"
     threads:
         1
     params:
         knowns_settings=lambda wildcards: [' --dbsnp %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.entity, SAMPLESHEETS, config, 'mutect')],
-        cosmic=lambda wildcards: [" --cosmic=%s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic) for cosmic in [get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['cosmic']] if cosmic is not None]
+        cosmic=lambda wildcards: [" --cosmic %s%s%s" % (wildcards.prefix, config['dirs']['references'], cosmic) for cosmic in [get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['cosmic']] if cosmic is not None]
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log.mutect}; fi; '
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log.mutect}; fi && '
         "java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
-        " -jar {input.mutect117}"
-        " --analysis_type MuTect"
+        #" -jar {input.mutect117}"
+        " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
+        " --analysis_type MuTect2"
         " --reference_sequence {input.references[0]}"
         "{params.knowns_settings}"
         "{params.cosmic}"
         " --intervals {input.exometrack}"
         " --input_file:normal {input.healthy}"
         " --input_file:tumor {input.tumor}"
-        " --out {output.csv}"
-        " --vcf {output.vcf}"
+        " --out {output.vcf}"
+        #" --vcf {output.vcf}"
         " 2> {log.mutect}"
-        " && grep"
-        " -v REJECT"
-        " {output.csv}"
-        " > {output.csv}_KEEP_only.csv"
-        " 2> {log.post}"
-        " && grep"
-        " -v REJECT"
-        " {output.vcf}"
-        " > {output.vcf}_KEEP_only.csv"
-        " 2>> {log.post}"
-        " && gzip {output.csv}"
-        " 2>> {log.post}"
+        #" && grep"
+        #" -v REJECT"
+        #" {output.csv}"
+        #" > {output.csv}_KEEP_only.csv"
+        #" 2> {log.post}"
+        #" && grep"
+        #" -v REJECT"
+        #" {output.vcf}"
+        #" > {output.vcf}_KEEP_only.csv"
+        #" 2>> {log.post}"
+        #" && gzip {output.csv}"
+        #" 2>> {log.post}"
         " && bgzip {output.vcf}"
         " && tabix -p vcf {output.vcf}.gz"
         " 2>> {log.post}"
