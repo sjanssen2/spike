@@ -11,7 +11,9 @@ rule mutect:
         healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
     output:
         #csv="{prefix}%s%s/{entity}.all_calls.csv" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
-        vcf="{prefix}%s%s/{entity}.all_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+        vcf="{prefix}%s%s/{entity}.all_calls.vcf.gz" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+        tbi="{prefix}%s%s/{entity}.all_calls.vcf.gz.tbi" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
+        idx="{prefix}%s%s/{entity}.all_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['mutect']),
     log:
         mutect="{prefix}%s%s.mutect.{entity}.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
         post="{prefix}%s%s.post.{entity}.log" % (config['dirs']['logs'], config['stepnames']['mutect']),
