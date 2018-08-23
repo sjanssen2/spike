@@ -54,8 +54,14 @@ rule platypus_filtered:
     threads:
         3
     shell:
-        'if [ $(gem list vcf-mapper -i) == "false" ]; then gem install --rdoc --ri {input.gem}; gem install trollop; fi && '
-        ' cat {input.vcf}'
+        'if [ $(gem list vcf-mapper -i) == "false" ]; then gem install --rdoc --ri {input.gem}; gem install trollop; fi '
+        # inject following line to NOT break vcf-mapper: ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Number of reads covering variant location in this sample",FROM_INDEX=0>
+        ' && tmpfile=$(mktemp) 2>> {log}'
+        ' && linenumber=`cat {input.vcf} | grep "^##FORMAT" -n | tail -n 1 | cut -d ":" -f 1` 2>> {log}'
+        ' && head {input.vcf} -n $linenumber > $tmpfile 2>> {log}'
+        ' && echo "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\\"Number of reads covering variant location in this sample\\",FROM_INDEX=0>" >> $tmpfile 2>> {log}'
+        ' && tail {input.vcf} -n+$linenumber >> $tmpfile 2>> {log}'
+        ' && cat $tmpfile'
         ' | vcf-mapper'
         ' -a map'
         ' -f "FORMAT:NR[0]"'
@@ -75,6 +81,7 @@ rule platypus_filtered:
         ' -p "#{{FORMAT:NV[0]}}"'
         ' -o {output.vcf}'
         " 2>> {log}"
+        " && rm $tmpfile 2>> {log}"
 
         # %.ptp.annotated.filtered.indels.vcf: %.ptp.filtered.indels.vcf
         # 	@echo "$(DATE) ######### Do a hard filtering of the indels in '$<'. #########"
