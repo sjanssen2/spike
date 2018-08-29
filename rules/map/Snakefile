@@ -7,7 +7,9 @@ rule bwa:
     output:
         "{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
     log:
-        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['map'])
+        bwa_mem="{prefix}%s%s.{sample}.bwa_mem.log" % (config['dirs']['logs'], config['stepnames']['map']),
+        sam_view="{prefix}%s%s.{sample}.samtools_view.log" % (config['dirs']['logs'], config['stepnames']['map']),
+        sam_sort="{prefix}%s%s.{sample}.samtools_sort.log" % (config['dirs']['logs'], config['stepnames']['map']),
     benchmark:
         "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['map'])
     conda:
@@ -23,9 +25,9 @@ rule bwa:
         'bwa mem -t {threads} -v 2 -M'
         '{params.header}'
         ' {input.references[0]}'
-        ' {input.forward} {input.reverse} 2> {log}.bwa_mem'
-        ' | samtools view -bSu -F 0x04 - 2> {log}.samtools_view'
-        ' | samtools sort -m 1G -@ {threads} - {output} 2> {log}.samtools_sort'
+        ' {input.forward} {input.reverse} 2> {log.bwa_mem}'
+        ' | samtools view -bSu -F 0x04 - 2> {log.sam_view}'
+        ' | samtools sort -m 1G -@ {threads} - {output} 2> {log.sam_sort}'
         # samtools appends .bam to given filename, which is different from snakemakes assumption and thus must be fixed here manually
         ' && mv {output}.bam {output}'
 
