@@ -16,7 +16,7 @@ rule gatk_RealignerTargetCreator:
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        3
+        1 # random numbergenerator seems to depend on number of threads, such that results are non deterministic if not using only one thread :-/ 
     params:
         knowns_settings=lambda wildcards: [' -known %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'RealignerTargetCreator')],
     shell:
