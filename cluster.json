@@ -39,8 +39,8 @@
     "bwa":
     {
       "ppn" : "3",
-      "mem" : "32GB",
-      "time" : "01:59:59",
+      "mem" : "15GB",
+      "time" : "03:59:59",
     },
 
     "remove_pcr_duplicates":
@@ -52,6 +52,7 @@
     "gatk_RealignerTargetCreator":
     {
       "mem" : "4GB",
+      "ppn" : 1,
     },
 
     "gatk_IndelRealigner":
@@ -71,6 +72,7 @@
     {
       "time" : "02:59:59",
       "mem" : "16GB",
+      "ppn" : 5,
     },
 
     "gatk_HaplotypeCaller":
