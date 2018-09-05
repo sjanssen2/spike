@@ -1,0 +1,6 @@
+name: spike_gatk
+
+channels:
+  - bioconda
+dependencies:
+  - tabix =0.2.5

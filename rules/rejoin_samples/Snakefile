@@ -11,6 +11,8 @@ rule rejoin_sample:
         "{prefix}%s%s.{sample}_{direction}.log" % (config['dirs']['logs'], config['stepnames']['rejoin_samples'])
     benchmark:
         "{prefix}%s%s.{sample}_{direction}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['rejoin_samples'])
+    conda:
+        "envs/spike_rejoin.yaml"
     threads:
         1
     params:
@@ -19,9 +21,12 @@ rule rejoin_sample:
         'if [[ $(echo "{params.single_fastqs}" | wc -w) -gt 1 ]]; then'
         # you can just concatenate multiple *.gz files into one, while
         # content when decompressed remains the same!
-        ' cat {params.single_fastqs} > {output} 2> {log};'
+        # NO, you cannot!
+        #' cat {params.single_fastqs} > {output} 2> {log};'
+        ' zcat {params.single_fastqs}'
+        ' | pigz --blocksize 1024 -6 --stdout '
+        ' | dd > {output} 2>> {log}; '
         ' else'
         ' cp -l -v {params.single_fastqs} {output} 2> {log} 1>&2;'
-        ' sleep 5;'  # for cluster latency
         ' chmod u+w {output} 2>> {log};'
         ' fi;'
