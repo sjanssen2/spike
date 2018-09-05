@@ -1,0 +1,40 @@
+rule reference_genome_hGRC37:
+    output:
+        "{prefix}%shGRC37.fa" % (config['dirs']['references'])
+    log:
+        "{prefix}%sReferences/hGRC37.fa.log" % (config['dirs']['logs'])
+    benchmark:
+        "{prefix}%sReferences/hGRC37.fa.benchmark" % (config['dirs']['benchmarks'])
+    shell:
+        "tmpdir=$(mktemp --tmpdir={config[dirs][tmpdir]} -d)"
+        #"export tmpdir=/tmp/tmp.CuATH9Gqn6 2> {log}"
+        " && rm -f {output}"
+        ' && for chromosome in `echo "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y"`; do'
+        " if [ ! -f $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa.gz ]; then wget ftp://ftp.ensembl.org/pub/grch37/current/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa.gz -O $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa.gz 2>> {log}; fi;"
+        " if [ ! -f $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa ]; then gunzip $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa.gz -c > $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa 2>> {log}; fi;"
+        " head -n 1 $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa | cut -d ' ' -f -3 >> {output} 2>> {log};"
+        " tail -n +2 $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa >> {output} 2>> {log};"
+        " done"
+        # apply to manual modification to be compatible with Michael's version
+        ' && sed -i "s/^CGCTACATAGCTGNCTTATTATTCGTGGTCCCCTATGACCCCCTGATCATTTTCCCTGAG$/CGCTACATAGCTGMCTTATTATTCGTGGTCCCCTATGACCCCCTGATCATTTTCCCTGAG/" {output} 2>> {log}'
+        ' && sed -i "s/^CCNNGCTTGGTTCTAACAATGAATTTAATAAGAATTGTATTTAATCAATGTTTAAATATA$/CCRRGCTTGGTTCTAACAATGAATTTAATAAGAATTGTATTTAATCAATGTTTAAATATA/" {output} 2>> {log}'
+        # assert file is identical to what we expect
+        " && echo 'a4d1c7c3c9afdc77184e1bdb04720648  {output}' > $tmpdir/md5 2>> {log}"
+        " && md5sum -c $tmpdir/md5 2>> {log} 1&>2"
+        " && rm -rf $tmpdir"
+
+
+rule reference_bwa_index:
+    input:
+        "{prefix}%s{refgenome}.fa" % (config['dirs']['references'])
+    output:
+        "{prefix}%s{refgenome}.fa.bwt" % (config['dirs']['references'])
+    log:
+        "{prefix}%sReferences/reference_bwa_index_{refgenome}.log" % (config['dirs']['logs'])
+    benchmark:
+        "{prefix}%sReferences/reference_bwa_index_{refgenome}.benchmark" % (config['dirs']['benchmarks'])
+    conda:
+        "../map/envs/spike_map.yaml"
+    shell:
+        "bwa index -a bwtsw {input} 2> {log}"
+        #hGRC37.fa.bwt

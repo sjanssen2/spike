@@ -17,6 +17,7 @@ if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith
 configfile: "config.yaml"
 SAMPLESHEETS = get_global_samplesheets(os.path.join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets']))
 
+include: "rules/references/Snakefile"
 include: "rules/demultiplex/Snakefile"
 include: "rules/backup/Snakefile"
 include: "rules/rejoin_samples/Snakefile"
