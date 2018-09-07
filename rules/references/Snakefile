@@ -69,7 +69,7 @@ rule reference_genome_hGRC37:
         " && echo 'bb0544da0cca98490eab38d284a97870  {output.chr_22}' > $tmpdir/md5 2>> {log}"
         " && echo '5b7f48db841076875918b43d99a13d82  {output.chr_X}' > $tmpdir/md5 2>> {log}"
         " && echo '8b5e36ebc92c9c9b56610e5a28e16dd5  {output.chr_Y}' > $tmpdir/md5 2>> {log}"
-        " && md5sum -c $tmpdir/md5 2>> {log} 1&>2"
+        " && md5sum -c $tmpdir/md5 2>> {log} 1>&2"
         " && rm -rf $tmpdir"
 
 
@@ -108,11 +108,7 @@ rule reference_genome_GRCm38_71:
         ' && for chromosome in `echo "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 X Y"`; do'
         " if [ ! -f $tmpdir/Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa.gz ]; then wget ftp://ftp.ensembl.org/pub/release-71/fasta/mus_musculus/dna/Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa.gz -O $tmpdir/Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa.gz 2>> {log}; fi;"
         " if [ ! -f $(dirname {output.chr_1})/Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa ]; then gunzip $tmpdir/Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa.gz -c > $(dirname {output.chr_1})/Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa 2>> {log}; fi;"
-        # apply to manual modification to be compatible with Michael's version
-        #' if [ $chromosome == "3" ]; then sed -i "s/^CGCTACATAGCTGNCTTATTATTCGTGGTCCCCTATGACCCCCTGATCATTTTCCCTGAG$/CGCTACATAGCTGMCTTATTATTCGTGGTCCCCTATGACCCCCTGATCATTTTCCCTGAG/" {output.dir_chromosomes}Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa 2>> {log}; fi;'
-        #' if [ $chromosome == "3" ]; then sed -i "s/^CCNNGCTTGGTTCTAACAATGAATTTAATAAGAATTGTATTTAATCAATGTTTAAATATA$/CCRRGCTTGGTTCTAACAATGAATTTAATAAGAATTGTATTTAATCAATGTTTAAATATA/" {output.dir_chromosomes}Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa 2>> {log}; fi;'
-        " head -n 1 $(dirname {output.chr_1})/Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa | cut -d ' ' -f -3 >> {output.all} 2>> {log};"
-        " tail -n +2 $(dirname {output.chr_1})/Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa >> {output.all} 2>> {log};"
+        " cat $(dirname {output.chr_1})/Mus_musculus.GRCm38.71.dna.chromosome.$chromosome.fa >> {output.all} 2>> {log};"
         " done"
         # assert file is identical to what we expect
         " && echo 'a9202273ace60d2834f4a1bfd416bb4c  {output.all}' > $tmpdir/md5 2>> {log}"
@@ -137,7 +133,7 @@ rule reference_genome_GRCm38_71:
         " && echo '262d6b46eba0d258ed845e888bc1d1d7  {output.chr_19}' > $tmpdir/md5 2>> {log}"
         " && echo '172ab515a2aae997490d51f96ed89852  {output.chr_X}' > $tmpdir/md5 2>> {log}"
         " && echo 'd5fa6a5454fbc287606b14d28afc11fe  {output.chr_Y}' > $tmpdir/md5 2>> {log}"
-        " && md5sum -c $tmpdir/md5 2>> {log} 1&>2"
+        " && md5sum -c $tmpdir/md5 2>> {log} 1>&2"
         " && rm -rf $tmpdir"
 
 
@@ -146,10 +142,10 @@ rule reference_bwa_index:
         "{prefix}%s{refgenome}.fa" % (config['dirs']['references'])
     output:
         bwt="{prefix}%s{refgenome}.fa.bwt" % (config['dirs']['references']),
-        bwt="{prefix}%s{refgenome}.fa.pac" % (config['dirs']['references']),
-        bwt="{prefix}%s{refgenome}.fa.ann" % (config['dirs']['references']),
-        bwt="{prefix}%s{refgenome}.fa.amb" % (config['dirs']['references']),
-        bwt="{prefix}%s{refgenome}.fa.sa" % (config['dirs']['references']),
+        pac="{prefix}%s{refgenome}.fa.pac" % (config['dirs']['references']),
+        ann="{prefix}%s{refgenome}.fa.ann" % (config['dirs']['references']),
+        amb="{prefix}%s{refgenome}.fa.amb" % (config['dirs']['references']),
+        sa="{prefix}%s{refgenome}.fa.sa" % (config['dirs']['references']),
     log:
         "{prefix}%sReferences/reference_bwa_index_{refgenome}.log" % (config['dirs']['logs'])
     benchmark:
