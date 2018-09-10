@@ -29,6 +29,7 @@
     "xenograft_bwa_aln":
     {
       "mem" : "8GB",
+      "ppn" : "4"
     },
 
     "xenograft_bwa_sampe":
