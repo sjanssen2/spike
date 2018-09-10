@@ -35,6 +35,7 @@ dirs:
 
   samplesheets: "SampleSheets/"
   rawillumina: "Raw_Illumina/"
+  persamplefastq: "PerSampleFastq/"
   benchmarks: "Benchmarks/"
   logs: "Logs/"
 
@@ -127,7 +128,18 @@ projects:
       - background
       - tumornormal
     species: homo sapiens
-
+  ALL_family_LB:
+    actions:
+      - persamplefastq
+      - background
+      - trio
+    species: homo sapiens
+    exometrack:
+      file: "Agilent_SureSelect_Human_AllExon_V6_r2.hGRC37.Covered.bed"
+      protocol_name: "SureSelectHumanAllExonV6r2"
+    fastq:
+      forward: '_1'
+      reverse: '_2'
 
 references:
   genomes:
