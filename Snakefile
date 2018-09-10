@@ -7,6 +7,7 @@ from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_sampl
 from scripts.utils import exclude_sample
 from scripts.checks import check_illuminarun_complete
 from scripts.reports import report_undertermined_filesizes, report_exome_coverage
+from scripts.convert_platypus import annotate
 
 
 if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith("murks"):
