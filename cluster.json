@@ -77,9 +77,23 @@
 
     "gatk_HaplotypeCaller":
     {
-      "ppn" : "2",
+      "ppn" : "1",
       "time" : "02:59:59",
       "mem" : "8GB",
+    },
+
+    "gatk_VariantRecalibrator_SNP":
+    {
+      "ppn" : "1",
+      "time" : "00:59:59",
+      "mem" : "4GB",
+    },
+
+    "gatk_VariantRecalibrator_INDEL":
+    {
+      "ppn" : "1",
+      "time" : "00:59:59",
+      "mem" : "4GB",
     },
 
     "varscan_trio":
