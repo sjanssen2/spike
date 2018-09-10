@@ -16,7 +16,7 @@ rule gatk_RealignerTargetCreator:
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        1 # random numbergenerator seems to depend on number of threads, such that results are non deterministic if not using only one thread :-/ 
+        1 # random numbergenerator seems to depend on number of threads, such that results are non deterministic if not using only one thread :-/
     params:
         knowns_settings=lambda wildcards: [' -known %s%s%s ' % (wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'RealignerTargetCreator')],
     shell:
@@ -201,13 +201,13 @@ rule gatk_HaplotypeCaller:
         vcf="{prefix}%s%s/{sample}.gatk.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
         idx="{prefix}%s%s/{sample}.gatk.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
     log:
-        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_HaplotypeCaller'])
+        "{prefix}%s%s/gatk/{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_HaplotypeCaller'])
     benchmark:
-        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_HaplotypeCaller'])
+        "{prefix}%s%s/gatk/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_HaplotypeCaller'])
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        1  # since this tool is known to crash when using in parallel
+        1  # we need to fix the number of threads to 1, since otherwise results are non-deterministic across multiple runs, i.e. not reproducible!!
     shell:
         'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi && '
         "java"
@@ -309,7 +309,7 @@ rule gatk_VariantRecalibrator_SNP:
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        3
+        1  # we need to fix the number of threads to 1, since otherwise results are non-deterministic across multiple runs, i.e. not reproducible!!
     params:
         knowns_settings=lambda wildcards: [' --resource:%s %s%s%s' % (known['VariantRecalibrator_SNP'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'VariantRecalibrator_SNP')],
     shell:
@@ -361,7 +361,7 @@ rule gatk_VariantRecalibrator_INDEL:
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        3
+        1  # we need to fix the number of threads to 1, since otherwise results are non-deterministic across multiple runs, i.e. not reproducible!!
     params:
         knowns_settings=lambda wildcards: [' --resource:%s %s%s%s' % (known['VariantRecalibrator_INDEL'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'VariantRecalibrator_INDEL')],
     shell:

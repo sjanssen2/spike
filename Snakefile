@@ -7,6 +7,7 @@ from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_sampl
 from scripts.utils import exclude_sample
 from scripts.checks import check_illuminarun_complete
 from scripts.reports import report_undertermined_filesizes, report_exome_coverage
+from scripts.convert_platypus import annotate
 
 
 if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith("murks"):
@@ -29,7 +30,7 @@ include: "rules/varscan/Snakefile"
 include: "rules/freec/Snakefile"
 include: "rules/mutect/Snakefile"
 
-localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, correct_genotypes_somatic, correct_genotypes, varscan_fpfilter_somatic, somatic_reduce, vcf_annotate, merge_somatic
+localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, correct_genotypes_somatic, correct_genotypes, varscan_fpfilter_somatic, somatic_reduce, vcf_annotate, merge_somatic, platypus_filtered
 
 rule all:
     input:
