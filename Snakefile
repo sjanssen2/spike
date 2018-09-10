@@ -7,6 +7,7 @@ from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_sampl
 from scripts.utils import exclude_sample
 from scripts.checks import check_illuminarun_complete
 from scripts.reports import report_undertermined_filesizes, report_exome_coverage
+from scripts.convert_platypus import annotate
 
 
 if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith("murks"):
@@ -29,7 +30,7 @@ include: "rules/varscan/Snakefile"
 include: "rules/freec/Snakefile"
 include: "rules/mutect/Snakefile"
 
-localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, per_sample_fastq
+localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, per_sample_fastq, correct_genotypes_somatic, correct_genotypes, varscan_fpfilter_somatic, somatic_reduce, vcf_annotate, merge_somatic, platypus_filtered
 
 rule all:
     input:
@@ -63,7 +64,7 @@ rule all:
 
         # tumornormal calling for complete tumor/normal pairs of all runs
         tumornormal_freec=['%s%s%s/%s/%s/tumor.pileup.gz_BAF.txt' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'],         pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
-        tumornormal_mutect=['%s%s%s/%s/%s.all_calls.csv'          % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'],        pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+        tumornormal_mutect=['%s%s%s/%s/%s.all_calls.vcf.gz'       % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'],        pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
         tumornormal_varscan=['%s%s%s/%s/%s.indel_snp.hc.vcf'      % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['merge_somatic'], pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
 
         # trio calling for complete trios of all runs

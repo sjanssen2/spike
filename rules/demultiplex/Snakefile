@@ -68,7 +68,7 @@ rule check_undetermined_filesizes:
     benchmark:
         "{prefix}%s%s.{run}.benchmark" % (config['dirs']['benchmarks'], 'check_undetermined_filesizes')
     run:
-        report_undertermined_filesizes(input[0], output[0], os.path.join(config['dirs']['prefix'], config['dirs']['reports'], config['run'], 'error_undetermined-filesizes.pdf'))
+        report_undertermined_filesizes(input[0], output[0], os.path.join(wildcards.preifx, config['dirs']['reports'], wildcards.run, 'error_undetermined-filesizes.pdf'))
 
 
 rule convert_illumina_report:
@@ -91,7 +91,7 @@ rule convert_illumina_report:
         "echo 'Hi there,\n\n"
         "this is an automated message from {config[name_program]}.\n\n"
         "Demultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report, some statistics about the file sizes of undetermined reads and the first base report.\n\n"
-        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' -A {output} -A {input.undetermined} -A {params.firstbase} {config[emails][demultiplexreport]}"
+        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' {config[mail_attachment_parameter]} {output} {config[mail_attachment_parameter]} {input.undetermined} {config[mail_attachment_parameter]} {params.firstbase} {config[emails][demultiplexreport]}"
         " 2>> {log}"
 
 

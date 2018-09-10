@@ -8,9 +8,9 @@ rule platypus:
         vcf="{prefix}%s%s/{sample}.ptp.raw_calls.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller']),
         #idx="{prefix}%s%s/{sample}.ptp.raw_calls.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['gatk_HaplotypeCaller'])
     log:
-        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_HaplotypeCaller'])
+        "{prefix}%s%s/ptp/{sample}.log" % (config['dirs']['logs'], config['stepnames']['gatk_HaplotypeCaller'])
     benchmark:
-        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_HaplotypeCaller'])
+        "{prefix}%s%s/ptp/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['gatk_HaplotypeCaller'])
     conda:
         "envs/spike_platypus.yaml"
     threads:
@@ -41,7 +41,6 @@ rule platypus:
 rule platypus_filtered:
     input:
         vcf="{prefix}%s%s/{sample}.ptp.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_VariantFiltration']),
-        gem="{prefix}%svcf-mapper-0.0.1.gem" % (config['dirs']['references'])
     output:
         vcf="{prefix}%s%s/{sample}.ptp.annotated.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
         #idx="{prefix}%s%s/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
@@ -49,32 +48,10 @@ rule platypus_filtered:
         "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['platypus_filtered'])
     benchmark:
         "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['platypus_filtered'])
-    conda:
-        "envs/spike_platypus.yaml"
     threads:
-        3
-    shell:
-        'if [ $(gem list vcf-mapper -i) == "false" ]; then gem install --rdoc --ri {input.gem}; gem install trollop; fi && '
-        ' cat {input.vcf}'
-        ' | vcf-mapper'
-        ' -a map'
-        ' -f "FORMAT:NR[0]"'
-        ' -t "FORMAT:DP"'
-        ' | vcf-mapper'
-        ' -a map'
-        ' -f "FORMAT:NR"'
-        ' -t "FORMAT:AD[0]"'
-        ' | vcf-mapper'
-        ' -a map'
-        ' -f "FORMAT:NV"'
-        ' -t "FORMAT:AD[1]"'
-        ' | vcf-mapper'
-        ' -a transform'
-        ' -f "FORMAT:AD[0]"'
-        ' -c "substract"'
-        ' -p "#{{FORMAT:NV[0]}}"'
-        ' -o {output.vcf}'
-        " 2>> {log}"
+        1
+    run:
+        annotate(input.vcf, output.vcf)
 
         # %.ptp.annotated.filtered.indels.vcf: %.ptp.filtered.indels.vcf
         # 	@echo "$(DATE) ######### Do a hard filtering of the indels in '$<'. #########"

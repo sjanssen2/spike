@@ -3,5 +3,4 @@ name: spike_gatk
 channels:
   - bioconda
 dependencies:
-  - gatk =3.5
   - tabix =0.2.5

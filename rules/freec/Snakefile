@@ -49,21 +49,20 @@ rule freec:
         "{prefix}%s%s/{entity}/tumor.pileup.gz_normal_CNVs" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         "{prefix}%s%s/{entity}/tumor.pileup.gz_normal_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         "{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        "{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt.log2.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        "{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        #"{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt.log2.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        #"{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         "{prefix}%s%s/{entity}/tumor.pileup.gz_sample.cpn" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         "{prefix}%s%s/{entity}/healthy.pileup.gz_control.cpn" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         baf="{prefix}%s%s/{entity}/tumor.pileup.gz_BAF.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         config="{prefix}%s%s/{entity}.config" % (config['dirs']['intermediate'], config['stepnames']['freec']),
     log:
-        freec="{prefix}%s%s.freec.{entity}.log" % (config['dirs']['logs'], config['stepnames']['freec']),
-        gzratio="{prefix}%s%s.gzratio.{entity}.log" % (config['dirs']['logs'], config['stepnames']['freec'])
+        "{prefix}%s%s.freec.{entity}.log" % (config['dirs']['logs'], config['stepnames']['freec'])
     benchmark:
         "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['freec'])
     conda:
         "envs/spike_freec.yaml"
     threads:
-        8
+        config['num_threads']
     params:
         minCNAlength=lambda wildcards: '"minCNAlength = 4"' if get_species(wildcards.entity, SAMPLESHEETS, config) == 'mus musculus' else ""
     shell:
@@ -105,16 +104,36 @@ rule freec:
         # actual command
         ' {input.freec}'
         ' -conf {output.config}'
-        ' 2> {log.freec}'
+        ' 2> {log}'
         ' 1>&2'
         ' && cd $(dirname {output.baf})'
+        ' && mv *.pileup.gz_control.cpn healthy.pileup.gz_control.cpn'
+        ' && for ending in `echo "pileup.gz_BAF.txt pileup.gz_CNVs pileup.gz_normal_BAF.txt pileup.gz_normal_CNVs pileup.gz_normal_ratio.txt pileup.gz_ratio.txt pileup.gz_sample.cpn"`; do mv *.$ending tumor.$ending; done'
+
+rule freec_render:
+    # this poses the issue of missing X11 server on HPC at HHU :-/
+    # Do we really need those plots?
+    input:
+        "{prefix}%s%s/{tumorsample}/tumor.pileup.gz_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec'])
+    output:
+        linear="{prefix}%s%s/{tumorsample}/tumor.pileup.gz_ratio.txt.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        log="{prefix}%s%s/{tumorsample}/tumor.pileup.gz_ratio.txt.log2.png" % (config['dirs']['intermediate'], config['stepnames']['freec'])
+    log:
+        "{prefix}%s%s.gzratio.{tumorsample}.log" % (config['dirs']['logs'], config['stepnames']['freec'])
+    benchmark:
+        "{prefix}%s{tumorsample}.%s-plot.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['freec'])
+    conda:
+        "envs/spike_freec.yaml"
+    threads:
+        1
+    shell:
+        'cd $(dirname {input})'
         ' && cat $CONDA_PREFIX/bin/makeGraph.R'
         ' | R '
         ' --slave'
         ' --args 2'
-        ' *.pileup.gz_ratio.txt'
-        ' 2>> {log.gzratio}'
-        ' && mv *.pileup.gz_control.cpn healthy.pileup.gz_control.cpn'
-        ' && for ending in `echo "pileup.gz_BAF.txt pileup.gz_CNVs pileup.gz_normal_BAF.txt pileup.gz_normal_CNVs pileup.gz_normal_ratio.txt pileup.gz_ratio.txt pileup.gz_ratio.txt.log2.png pileup.gz_ratio.txt.png pileup.gz_sample.cpn"`; do mv *.$ending tumor.$ending; done'
+        ' {input}'
+        ' 2>> {log}'
+        #' && for ending in `echo "pileup.gz_ratio.txt.log2.png pileup.gz_ratio.txt.png"`; do mv *.$ending tumor.$ending; done'
 
         # freec -conf $CONFIG_FILE && cd $OUTPUT_DIR && cat /data/biotools/src/freec_6.6/makeGraph.R | R --slave --args 2 $SAMPLE_PREFIX.pileup.gz_ratio.txt"
