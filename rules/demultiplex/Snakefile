@@ -93,3 +93,35 @@ rule convert_illumina_report:
         "Demultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report, some statistics about the file sizes of undetermined reads and the first base report.\n\n"
         "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' {config[mail_attachment_parameter]} {output} {config[mail_attachment_parameter]} {input.undetermined} {config[mail_attachment_parameter]} {params.firstbase} {config[emails][demultiplexreport]}"
         " 2>> {log}"
+
+
+rule per_sample_fastq:
+    input:
+        lambda wildcards: ["%s%s%s%s/%s%s.fastq.gz" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['persamplefastq'], wildcards.run, sample, direction)
+                           for sample in get_persamplefastq_samples(SAMPLESHEETS, config, get='samples')
+                           for direction in (config['projects'][get_persamplefastq_samples(SAMPLESHEETS, config, get='projects')[0]]['fastq']['forward'],
+                                             config['projects'][get_persamplefastq_samples(SAMPLESHEETS, config, get='projects')[0]]['fastq']['reverse'])]
+    output:
+        fastqs=directory("{prefix}%s%s/{run,[^/]+XX}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+    log:
+        "{prefix}%sper_sample_fastq.{run}.log" % (config['dirs']['logs'])
+    benchmark:
+        "{prefix}%sper_sample_fastq.{run}.benchmark" % (config['dirs']['benchmarks'])
+    run:
+        project = SAMPLESHEETS[SAMPLESHEETS['run'] == wildcards.run]['Sample_Project'].iloc[0]
+        map_directions = {config['projects'][project]['fastq']['forward']: 'R1',
+                          config['projects'][project]['fastq']['reverse']: 'R2'}
+        for fastq in input:
+            #../Spike_data/Inputs/PerSampleFastq/180608_K00171_0758_HWYTJBBXX/ALL_family_LB/LB_4-2_1.fastq.gz ../Spike_data/ 180608_K00171_0758_HWYTJBBXX
+            fp_input = fastq[fastq.find(wildcards.run) + len(wildcards.run)+1:-1*(len('.fastq.gz'))]
+            fp_output = None
+            for direction in map_directions.keys():
+                if fp_input.endswith(direction):
+                    fp_output = fp_input[:-1*len(direction)] + '_L000_' + map_directions[direction] + '_001.fastq.gz'
+                    break
+
+            fp_input = '%s%s%s%s/%s.fastq.gz' % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['persamplefastq'], wildcards.run, fp_input)
+            fp_output = '%s%s%s/%s/%s' % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, fp_output)
+
+            os.makedirs(os.path.dirname(fp_output), exist_ok=True)
+            os.link(fp_input, fp_output)
