@@ -33,6 +33,15 @@ include: "rules/mutect/Snakefile"
 
 localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, per_sample_fastq, correct_genotypes_somatic, correct_genotypes, varscan_fpfilter_somatic, somatic_reduce, vcf_annotate, merge_somatic, platypus_filtered
 
+
+rule references:
+    # build all needed reference files
+    input:
+        genomes=["%s%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], organism, ending)
+                 for organism in ['hGRC37', 'Mus_musculus.GRCm38.71.dna', 'GRCh_GRCm_filtering_hybrid']
+                 for ending in config['endings_bwa']],
+
+
 rule all:
     input:
         # create a yield report per run as one of the checkpoints for the wetlab crew
