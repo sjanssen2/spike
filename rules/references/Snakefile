@@ -1,7 +1,6 @@
 rule reference_genome_hGRC37:
     output:
         all="{prefix}%shGRC37.fa" % (config['dirs']['references']),
-        dir_chromosomes=directory("{prefix}%shGRC37_chromosomes/" % (config['dirs']['references'])),
         chr_1="{prefix}%shGRC37_chromosomes/1.fa" % (config['dirs']['references']),
         chr_2="{prefix}%shGRC37_chromosomes/2.fa" % (config['dirs']['references']),
         chr_3="{prefix}%shGRC37_chromosomes/3.fa" % (config['dirs']['references']),
@@ -36,12 +35,12 @@ rule reference_genome_hGRC37:
         " && rm -f {output.all}"
         ' && for chromosome in `echo "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y"`; do'
         " if [ ! -f $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa.gz ]; then wget ftp://ftp.ensembl.org/pub/grch37/current/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa.gz -O $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa.gz 2>> {log}; fi;"
-        " if [ ! -f {output.dir_chromosomes}$chromosome.fa ]; gunzip $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa.gz -c > {output.dir_chromosomes}$chromosome.fa 2>> {log}; fi;"
+        " if [ ! -f $(dirname {output.chr_1})/$chromosome.fa ]; gunzip $tmpdir/Homo_sapiens.GRCh37.dna.chromosome.$chromosome.fa.gz -c > $(dirname {output.chr_1})/$chromosome.fa 2>> {log}; fi;"
         # apply to manual modification to be compatible with Michael's version
-        ' if [ $chromosome == "3" ]; then sed -i "s/^CGCTACATAGCTGNCTTATTATTCGTGGTCCCCTATGACCCCCTGATCATTTTCCCTGAG$/CGCTACATAGCTGMCTTATTATTCGTGGTCCCCTATGACCCCCTGATCATTTTCCCTGAG/" {output.dir_chromosomes}$chromosome.fa 2>> {log}; fi;'
-        ' if [ $chromosome == "3" ]; then sed -i "s/^CCNNGCTTGGTTCTAACAATGAATTTAATAAGAATTGTATTTAATCAATGTTTAAATATA$/CCRRGCTTGGTTCTAACAATGAATTTAATAAGAATTGTATTTAATCAATGTTTAAATATA/" {output.dir_chromosomes}$chromosome.fa 2>> {log}; fi;'
-        " head -n 1 {output.dir_chromosomes}$chromosome.fa | cut -d ' ' -f -3 >> {output.all} 2>> {log};"
-        " tail -n +2 {output.dir_chromosomes}$chromosome.fa >> {output.all} 2>> {log};"
+        ' if [ $chromosome == "3" ]; then sed -i "s/^CGCTACATAGCTGNCTTATTATTCGTGGTCCCCTATGACCCCCTGATCATTTTCCCTGAG$/CGCTACATAGCTGMCTTATTATTCGTGGTCCCCTATGACCCCCTGATCATTTTCCCTGAG/" $(dirname {output.chr_1})/$chromosome.fa 2>> {log}; fi;'
+        ' if [ $chromosome == "3" ]; then sed -i "s/^CCNNGCTTGGTTCTAACAATGAATTTAATAAGAATTGTATTTAATCAATGTTTAAATATA$/CCRRGCTTGGTTCTAACAATGAATTTAATAAGAATTGTATTTAATCAATGTTTAAATATA/" $(dirname {output.chr_1})/$chromosome.fa 2>> {log}; fi;'
+        " head -n 1 $(dirname {output.chr_1})/$chromosome.fa | cut -d ' ' -f -3 >> {output.all} 2>> {log};"
+        " tail -n +2 $(dirname {output.chr_1})/$chromosome.fa >> {output.all} 2>> {log};"
         " done"
         # assert file is identical to what we expect
         " && echo 'a4d1c7c3c9afdc77184e1bdb04720648  {output.all}' > $tmpdir/md5 2>> {log}"
@@ -154,16 +153,130 @@ rule reference_bwa_index:
         "../map/envs/spike_map.yaml"
     shell:
         "bwa index -a bwtsw {input} 2> {log} 1>&2"
-        #hGRC37.fa.bwt
+        ' && md5sum -c <('
+        'echo "'
+        # If you want to add a new reference, than make sure you add accoring five lines here, the grep will restrict information to the correct reference name.
+        '8ab1ad4b0d36b22c33b5f0ae9d9404a4  {wildcards.prefix}{config[dirs][references]}hGRC37.fa.amb\n'
+        '7b89b29509852dfc59a6098463b821df  {wildcards.prefix}{config[dirs][references]}hGRC37.fa.ann\n'
+        '42819dc2cd93fc15a79ec3a95f119831  {wildcards.prefix}{config[dirs][references]}hGRC37.fa.bwt\n'
+        '848d2f3e268aa14df2e1014e77e6705c  {wildcards.prefix}{config[dirs][references]}hGRC37.fa.pac\n'
+        '85313f4f9a907012e387191567b45c40  {wildcards.prefix}{config[dirs][references]}hGRC37.fa.sa\n'
+        'd703db3530bbfd13f5b88bf753f97ff6  {wildcards.prefix}{config[dirs][references]}Mus_musculus.GRCm38.71.dna.fa.amb\n'
+        '7c86d5b83387722ba0a6be941a831a64  {wildcards.prefix}{config[dirs][references]}Mus_musculus.GRCm38.71.dna.fa.ann\n'
+        '666c98bc568069c0eafd092d70d4644a  {wildcards.prefix}{config[dirs][references]}Mus_musculus.GRCm38.71.dna.fa.bwt\n'
+        'b056ccb4a4faf7990c8ece1c006946f9  {wildcards.prefix}{config[dirs][references]}Mus_musculus.GRCm38.71.dna.fa.pac\n'
+        'e1f50e549da855576c42cca428a896ae  {wildcards.prefix}{config[dirs][references]}Mus_musculus.GRCm38.71.dna.fa.sa\n'
+        'd94568885b9fd12c1c324be2cbf2a816  {wildcards.prefix}{config[dirs][references]}GRCh_GRCm_filtering_hybrid.fa.amb\n'
+        'abfa293c4527172822b33c5a4c1124df  {wildcards.prefix}{config[dirs][references]}GRCh_GRCm_filtering_hybrid.fa.ann\n'
+        'ed5b70b6acfea8180ccf5f00fd06709d  {wildcards.prefix}{config[dirs][references]}GRCh_GRCm_filtering_hybrid.fa.bwt\n'
+        'e94a9577e9afb3a73a92df6e9c0915ea  {wildcards.prefix}{config[dirs][references]}GRCh_GRCm_filtering_hybrid.fa.pac\n'
+        '7b75b73bdd1b86e28f9e2d71228e09bf  {wildcards.prefix}{config[dirs][references]}GRCh_GRCm_filtering_hybrid.fa.sa\n'
+        '" | grep {wildcards.refgenome}) 2>> {log} 1>&2'
 
-# 8ab1ad4b0d36b22c33b5f0ae9d9404a4  /data/Spike_refdata/References/hGRC37.fa.amb
-# 7b89b29509852dfc59a6098463b821df  /data/Spike_refdata/References/hGRC37.fa.ann
-# 42819dc2cd93fc15a79ec3a95f119831  /data/Spike_refdata/References/hGRC37.fa.bwt
-# 848d2f3e268aa14df2e1014e77e6705c  /data/Spike_refdata/References/hGRC37.fa.pac
-# 85313f4f9a907012e387191567b45c40  /data/Spike_refdata/References/hGRC37.fa.sa
 
-# 8ab1ad4b0d36b22c33b5f0ae9d9404a4  /data/biotools/reference/hGRC37/hGRC37.fa.amb
-# 7b89b29509852dfc59a6098463b821df  /data/biotools/reference/hGRC37/hGRC37.fa.ann
-# 42819dc2cd93fc15a79ec3a95f119831  /data/biotools/reference/hGRC37/hGRC37.fa.bwt
-# 848d2f3e268aa14df2e1014e77e6705c  /data/biotools/reference/hGRC37/hGRC37.fa.pac
-# 85313f4f9a907012e387191567b45c40  /data/biotools/reference/hGRC37/hGRC37.fa.sa
+rule reference_dict:
+    input:
+        "{prefix}%s{refgenome}.fa" % (config['dirs']['references'])
+    output:
+        "{prefix}%s{refgenome}.dict" % (config['dirs']['references']),
+    log:
+        "{prefix}%sReferences/reference_dict_{refgenome}.log" % (config['dirs']['logs'])
+    benchmark:
+        "{prefix}%sReferences/reference_dict_{refgenome}.benchmark" % (config['dirs']['benchmarks'])
+    conda:
+        "../map/envs/spike_map.yaml"
+    threads:
+        1  # since this picard tools function doesn't support multithreading :-(
+    shell:
+        "java"
+        " -Xmx4g"
+        " -XX:ParallelGCThreads={threads}"
+        " -jar ${{CONDA_PREFIX}}/share/picard-2.0.1-1/picard.jar"
+        " CreateSequenceDictionary"
+        " R={input}"
+        " O={output}"
+        " 2> {log}"
+        " && obs=`tail -n +2 {output} | cut -f -3 | md5sum | cut -d ' ' -f 1`"
+        ' && exp=`echo "'
+        '6853fdd566fc1284657431e42807d71e\tMus_musculus.GRCm38.71.dna.dict\n'
+        'd6c0d0b2e56d64b20cadec6638b5ffe7\thGRC37.dict\n'
+        'da6e1a1b6767e0b703207172f1281d51\tGRCh_GRCm_filtering_hybrid.dict\n'
+        '" | grep {wildcards.refgenome} | cut -f 1`'
+        " && [ $exp == $obs ] 2>> {log}"
+        # " && echo $obs"
+
+
+rule reference_faidx:
+    input:
+        "{prefix}%s{refgenome}.fa" % (config['dirs']['references'])
+    output:
+        "{prefix}%s{refgenome}.fa.fai" % (config['dirs']['references']),
+    log:
+        "{prefix}%sReferences/reference_faidx_{refgenome}.log" % (config['dirs']['logs'])
+    benchmark:
+        "{prefix}%sReferences/reference_faidx_{refgenome}.benchmark" % (config['dirs']['benchmarks'])
+    conda:
+        "../map/envs/spike_map.yaml"
+    threads:
+        1  # since this picard tools function doesn't support multithreading :-(
+    shell:
+        "cd $(dirname {output})"
+        " && samtools faidx {input} 2> {log}"
+        ' && obs=`md5sum {output} | cut -d " " -f 1`'
+        ' && exp=`echo "'
+        '37c9b4b94879f23c986ba595a6e78841\t{wildcards.prefix}{config[dirs][references]}hGRC37.fa.fai\n'
+        '86ae403b700f1183e18f92532b14915c\t{wildcards.prefix}{config[dirs][references]}Mus_musculus.GRCm38.71.dna.fa.fai\n'
+        'f2832bc55c4b89138539ec4198a33631\t{wildcards.prefix}{config[dirs][references]}GRCh_GRCm_filtering_hybrid.fa.fai\n'
+        '" | grep {wildcards.refgenome} | cut -f 1`'
+        " && [ $exp == $obs ] 2>> {log}"
+
+
+rule reference_xenograft_GRCh_GRCm:
+    input:
+        GRCh="{prefix}%shGRC37.fa" % (config['dirs']['references']),
+        GRCm="{prefix}%sMus_musculus.GRCm38.71.dna.fa" % (config['dirs']['references']),
+    output:
+        "{prefix}%sGRCh_GRCm_filtering_hybrid.fa" % (config['dirs']['references']),
+    log:
+        "{prefix}%sReferences/reference_xenograft_GRCh_GRCm.log" % (config['dirs']['logs'])
+    benchmark:
+        "{prefix}%sReferences/reference_xenograft_GRCh_GRCm.benchmark" % (config['dirs']['benchmarks'])
+    threads:
+        1
+    shell:
+        # renaming mouse chromsomes to be easily filtered:
+        # merging the genomes
+        'cat'
+        ' {input.GRCh}'
+        ' <(cat {input.GRCm} | sed -e "s/>/>mouse_/g")'
+        ' > {output}'
+        ' 2> {log}'
+        ' && obs=`md5sum {output} | cut -d " " -f 1`'
+        ' && exp="60a50ac3cfb30b1c59e19e1155514091"'
+        " && [ $exp == $obs ] 2>> {log}"
+
+
+rule reference_knownSNVs:
+    output:
+        vcf="{prefix}%s{db,1000G_phase1.indels.b37}.vcf" % (config['dirs']['references']),
+        #idx="{prefix}%s{db,1000G_phase1.indels.b37}.vcf.idx" % (config['dirs']['references'])
+    log:
+        "{prefix}%sReferences/reference_knownSNVs_{db}.log" % (config['dirs']['logs'])
+    benchmark:
+        "{prefix}%sReferences/reference_knownSNVs_{db}.benchmark" % (config['dirs']['benchmarks'])
+    threads:
+        1
+    #conda:
+    #    '../varscan/envs/spike_vcftools.yaml'
+    shell:
+        'wget ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/{wildcards.db}.vcf.gz -O - 2> {log}'
+        ' | gunzip -c > {output.vcf} 2>> {log}'
+        #' && tabix"
+        #" -s 1"
+        #" -b 2"
+        #" -e 2"
+        #" {output.vcf}"
+        #" 2>> {log}"
+
+#wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/1000G_phase1.indels.b37.vcf.gz
+#wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/b37/Mills_and_1000G_gold_standard.indels.b37.vcf.gz
