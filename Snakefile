@@ -40,6 +40,8 @@ rule references:
         genomes=["%s%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], organism, ending)
                  for organism in ['hGRC37', 'Mus_musculus.GRCm38.71.dna', 'GRCh_GRCm_filtering_hybrid']
                  for ending in config['endings_bwa']],
+        gatkbundle=["%s%s%s.vcf" % (config['dirs']['prefix'], config['dirs']['references'], vcf)
+                    for vcf in ['1000G_phase1.indels.b37', 'Mills_and_1000G_gold_standard.indels.b37', '1000G_omni2.5.b37', '1000G_phase1.snps.high_confidence.b37', 'dbsnp_138.b37', 'hapmap_3.3.b37']],
 
 
 rule all:
