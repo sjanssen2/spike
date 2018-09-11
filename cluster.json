@@ -29,12 +29,13 @@
     "xenograft_bwa_aln":
     {
       "mem" : "8GB",
-      "ppn" : "4"
+      "ppn" : "4",
+      "time" : "02:59:50",
     },
 
     "xenograft_bwa_sampe":
     { "ppn" : "2",
-      "time" : "03:59:50",
+      "time" : "05:59:50",
     },
 
     "bwa":
