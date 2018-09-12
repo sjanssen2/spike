@@ -54,7 +54,7 @@ rule mutect:
         #" 2>> {log.post}"
         #" && gzip {output.csv}"
         #" 2>> {log.post}"
-        " && bgzip {output.vcf}"
+        " && bgzip -f {output.vcf}"
         " && tabix -p vcf {output.vcf}.gz"
         " 2>> {log.post}"
 
