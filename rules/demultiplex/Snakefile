@@ -24,6 +24,8 @@ rule demultiplex:
         "{prefix}%s%s.{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
     threads:
         config['num_threads']
+    conda:
+        "envs/spike_demux.yaml"
     shell:
         "uname -a > {log} 2>&1 &&"
         "bcl2fastq"

@@ -11,8 +11,9 @@ from scripts.convert_platypus import annotate
 
 
 if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith("murks"):
+    # I now prefer to use the bcl2fastq version shipped via conda!
     # this loads a highly parallelized version of bcl2fastq compiled by HHU-HPC's guys
-    shell.prefix("module load bcl2fastq;")
+    # shell.prefix("module load bcl2fastq;")
     shell.prefix("module load R;")
 
 configfile: "config.yaml"
