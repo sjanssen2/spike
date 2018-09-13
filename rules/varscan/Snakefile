@@ -141,7 +141,7 @@ rule varscan_filter_INDEL:
 rule bam_readcount_SNP:
     input:
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.trio, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
-        vcf=lambda wildcards: "%s%s%s/%s.snp.filtered.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['varscan_filter'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS)),
+        vcf="{prefix}%s%s/{trio}.snp.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS)),
     output:
         var="{prefix}%s%s/{trio}.snp.filtered.var" % (config['dirs']['intermediate'], config['stepnames']['bam_readcount']),
@@ -427,6 +427,7 @@ rule samtools_mpileup_somatic:
         "samtools"
         " mpileup"
         " -f {input.references[0]}"
+        " -q 1"
         " -l {input.exometrack}"
         " -B {input.bam}"
         " > {output}"

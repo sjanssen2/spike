@@ -243,8 +243,9 @@ def get_trios(samplesheets, config):
 
     trios = []
     for trio, g in trio_samples.groupby(['Sample_Project', 'ukd_entity_id']):
-        # only choose comlete trios
-        if set(g['ukd_entity_role'].unique()) == {'patient', 'mother', 'father'}:
+        # only choose comlete trios, i.e. entities that have at least patient, mother and father
+        # there might also be siblings, but we ignore those samples for now.
+        if len(set(g['ukd_entity_role'].unique()) & {'patient', 'mother', 'father'}) == 3:
             trios.append({'Sample_Project': trio[0],
                           'ukd_entity_id': trio[1]})
 
