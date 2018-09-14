@@ -450,7 +450,7 @@ rule varscan_somatic:
     benchmark:
         "{prefix}%s%s.{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_somatic'])
     conda:
-        "envs/spike_varscan.yaml"
+        "envs/spike_varscan_somatic.yaml"
     threads:
         1
     params:
@@ -460,7 +460,7 @@ rule varscan_somatic:
         "java"
         " -Xmx3g"
         " -XX:ParallelGCThreads={threads}"
-        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
+        " -jar $CONDA_PREFIX/share/varscan-2.4.1-0/VarScan.jar"
         " somatic"
         " {input.healthy}"
         " {input.tumor}"
@@ -491,14 +491,14 @@ rule varscan_processSomatic:
     benchmark:
         "{prefix}%s%s.{entity}.{snvtype}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['varscan_processSomatic'])
     conda:
-        "envs/spike_varscan.yaml"
+        "envs/spike_varscan_somatic.yaml"
     threads:
         1
     shell:
         # first move input file, to output directory, because output directory cannot be defined for this command and I don't want to mess up the real input directory
         "cp -v -l {input} $(dirname {output.somatic_hc}) 2>> {log} 1>&2"
         " && java"
-        " -jar $CONDA_PREFIX/share/varscan-2.4.3-1/VarScan.jar"
+        " -jar $CONDA_PREFIX/share/varscan-2.4.1-0/VarScan.jar"
         " processSomatic"
         " $(dirname {output.somatic_hc})/$(basename {input})"
         " 2>> {log}"
