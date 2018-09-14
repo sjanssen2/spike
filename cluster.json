@@ -13,6 +13,7 @@
     {
       "mem" : "16GB",
       "ppn" : "16",
+      "time" : "01:59:59",
     },
 
     "rejoin_sample":
