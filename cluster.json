@@ -131,6 +131,8 @@
     "varscan_somatic":
     {
       "time" : "01:59:59",
+      "ppn" : "1",
+      "mem" : "1GB",
     },
 
     "varscan_processSomatic":
@@ -138,4 +140,9 @@
       "ppn": "2",
     },
 
+    "bam_readcount_somatic_SNP":
+    {
+      "mem" : "1GB",
+      "ppn" : "1",
+    },
 }
