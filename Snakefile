@@ -31,7 +31,7 @@ include: "rules/varscan/Snakefile"
 include: "rules/freec/Snakefile"
 include: "rules/mutect/Snakefile"
 
-localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, per_sample_fastq, correct_genotypes_somatic, correct_genotypes, varscan_fpfilter_somatic, somatic_reduce, vcf_annotate, merge_somatic, platypus_filtered
+localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, per_sample_fastq, correct_genotypes_somatic, correct_genotypes, varscan_fpfilter_somatic, somatic_FPfilter, somatic_reduce, vcf_annotate, merge_somatic_mus_musculus, merge_somatic_homo_sapiens, platypus_filtered
 
 rule all:
     input:
@@ -64,9 +64,10 @@ rule all:
                          for isrelax in ['', 'relax.']],
 
         # tumornormal calling for complete tumor/normal pairs of all runs
-        tumornormal_freec=['%s%s%s/%s/%s/tumor.pileup.gz_BAF.txt' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'],         pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
-        tumornormal_mutect=['%s%s%s/%s/%s.all_calls.vcf.gz'       % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'],        pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
-        tumornormal_varscan=['%s%s%s/%s/%s.indel_snp.hc.vcf'      % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['merge_somatic'], pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+        tumornormal_freec=['%s%s%s/%s/%s/tumor.pileup.gz_BAF.txt'          % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'],         pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+        tumornormal_mutect=['%s%s%s/%s/%s.all_calls.vcf.gz'                % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'],        pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+        tumornormal_varscan_mouse=['%s%s%s/%s/%s.indel_snp.vcf'            % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['merge_somatic'], pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config, species="mus musculus")],
+        tumornormal_varscan_human=['%s%s%s/%s/%s.snp.somatic_germline.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['merge_somatic'], pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config, species="homo sapiens")],
 
         # trio calling for complete trios of all runs
         trio_calling=['%s%s%s/%s/%s.var2denovo.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['writing_headers'], trio['Sample_Project'], trio['ukd_entity_id']) for trio in get_trios(SAMPLESHEETS, config)],
