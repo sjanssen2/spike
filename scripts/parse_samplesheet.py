@@ -217,7 +217,7 @@ def get_samples(samplesheets, config):
     return samples
 
 
-def get_tumorNormalPairs(samplesheets, config):
+def get_tumorNormalPairs(samplesheets, config, species=None):
     # get projects that require tumor vs. normal analysis
     tumornormal_projects = [prj_name for prj_name in config['projects'] if 'tumornormal' in config['projects'][prj_name]['actions']]
 
@@ -228,6 +228,9 @@ def get_tumorNormalPairs(samplesheets, config):
     for pair, g in tumornormal_samples.groupby(['Sample_Project', 'ukd_entity_id']):
         # only choose comlete pairs
         if set(g['ukd_entity_role'].unique()) == {'healthy','tumor'}:
+            if species is not None:
+                if get_species(g['fastq-prefix'].iloc[0], samplesheets, config) != species:
+                    continue
             pairs.append({'Sample_Project': pair[0],
                           'ukd_entity_id': pair[1]})
 
