@@ -55,13 +55,13 @@
     "gatk_RealignerTargetCreator":
     {
       "mem" : "4GB",
-      "ppn" : 1,
+      "ppn" : "1",
     },
 
     "gatk_IndelRealigner":
     {
       "mem" : "5GB",
-      "ppn" : "2",
+      "ppn" : "1",
       "time" : "01:59:59",
     },
 
@@ -69,13 +69,14 @@
     {
       "mem" : "8GB",
       "time" : "01:59:59",
+      "ppn" : "3",
     },
 
     "gatk_PrintReads":
     {
       "time" : "02:59:59",
       "mem" : "16GB",
-      "ppn" : 5,
+      "ppn" : "5",
     },
 
     "gatk_HaplotypeCaller":
@@ -101,30 +102,35 @@
 
     "varscan_trio":
     {
-      "ppn": "2",
+      "ppn": "1",
       "time" : "04:59:59",
     },
 
     "exome_coverage":
     {
-      "ppn": "2",
+      "ppn": "1",
+    },
+
+    "platypus":
+    {
+      "ppn": "3",
     },
 
     "mutect":
     {
-      "ppn": "2",
+      "ppn": "1",
       "time" : "14:59:59",
     },
 
     "samtools_mpileup":
     {
-      "ppn": "2",
-      "time" : "04:59:59",
+      "ppn": "1",
+      "time" : "03:59:59",
     },
 
     "samtools_mpileup_somatic":
     {
-      "ppn": "2",
+      "ppn": "1",
       "time" : "01:59:59",
     },
 

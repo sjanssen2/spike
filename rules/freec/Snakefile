@@ -5,10 +5,9 @@ rule samtools_mpileup:
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
-        pileup="{prefix}%s%s/{entity}.pileup.gz" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
+        "{prefix}%s%s/{entity}.pileup.freec" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
     log:
-        samtools="{prefix}%s%s.samtools.{entity}.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup']),
-        pigz="{prefix}%s%s.pigz.{entity}.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup'])
+        samtools="{prefix}%s%s.samtools.{entity}.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup'])
     benchmark:
         "{prefix}%s%s.{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
     conda:
@@ -23,10 +22,10 @@ rule samtools_mpileup:
         " -f {input.references[0]}"
         " -l {input.exometrack}"
         " {input.bam}"
-        " 2> {log.samtools}"
-        " | pigz"
-        " > {output.pileup}"
-        " 2> {log.pigz}"
+        " 2> {log}"
+        " > {output}"
+        # " | pigz"
+        # " 2> {log.pigz}"
 
         # /data/biotools/src/samtools-1.3/samtools mpileup -C50 -Q20 -f /data/biotools/reference/hGRC37/hGRC37.fa  -l $EXOME_TRACK $SAMPLE_BAM | pigz > $SAMPLE_PREFIX.pileup.gz & \
         # /data/biotools/src/samtools-1.3/samtools mpileup -C50 -Q20 -f /data/biotools/reference/hGRC37/hGRC37.fa  -l $EXOME_TRACK $CONTROL_BAM | pigz > $CONTROL_PREFIX.pileup.gz & \
@@ -35,8 +34,8 @@ rule samtools_mpileup:
 rule freec:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        tumor=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
-        healthy=lambda wildcards: "%s%s%s/%s.pileup.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
+        tumor=lambda wildcards: "%s%s%s/%s.pileup.freec" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
+        healthy=lambda wildcards: "%s%s%s/%s.pileup.freec" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
         freec="%s%sfreec" % (config['dirs']['prefix'], config['dirs']['references']),
         reference_len=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['lengths']),
@@ -44,16 +43,16 @@ rule freec:
         reference_chromosomes=lambda wildcards: ["%s%s%s" % (wildcards.prefix, config['dirs']['references'], chr) for chr in get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['chromosomes']],
         known_snps=lambda wildcards: "%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['SNPfile']),
     output:
-        "{prefix}%s%s/{entity}/tumor.pileup.gz_CNVs" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        "{prefix}%s%s/{entity}/tumor.pileup.gz_normal_BAF.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        "{prefix}%s%s/{entity}/tumor.pileup.gz_normal_CNVs" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        "{prefix}%s%s/{entity}/tumor.pileup.gz_normal_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        "{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        #"{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt.log2.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        #"{prefix}%s%s/{entity}/tumor.pileup.gz_ratio.txt.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        "{prefix}%s%s/{entity}/tumor.pileup.gz_sample.cpn" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        "{prefix}%s%s/{entity}/healthy.pileup.gz_control.cpn" % (config['dirs']['intermediate'], config['stepnames']['freec']),
-        baf="{prefix}%s%s/{entity}/tumor.pileup.gz_BAF.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        "{prefix}%s%s/{entity}/tumor.pileup.freec_CNVs" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        "{prefix}%s%s/{entity}/tumor.pileup.freec_normal_BAF.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        "{prefix}%s%s/{entity}/tumor.pileup.freec_normal_CNVs" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        "{prefix}%s%s/{entity}/tumor.pileup.freec_normal_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        "{prefix}%s%s/{entity}/tumor.pileup.freec_ratio.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        #"{prefix}%s%s/{entity}/tumor.pileup.freec_ratio.txt.log2.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        #"{prefix}%s%s/{entity}/tumor.pileup.freec_ratio.txt.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        "{prefix}%s%s/{entity}/tumor.pileup.freec_sample.cpn" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        "{prefix}%s%s/{entity}/healthy.pileup.freec_control.cpn" % (config['dirs']['intermediate'], config['stepnames']['freec']),
+        baf="{prefix}%s%s/{entity}/tumor.pileup.freec_BAF.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         config="{prefix}%s%s/{entity}.config" % (config['dirs']['intermediate'], config['stepnames']['freec']),
     log:
         "{prefix}%s%s.freec.{entity}.log" % (config['dirs']['logs'], config['stepnames']['freec'])
@@ -106,9 +105,9 @@ rule freec:
         ' -conf {output.config}'
         ' 2> {log}'
         ' 1>&2'
-        ' && cd $(dirname {output.baf})'
-        ' && mv *.pileup.gz_control.cpn healthy.pileup.gz_control.cpn'
-        ' && for ending in `echo "pileup.gz_BAF.txt pileup.gz_CNVs pileup.gz_normal_BAF.txt pileup.gz_normal_CNVs pileup.gz_normal_ratio.txt pileup.gz_ratio.txt pileup.gz_sample.cpn"`; do mv *.$ending tumor.$ending; done'
+        ' && ls -la $(dirname {output.baf}) >> {log} 2>&1 '
+        ' && mv $(dirname {output.baf})/*.pileup.freec_control.cpn $(dirname {output.baf})/healthy.pileup.freec_control.cpn 2>> {log}'
+        ' && for ending in `echo "pileup.freec_BAF.txt pileup.freec_CNVs pileup.freec_normal_BAF.txt pileup.freec_normal_CNVs pileup.freec_normal_ratio.txt pileup.freec_ratio.txt pileup.freec_sample.cpn"`; do mv -v $(dirname {output.baf})/*.$ending $(dirname {output.baf})/tumor.$ending 2>> {log}; done'
 
 rule freec_render:
     # this poses the issue of missing X11 server on HPC at HHU :-/

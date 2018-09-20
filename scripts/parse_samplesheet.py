@@ -168,11 +168,12 @@ def _run2date(run):
 
 def get_bwa_mem_header(sample, samplesheets, config):
     samples = samplesheets[samplesheets['fastq-prefix'] == sample]
-    res = ' -R "@RG\\tID:%s\\tCN:Department_of_Pediatric_Oncology_Dusseldorf\\tPU:%s\\tDT:%s\\tPL:ILLUMINA\\tLB:%s\\tSM:readgroups.info"' % (
+    res = ' -R "@RG\\tID:%s\\tCN:Department_of_Pediatric_Oncology_Dusseldorf\\tPU:%s\\tDT:%s\\tPL:ILLUMINA\\tLB:%s\\tSM:%s"' % (
         ' and '.join(samples['run'].dropna().unique()),
         ' and '.join(list(map(lambda x: x.split('_')[-1][1:], samples['run'].dropna().unique()))),
         ' and '.join(list(map(_run2date, samples['run'].dropna().unique()))),
-        get_reference_exometrack(sample, samplesheets, config, returnfield='protocol_name')
+        get_reference_exometrack(sample, samplesheets, config, returnfield='protocol_name'),
+        ' and '.join(samples['Sample_ID'].dropna().unique()),
         )
     return res
 
