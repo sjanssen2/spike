@@ -65,7 +65,7 @@ rule all:
 
         # tumornormal calling for complete tumor/normal pairs of all runs
         tumornormal_freec=['%s%s%s/%s/%s/tumor.pileup.gz_BAF.txt'          % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'],         pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
-        tumornormal_mutect=['%s%s%s/%s/%s.all_calls.vcf.gz'                % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'],        pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+        tumornormal_mutect=['%s%s%s/%s/%s.all_calls.vcf'                   % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['mutect'],        pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
         tumornormal_varscan_mouse=['%s%s%s/%s/%s.indel_snp.vcf'            % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['merge_somatic'], pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config, species="mus musculus")],
         tumornormal_varscan_human=['%s%s%s/%s/%s.snp.somatic_germline.vcf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['merge_somatic'], pair['Sample_Project'], pair['ukd_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config, species="homo sapiens")],
 
