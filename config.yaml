@@ -12,7 +12,6 @@ endings_bwa:
   - '.fa.fai'
   - '.fa.pac'
   - '.fa.sa'
-  - '.fa.bwt'
 
 mail_attachment_parameter: "-A"
 
@@ -226,11 +225,11 @@ references:
 
       - file: "dbSNP135_GRCh37.3.vcf"
         BaseRecalibrator: 'yes'
+        mutect:
 
       - file: "dbsnp_138.b37.vcf"
         BaseRecalibrator: 'yes'
         VariantRecalibrator_SNP: "dbsnp,VCF,known=true,training=false,truth=false,prior=2.0"
-        mutect:
     mus musculus:
       - file: "C57BL6NJ_CBAJDBA2.indels.vcf.gz"
         RealignerTargetCreator: "yes"
@@ -240,6 +239,7 @@ references:
       - file: "Mus_musculus.ref_clean.vcf.gz.recode.vcf.gz"
         BaseRecalibrator: 'yes'
         VariantRecalibrator_SNP: "mouse_dbsnp,VCF,known=true,training=true,truth=false,prior=8.0"
+        mutect:
 
       - file: "C57BL6NJ.genoc5.ref.snp.vcf.gz.recode.vcf.gz"
         VariantRecalibrator_SNP: "C58BL6NJ_snps,VCF,known=false,training=true,truth=true,prior=12.0"
