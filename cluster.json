@@ -42,20 +42,15 @@
     "bwa":
     {
       "ppn" : "3",
-      "mem" : "15GB",
+      "mem" : "20GB",
       "time" : "06:59:59",
     },
 
     "remove_pcr_duplicates":
     {
       "time" : "01:59:59",
-      "ppn" : "2",
-    },
-
-    "gatk_RealignerTargetCreator":
-    {
-      "mem" : "4GB",
       "ppn" : "1",
+      "mem" : "6GB",
     },
 
     "gatk_IndelRealigner":
@@ -86,29 +81,11 @@
       "mem" : "8GB",
     },
 
-    "gatk_VariantRecalibrator_SNP":
-    {
-      "ppn" : "1",
-      "time" : "00:59:59",
-      "mem" : "4GB",
-    },
-
-    "gatk_VariantRecalibrator_INDEL":
-    {
-      "ppn" : "1",
-      "time" : "00:59:59",
-      "mem" : "4GB",
-    },
-
     "varscan_trio":
     {
       "ppn": "1",
       "time" : "04:59:59",
-    },
-
-    "exome_coverage":
-    {
-      "ppn": "1",
+      "mem" : "3GB"
     },
 
     "platypus":
@@ -126,6 +103,7 @@
     {
       "ppn": "1",
       "time" : "03:59:59",
+      "mem" : "1GB",
     },
 
     "samtools_mpileup_somatic":
@@ -138,12 +116,7 @@
     {
       "time" : "01:59:59",
       "ppn" : "1",
-      "mem" : "1GB",
-    },
-
-    "varscan_processSomatic":
-    {
-      "ppn": "2",
+      "mem" : "2GB",
     },
 
     "bam_readcount_somatic_SNP":
@@ -151,9 +124,112 @@
       "mem" : "1GB",
       "ppn" : "1",
     },
-    
+
     "freec":
     {
       "ppn": "8",
+    },
+
+    "somatic_FPfilter":
+    {
+      "time" : "00:09:59",
+      "ppn" : "1",
+      "mem" : "100MB",
+    },
+
+    "somatic_reduce":
+    {
+      "time" : "00:09:59",
+      "ppn" : "1",
+      "mem" : "100MB",
+    },
+
+    "gatk_VariantFiltration_SNP":
+    {
+      "time": "00:09:59",
+      "ppn" : "1",
+      "mem" : "3GB",
+    },
+
+    "gatk_VariantFiltration_INDEL":
+    {
+      "time": "00:09:59",
+      "ppn" : "1",
+      "mem" : "4GB"
+    },
+
+    "correct_genotypes":
+    {
+      "time": "00:09:59",
+      "ppn" : "1",
+      "mem" : "1GB"
+    },
+
+    "bam_readcount_INDEL":
+    {
+      "time": "00:09:59",
+      "ppn" : "1",
+      "mem" : "1GB",
+    },
+
+    "platypus_filtered":
+    {
+      "time": "00:09:59",
+      "ppn" : "1",
+      "mem" : "1GB",
+    },
+
+    "vcf_annotate":
+    {
+      "time": "00:09:59",
+      "ppn" : "1",
+      "mem" : "100MB",
+    },
+
+    "gatk_ApplyRecalibration":
+    {
+      "time": "00:29:59",
+      "ppn" : "3",
+      "mem" : "4GB"
+    },
+
+    "gatk_SelectVariants":
+    {
+      "time": "00:29:59",
+      "ppn" : "3",
+      "mem" : "4GB"
+    },
+
+    "gatk_VariantRecalibrator_INDEL":
+    {
+      "ppn" : "1",
+      "time" : "00:29:59",
+      "mem" : "4GB",
+    },
+
+    "gatk_VariantRecalibrator_SNP":
+    {
+      "ppn" : "1",
+      "time" : "00:29:59",
+      "mem" : "5GB",
+    },
+
+    "exome_coverage":
+    {
+      "ppn": "1",
+      "time" : "00:59:59",
+      "mem" : "8GB",
+    },
+
+    "gatk_RealignerTargetCreator":
+    {
+      "mem" : "5GB",
+      "ppn" : "1",
+    },
+
+    "rejoin_samples":
+    {
+      "time" : "01:59:59",
+      "ppn" : "1",
     },
 }
