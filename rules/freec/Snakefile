@@ -61,7 +61,7 @@ rule freec:
     conda:
         "envs/spike_freec.yaml"
     threads:
-        config['num_threads']
+        8
     params:
         minCNAlength=lambda wildcards: '"minCNAlength = 4"' if get_species(wildcards.entity, SAMPLESHEETS, config) == 'mus musculus' else ""
     shell:
@@ -69,6 +69,8 @@ rule freec:
         'echo "chrLenFile = {input.reference_len}" >> {output.config} && '
         'echo "window = 50000" >> {output.config} && '
         'echo "step = 10000" >> {output.config} && '
+        'echo "#window = 500" >> {output.config} && '
+        'echo "#step = 250" >> {output.config} && '
         'echo "ploidy = 2" >> {output.config} && '
         'echo "{params.minCNAlength}" >> {output.config} && '
         'echo "outputDir = $(dirname {output.baf})" >> {output.config} && '
@@ -94,6 +96,8 @@ rule freec:
         'echo "" >> {output.config} && '
         'echo "[BAF]" >> {output.config} && '
         'echo "SNPfile = {input.known_snps}" >> {output.config} && '
+        'echo "# This one make the script crash" >> {output.config} && '
+        'echo "#SNPfile = /data/biotools/reference/GRCm38.71_dbsnp/Mus_musculus.ref_clean.vcf.recode.vcf" >> {output.config} && '
         'echo "minimalCoveragePerPosition = 5" >> {output.config} && '
         'echo "" >> {output.config} && '
         'echo "[target]" >> {output.config} && '
