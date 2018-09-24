@@ -50,7 +50,7 @@ def parse_samplesheet(fp_samplesheet):
 
 def get_global_samplesheets(dir_samplesheets):
     # parse all available sample sheets
-    fps_samplesheets = glob.glob('%s*XX_spike.csv' % dir_samplesheets)
+    fps_samplesheets = glob.glob('%s*_spike.csv' % dir_samplesheets)
 
     global_samplesheet = []
     for fp_samplesheet in fps_samplesheets:
