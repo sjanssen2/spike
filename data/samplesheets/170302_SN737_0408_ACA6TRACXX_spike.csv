@@ -61,7 +61,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 6,t7_12_Pat10_Rem,,,,C01,AACGTGAT,Translokation_t7_12_Hauer,,,,
 6,t7_12_Pat10_Relapse,,,,D01,CACTTCGA,Translokation_t7_12_Hauer,,,,
 7,NALM6,,,,E01,GCCAAGAC,Autophagy_Cyrill_Schipp,,,,
-7,29_C_CD45RO_CD8G6,,,,G01,ATTGGCTC,singecell_Fischer,,,,
+7,29_C_CD45RO_CD8G6,,,,G01,ATTGGCTC,Single_Cell,,,,
 7,KB0110_c,,,,A01,ATGCCTAA,Keimbahn,,KB0110,patient,
 8,KB0110_f,,,,B01,GAATCTGA,Keimbahn,,KB0110,father,
 8,KB0114_m,,,,G01,ATTGGCTC,Keimbahn,,KB0114,mother,
