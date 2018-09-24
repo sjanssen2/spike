@@ -7,9 +7,9 @@ rule samtools_mpileup:
     output:
         "{prefix}%s%s/{entity}.pileup.freec" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup']),
     log:
-        samtools="{prefix}%s%s.samtools.{entity}.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup'])
+        "{prefix}%s%s/{entity}.log" % (config['dirs']['logs'], config['stepnames']['samtools_mpileup'])
     benchmark:
-        "{prefix}%s%s.{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
+        "{prefix}%s%s/{entity}./benchmark" % (config['dirs']['benchmarks'], config['stepnames']['samtools_mpileup'])
     conda:
         "envs/spike_freec.yaml"
     threads:
@@ -55,9 +55,9 @@ rule freec:
         baf="{prefix}%s%s/{entity}/tumor.pileup.freec_BAF.txt" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         config="{prefix}%s%s/{entity}.config" % (config['dirs']['intermediate'], config['stepnames']['freec']),
     log:
-        "{prefix}%s%s.freec.{entity}.log" % (config['dirs']['logs'], config['stepnames']['freec'])
+        "{prefix}%s%s/{entity}.freec.log" % (config['dirs']['logs'], config['stepnames']['freec'])
     benchmark:
-        "{prefix}%s{entity}.%s.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['freec'])
+        "{prefix}%s%s/{entity}.freec.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['freec'])
     conda:
         "envs/spike_freec.yaml"
     threads:
@@ -122,9 +122,9 @@ rule freec_render:
         linear="{prefix}%s%s/{tumorsample}/tumor.pileup.gz_ratio.txt.png" % (config['dirs']['intermediate'], config['stepnames']['freec']),
         log="{prefix}%s%s/{tumorsample}/tumor.pileup.gz_ratio.txt.log2.png" % (config['dirs']['intermediate'], config['stepnames']['freec'])
     log:
-        "{prefix}%s%s.gzratio.{tumorsample}.log" % (config['dirs']['logs'], config['stepnames']['freec'])
+        "{prefix}%s%s/{tumorsample}.plot.log" % (config['dirs']['logs'], config['stepnames']['freec'])
     benchmark:
-        "{prefix}%s{tumorsample}.%s-plot.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['freec'])
+        "{prefix}%s%s/{tumorsample}.plot.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['freec'])
     conda:
         "envs/spike_freec.yaml"
     threads:

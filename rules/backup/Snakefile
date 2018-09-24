@@ -6,9 +6,9 @@ rule backup_compress:
     output:
         temp("{prefix}%s%s/{run}.7z" % (config['dirs']['intermediate'], config['stepnames']['backup_compress']))
     log:
-        "{prefix}%s%s.{run}.log" % (config['dirs']['logs'], config['stepnames']['backup_compress'])
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['backup_compress'])
     benchmark:
-        "{prefix}%s%s.{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['backup_compress'])
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['backup_compress'])
     conda:
         "envs/spike_backup.yaml"
     threads:
@@ -36,9 +36,9 @@ rule backup_transfer:
     output:
         "{prefix}%s{run}.%s.done" % (config['dirs']['checks'], config['stepnames']['backup_transfer'])
     log:
-        "{prefix}%s%s.{run}.log" % (config['dirs']['logs'], config['stepnames']['backup_transfer'])
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['backup_transfer'])
     benchmark:
-        "{prefix}%s%s.{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['backup_transfer'])
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['backup_transfer'])
     threads:
         1
     shell:
@@ -76,9 +76,9 @@ rule backup_validate:
     output:
         "{prefix}%s{run}.%s.done" % (config['dirs']['checks'], config['stepnames']['backup_validate'])
     log:
-        "{prefix}%s%s.{run}.log" % (config['dirs']['logs'], config['stepnames']['backup_validate'])
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['backup_validate'])
     benchmark:
-        "{prefix}%s%s.{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['backup_validate'])
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['backup_validate'])
     threads:
         1
     shell:

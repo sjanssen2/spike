@@ -45,9 +45,9 @@ rule platypus_filtered:
         vcf="{prefix}%s%s/{sample}.ptp.annotated.filtered.indels.vcf" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
         #idx="{prefix}%s%s/{sample}.ptp.annotated.filtered.indels.vcf.idx" % (config['dirs']['intermediate'], config['stepnames']['platypus_filtered']),
     log:
-        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['platypus_filtered'])
+        "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['platypus_filtered'])
     benchmark:
-        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['platypus_filtered'])
+        "{prefix}%s%s/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['platypus_filtered'])
     threads:
         1
     run:

@@ -39,11 +39,17 @@ dirs:
   logs: "Logs/"
 
 stepnames:
+  check_complete: "00_check_complete"
+
   backup_compress: "01_backup_compress"
   backup_transfer: "02_backup_transfer"
   backup_validate: "03_backup_validate"
 
   demultiplex: "05_demultiplex"
+  per_sample_fastq: "05_per_sample_fastq"
+  aggregate_undetermined_filesizes: "06_aggregate_undetermined_filesizes"
+  check_undetermined_filesizes: "07_check_undetermined_filesizes"
+  convert_illumina_report: "08_convert_illumina_report"
   rejoin_samples: "10_rejoin_samples"
   trim: "15_trim"
   xenograft_bwa_aln: "22_xenograft_bwa_aln"
@@ -55,6 +61,7 @@ stepnames:
   gatk_IndelRealigner: "40_gatk_IndelRealigner"
   gatk_BaseRecalibrator: "45_gatk_BaseRecalibrator"
   gatk_PrintReads: "50_gatk_PrintReads"
+  check_coverage: "51_check_coverage"
   gatk_HaplotypeCaller: "55_gatk_HaplotypeCaller"
   gatk_SelectVariants: "60_gatk_SelectVariants"
   gatk_VariantRecalibrator: "65_gatk_VariantRecalibrator"
