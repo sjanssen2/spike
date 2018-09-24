@@ -15,7 +15,7 @@ rule demultiplex:
     input:
         status="{prefix}%s%s-{run}-illuminarun_complete.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex']),
         raw="{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
-        samplesheet="{prefix}%s%s{run}_ukd.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
+        samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
     output:
         fastqs=directory("{prefix}%s%s/{run,[^/]+XX}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
     log:

@@ -19,7 +19,7 @@ Adapter,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,
 AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,
 ,,,,,,,,,,,
 [Data],,,,,,,,,,,
-Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,ukd_entity_id,ukd_entity_role,ukd_ignore_sample
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,spike_entity_id,spike_entity_role,spike_ignore_sample
 1,KB0112_f,,,,H01,GATGAATC,Keimbahn,,KB0112,father,
 1,KB0113_f,,,,C01,AACGTGAT,Keimbahn,,KB0113,father,
 1,KB0113_m,,,,D01,CACTTCGA,Keimbahn,,KB0113,mother,
