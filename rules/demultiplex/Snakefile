@@ -17,7 +17,7 @@ rule demultiplex:
         raw="{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
         samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
     output:
-        fastqs=directory("{prefix}%s%s/{run,[^/]+XX}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+        fastqs=directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
     log:
         "{prefix}%s%s.{run}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
     benchmark:
