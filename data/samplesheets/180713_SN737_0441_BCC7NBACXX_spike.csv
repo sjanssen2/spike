@@ -8,8 +8,6 @@ Assay,Agilent_Sure_SelectXT,,,,,,,,,,
 Index Adapters,Agilent_Sure_SelectXT,,,,,,,,,,
 Description,sample sheet hacked by Stefan Janssen with data from Frauke Meyer,,,,,,,,,,
 Chemistry,Default,,,,,,,,,,
-spike_prep-kit_mus musculus,Sure SelectXT mouse all exon
-spike_capture-kit_mus musculus,SureSelect Human All Exon V5+UTRs,,,,,,,,,,
 ,,,,,,,,,,,
 [Reads],,,,,,,,,,,
 101,,,,,,,,,,,
