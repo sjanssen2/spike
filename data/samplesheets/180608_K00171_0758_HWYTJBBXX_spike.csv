@@ -8,6 +8,8 @@ Assay,Agilent_SureSelect_Human_AllExon_V6_r2.hGRC37.Covered.bed,,,,,,,,,,
 Index Adapters,Agilent_Sure_SelectXT,,,,,,,,,,
 Description,sample sheet created by Stefan Janssen with information from Frederike Opitz,,,,,,,,,,
 Chemistry,Default,,,,,,,,,,
+spike_prep-kit_homo sapiens,unknown
+spike_capture-kit_homo sapiens,SureSelect Human All Exon V6_r2,,,,,,,,,,
 ,,,,,,,,,,,
 [Reads],,,,,,,,,,,
 101,,,,,,,,,,,
@@ -19,7 +21,7 @@ Adapter,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,
 AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,
 ,,,,,,,,,,,
 [Data],,,,,,,,,,,
-Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,ukd_entity_id,ukd_entity_role,ukd_ignore_sample
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,spike_entity_id,spike_entity_role,spike_ignore_sample
 ,LB_4-2,,,,,,ALL_family_LB,,LB,father,
 ,LB_4-3,,,,,,ALL_family_LB,,LB,mother,
 ,LB_5-1,,,,,,ALL_family_LB,,LB,sister,

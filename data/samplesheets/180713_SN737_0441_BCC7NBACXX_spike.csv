@@ -8,6 +8,8 @@ Assay,Agilent_Sure_SelectXT,,,,,,,,,,
 Index Adapters,Agilent_Sure_SelectXT,,,,,,,,,,
 Description,sample sheet hacked by Stefan Janssen with data from Frauke Meyer,,,,,,,,,,
 Chemistry,Default,,,,,,,,,,
+spike_prep-kit_mus musculus,Sure SelectXT mouse all exon
+spike_capture-kit_mus musculus,SureSelect Human All Exon V5+UTRs,,,,,,,,,,
 ,,,,,,,,,,,
 [Reads],,,,,,,,,,,
 101,,,,,,,,,,,
@@ -19,7 +21,7 @@ Adapter,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,
 AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,
 ,,,,,,,,,,,
 [Data],,,,,,,,,,,
-Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,ukd_entity_id,ukd_entity_role,ukd_ignore_sample
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,spike_entity_id,spike_entity_role,spike_ignore_sample
 1,mAID_292_N,,,,A02,AGCAGGAA,Maus_Hauer,Pool 1,mAID_292,healthy,
 1,mAID_292_T,,,,B02,GAGCTGAA,Maus_Hauer,Pool 1,mAID_292,tumor,
 1,mAID_293_N,,,,C02,AAACATCG,Maus_Hauer,Pool 1,mAID_293,healthy,

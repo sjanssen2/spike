@@ -40,7 +40,7 @@ def parse_samplesheet(fp_samplesheet):
     ss['fastq-prefix'] = fp_fastqs
 
     # remove samples that are marked to be ignored
-    ss = ss[pd.isnull(ss['ukd_ignore_sample'])]
+    ss = ss[pd.isnull(ss['spike_ignore_sample'])]
 
     # set Lane to 0 if not defined, as in Macrogen samples
     ss['Lane'] = ss['Lane'].fillna(0)
@@ -50,28 +50,28 @@ def parse_samplesheet(fp_samplesheet):
 
 def get_global_samplesheets(dir_samplesheets):
     # parse all available sample sheets
-    fps_samplesheets = glob.glob('%s*XX_ukd.csv' % dir_samplesheets)
+    fps_samplesheets = glob.glob('%s*XX_spike.csv' % dir_samplesheets)
 
     global_samplesheet = []
     for fp_samplesheet in fps_samplesheets:
         ss = parse_samplesheet(fp_samplesheet)
-        ss['run'] = fp_samplesheet.split('/')[-1].replace('_ukd.csv', '')
+        ss['run'] = fp_samplesheet.split('/')[-1].replace('_spike.csv', '')
         global_samplesheet.append(ss)
     global_samplesheet = pd.concat(global_samplesheet, sort=False)
 
     return global_samplesheet
 
 
-def get_role(ukd_project, ukd_entity_id, ukd_entity_role, samplesheets):
+def get_role(spike_project, spike_entity_id, spike_entity_role, samplesheets):
     """Returns file path for bam, given project, entity and role (for trio).
 
     Parameters
     ----------
-    ukd_project : str
+    spike_project : str
         Name of project, to avoid entity ID clashes across projects.
-    ukd_entity_id : str
+    spike_entity_id : str
         Entity ID for which role needs to be obtained.
-    ukd_entity_role : str
+    spike_entity_role : str
         Role of entity ID whose bam filepath shall be returned.
     config : snakemake.config
         Snakemakes config object to obtain file path of sample sheets.
@@ -84,28 +84,28 @@ def get_role(ukd_project, ukd_entity_id, ukd_entity_role, samplesheets):
 
     # select correct project
     try:
-        x = samples[samples['Sample_Project'] == ukd_project]
+        x = samples[samples['Sample_Project'] == spike_project]
         x.iloc[0]
     except IndexError:
-        raise ValueError('Could not find an UKD project with name "%s". Available projects are:\n\t%s\n' % (ukd_project, '\n\t'.join(sorted(samples['Sample_Project'].unique()))))
+        raise ValueError('Could not find an spike project with name "%s". Available projects are:\n\t%s\n' % (spike_project, '\n\t'.join(sorted(samples['Sample_Project'].unique()))))
     else:
         samples = x
 
     # select correct entity
     try:
-        x = samples[samples['ukd_entity_id'] == ukd_entity_id]
+        x = samples[samples['spike_entity_id'] == spike_entity_id]
         x.iloc[0]
     except IndexError:
-        raise ValueError('Could not find an UKD entity group with name "%s". Available entities for projects "%s" are:\n\t%s\n' % (ukd_entity_id, ukd_project, '\n\t'.join(sorted(samples['ukd_entity_id'].unique()))))
+        raise ValueError('Could not find an spike entity group with name "%s". Available entities for projects "%s" are:\n\t%s\n' % (spike_entity_id, spike_project, '\n\t'.join(sorted(samples['spike_entity_id'].unique()))))
     else:
         samples = x
 
     # select correct role
     try:
-        x = samples[samples['ukd_entity_role'] == ukd_entity_role]
+        x = samples[samples['spike_entity_role'] == spike_entity_role]
         x.iloc[0]
     except IndexError:
-        raise ValueError('Could not find a role "%s" for UKD entity group with name "%s". Available roles are:\n\t%s\n' % (ukd_entity_role, ukd_entity_id, '\n\t'.join(sorted(samples['ukd_entity_role'].unique()))))
+        raise ValueError('Could not find a role "%s" for spike entity group with name "%s". Available roles are:\n\t%s\n' % (spike_entity_role, spike_entity_id, '\n\t'.join(sorted(samples['spike_entity_role'].unique()))))
     else:
         samples = x
 
@@ -122,7 +122,7 @@ def get_species(sample, samplesheets, config):
 
     # ... or an entity
     if len(projects) == 0:
-        projects = samplesheets[(samplesheets['Sample_Project'] == sample.split('/')[0]) & (samplesheets['ukd_entity_id'] == sample.split('/')[-1])]['Sample_Project'].unique()
+        projects = samplesheets[(samplesheets['Sample_Project'] == sample.split('/')[0]) & (samplesheets['spike_entity_id'] == sample.split('/')[-1])]['Sample_Project'].unique()
 
     if len(projects) > 1:
         raise ValueError("Ambiguous projects: '%s' for sample '%s'" % (projects, sample))
@@ -142,7 +142,7 @@ def get_reference_exometrack(sample, samplesheets, config, returnfield='file'):
     # there might be a project specific exome track, like for samples we got sequenced by macrogen:
     projects = samplesheets[
         (samplesheets['fastq-prefix'] == sample) | # check samplenames
-        (samplesheets['Sample_Project']+'/'+samplesheets['ukd_entity_id'] == sample) # or project-name / ukd_entity
+        (samplesheets['Sample_Project']+'/'+samplesheets['spike_entity_id'] == sample) # or project-name / spike_entity
         ]['Sample_Project'].unique()
     if len(projects) != 1:
         raise ValueError('Ambigious or missing project for sample "%s"!' % sample)
@@ -226,14 +226,14 @@ def get_tumorNormalPairs(samplesheets, config, species=None):
     tumornormal_samples = samplesheets[samplesheets['Sample_Project'].isin(tumornormal_projects)]
 
     pairs = []
-    for pair, g in tumornormal_samples.groupby(['Sample_Project', 'ukd_entity_id']):
+    for pair, g in tumornormal_samples.groupby(['Sample_Project', 'spike_entity_id']):
         # only choose comlete pairs
-        if set(g['ukd_entity_role'].unique()) == {'healthy','tumor'}:
+        if set(g['spike_entity_role'].unique()) == {'healthy','tumor'}:
             if species is not None:
                 if get_species(g['fastq-prefix'].iloc[0], samplesheets, config) != species:
                     continue
             pairs.append({'Sample_Project': pair[0],
-                          'ukd_entity_id': pair[1]})
+                          'spike_entity_id': pair[1]})
 
     return pairs
 
@@ -246,12 +246,12 @@ def get_trios(samplesheets, config):
     trio_samples = samplesheets[samplesheets['Sample_Project'].isin(trio_projects)]
 
     trios = []
-    for trio, g in trio_samples.groupby(['Sample_Project', 'ukd_entity_id']):
+    for trio, g in trio_samples.groupby(['Sample_Project', 'spike_entity_id']):
         # only choose comlete trios, i.e. entities that have at least patient, mother and father
         # there might also be siblings, but we ignore those samples for now.
-        if len(set(g['ukd_entity_role'].unique()) & {'patient', 'mother', 'father'}) == 3:
+        if len(set(g['spike_entity_role'].unique()) & {'patient', 'mother', 'father'}) == 3:
             trios.append({'Sample_Project': trio[0],
-                          'ukd_entity_id': trio[1]})
+                          'spike_entity_id': trio[1]})
 
     return trios
 

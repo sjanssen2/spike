@@ -19,7 +19,7 @@ Adapter,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,
 AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,
 ,,,,,,,,,,,
 [Data],,,,,,,,,,,
-Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,ukd_entity_id,ukd_entity_role,ukd_ignore_sample
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,spike_entity_id,spike_entity_role,spike_ignore_sample
 1,PatuT_DMSO,,,,18,GTCCGC,AG_Remke,Set 1,PatuT_DMSO,,
 1,PatuS_DMSO,,,,19,GTGAAA,AG_Remke,Set 1,PatuS_DMSO,,
 1,Patu8902_DMSO,,,,2,CGATGT,AG_Remke,Set 1,Patu8902_DMSO,,
