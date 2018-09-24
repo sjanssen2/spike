@@ -7,11 +7,11 @@ rule bwa:
     output:
         "{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
     log:
-        bwa_mem="{prefix}%s%s.{sample}.bwa_mem.log" % (config['dirs']['logs'], config['stepnames']['map']),
-        sam_view="{prefix}%s%s.{sample}.samtools_view.log" % (config['dirs']['logs'], config['stepnames']['map']),
-        sam_sort="{prefix}%s%s.{sample}.samtools_sort.log" % (config['dirs']['logs'], config['stepnames']['map']),
+        bwa_mem="{prefix}%s%s/{sample}.bwa_mem.log" % (config['dirs']['logs'], config['stepnames']['map']),
+        sam_view="{prefix}%s%s/{sample}.samtools_view.log" % (config['dirs']['logs'], config['stepnames']['map']),
+        sam_sort="{prefix}%s%s/{sample}.samtools_sort.log" % (config['dirs']['logs'], config['stepnames']['map']),
     benchmark:
-        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['map'])
+        "{prefix}%s%s/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['map'])
     conda:
         "envs/spike_map.yaml"
     threads:
@@ -51,9 +51,9 @@ rule remove_pcr_duplicates:
         bai="{prefix}%s%s/{sample}.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
         metric="{prefix}%s%s/{sample}.nodup.srt.bam.metrics" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
     log:
-        "{prefix}%s%s.{sample}.log" % (config['dirs']['logs'], config['stepnames']['nodup'])
+        "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['nodup'])
     benchmark:
-        "{prefix}%s%s.{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['nodup'])
+        "{prefix}%s%s/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['nodup'])
     conda:
         "envs/spike_map.yaml"
     threads:

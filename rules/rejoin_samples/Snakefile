@@ -8,9 +8,9 @@ rule rejoin_sample:
     output:
         "{prefix}%s%s/{sample, .*?}_{direction,R[1|2]}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
     log:
-        "{prefix}%s%s.{sample}_{direction}.log" % (config['dirs']['logs'], config['stepnames']['rejoin_samples'])
+        "{prefix}%s%s/{sample}_{direction}.log" % (config['dirs']['logs'], config['stepnames']['rejoin_samples'])
     benchmark:
-        "{prefix}%s%s.{sample}_{direction}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['rejoin_samples'])
+        "{prefix}%s%s/{sample}_{direction}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['rejoin_samples'])
     conda:
         "envs/spike_rejoin.yaml"
     threads:

@@ -4,9 +4,9 @@ rule check_complete:
     output:
         fp_check="{prefix}%s%s-{run}-illuminarun_complete.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])
     log:
-        "{prefix}%s%s.{run}.log" % (config['dirs']['logs'], 'check_complete')
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['check_complete'])
     benchmark:
-        "{prefix}%s%s.{run}.benchmark" % (config['dirs']['benchmarks'], 'check_complete')
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['check_complete'])
     run:
         check_illuminarun_complete(input.fp_status, output.fp_check)
 
@@ -17,11 +17,11 @@ rule demultiplex:
         raw="{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
         samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
     output:
-        fastqs=directory("{prefix}%s%s/{run,[^/]+XX}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+        fastqs=directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
     log:
-        "{prefix}%s%s.{run}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
     benchmark:
-        "{prefix}%s%s.{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
     threads:
         config['num_threads']
     conda:
@@ -50,9 +50,9 @@ rule aggregate_undetermined_filesizes:
         sizes="{prefix}%sUndeterminedFilesizes/{run}.txt" % (config['dirs']['aggregation']),
         fp_check="{prefix}%s%s-{run}-aggregate_undetermined_filesizes.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])
     log:
-        "{prefix}%s%s.{run}.log" % (config['dirs']['logs'], 'aggregate_undetermined_filesizes')
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['aggregate_undetermined_filesizes'])
     benchmark:
-        "{prefix}%s%s.{run}.benchmark" % (config['dirs']['benchmarks'], 'aggregate_undetermined_filesizes')
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['aggregate_undetermined_filesizes'])
     params:
         fps_undertermined="{prefix}%s%s/{run}/Undetermined_L*_001.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])
     shell:
@@ -66,9 +66,9 @@ rule check_undetermined_filesizes:
     output:
         "{prefix}%s{run}/{run}.undetermined-filesizes.pdf" % (config['dirs']['reports'])
     log:
-        "{prefix}%s%s.{run}.log" % (config['dirs']['logs'], 'check_undetermined_filesizes')
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['check_undetermined_filesizes'])
     benchmark:
-        "{prefix}%s%s.{run}.benchmark" % (config['dirs']['benchmarks'], 'check_undetermined_filesizes')
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['check_undetermined_filesizes'])
     run:
         report_undertermined_filesizes(input[0], output[0], os.path.join(wildcards.prefix, config['dirs']['reports'], wildcards.run, 'error_undetermined-filesizes.pdf'))
 
@@ -80,9 +80,9 @@ rule convert_illumina_report:
     output:
         "{prefix}%s{run}/{run}.yield_report.pdf" % (config['dirs']['reports'])
     log:
-        "{prefix}%sconvert_illumina_report.{run}.log" % (config['dirs']['logs'])
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['convert_illumina_report'])
     benchmark:
-        "{prefix}%sconvert_illumina_report.{run}.benchmark" % (config['dirs']['benchmarks'])
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['convert_illumina_report'])
     conda:
         "envs/spike_report.yaml"
     params:
@@ -104,11 +104,11 @@ rule per_sample_fastq:
                            for direction in (config['projects'][get_persamplefastq_samples(SAMPLESHEETS, config, get='projects')[0]]['fastq']['forward'],
                                              config['projects'][get_persamplefastq_samples(SAMPLESHEETS, config, get='projects')[0]]['fastq']['reverse'])]
     output:
-        fastqs=directory("{prefix}%s%s/{run,[^/]+XX}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+        fastqs=directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
     log:
-        "{prefix}%sper_sample_fastq.{run}.log" % (config['dirs']['logs'])
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['per_sample_fastq'])
     benchmark:
-        "{prefix}%sper_sample_fastq.{run}.benchmark" % (config['dirs']['benchmarks'])
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['per_sample_fastq'])
     run:
         project = SAMPLESHEETS[SAMPLESHEETS['run'] == wildcards.run]['Sample_Project'].iloc[0]
         map_directions = {config['projects'][project]['fastq']['forward']: 'R1',
