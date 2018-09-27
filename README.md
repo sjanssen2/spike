@@ -9,4 +9,3 @@ NGS pipeline for SNV detection in tumor context
   3. install snakemake `conda install -c bioconda -c conda-forge snakemake`
     - if within UKD network, you might have to force conda to **not** use certificates `conda config --set ssl_verify false `
   4. install seaborn: `conda install seaborn`
-  5. use a recent version of pythons ``request`` library, i.e. > 2.19.1
