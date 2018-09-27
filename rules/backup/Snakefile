@@ -43,9 +43,9 @@ rule backup_transfer:
         1
     shell:
         "tmpfile=$(mktemp) &&"
-        ' echo "quote USER {config[backup][username]}" > $tmpfile &&'
-        ' echo "quote PASS {config[pwd_backup]}" >> $tmpfile &&'
-        ' echo "cd {config[backup][targetdirectory]}" >> $tmpfile &&'
+        ' echo "quote USER {config[credentials][backup][username]}" > $tmpfile &&'
+        ' echo "quote PASS {config[credentials][backup][password]}" >> $tmpfile &&'
+        ' echo "cd {config[credentials][backup][targetdirectory]}" >> $tmpfile &&'
         ' echo "binary" >> $tmpfile &&'
         ' echo "prompt" >> $tmpfile &&'
         ' echo "put {input} $(basename {input})" >> $tmpfile &&'
@@ -53,7 +53,7 @@ rule backup_transfer:
         ' echo "temporary file is $tmpfile" 2> {log} 1>&2 &&'
         " cat $tmpfile"
         " | ftp"
-        " -n {config[backup][host]}"
+        " -n {config[credentials][backup][host]}"
         " 2>> {log}"
         " && echo 'transfer completed' > {output}"
         " && rm -f $tmpfile"
@@ -84,9 +84,9 @@ rule backup_validate:
     shell:
         "tmpdir=$(mktemp --tmpdir={config[dirs][tmpdir]} -d) &&"
         "tmpfile=$(mktemp) &&"
-        ' echo "quote USER {config[backup][username]}" > $tmpfile &&'
-        ' echo "quote PASS {config[pwd_backup]}" >> $tmpfile &&'
-        ' echo "cd {config[backup][targetdirectory]}" >> $tmpfile &&'
+        ' echo "quote USER {config[credentials][backup][username]}" > $tmpfile &&'
+        ' echo "quote PASS {config[credentials][backup][password]}" >> $tmpfile &&'
+        ' echo "cd {config[credentials][backup][targetdirectory]}" >> $tmpfile &&'
         ' echo "binary" >> $tmpfile &&'
         ' echo "prompt" >> $tmpfile &&'
         ' echo "get {wildcards.run}.7z $tmpdir/{wildcards.run}.7z" >> $tmpfile &&'
@@ -94,13 +94,13 @@ rule backup_validate:
         ' echo "temporary file is $tmpfile" 2> {log} 1>&2 &&'
         " cat $tmpfile"
         " | ftp"
-        " -n {config[backup][host]}"
+        " -n {config[credentials][backup][host]}"
         " 2>> {log}"
         " && cd $tmpdir/ && 7za t {wildcards.run}.7z | tail >> {log}"
         " && echo 'backup of {wildcards.run} validated' > {output}"
         " && rm -f $tmpfile"
         " && rm -rf $tmpdir"
-        " && echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nIllumina raw data for run {wildcards.run} have been succesfully transferred to the backup NAS {config[backup][host]} and double checked.\nYou can now safely delete those data from the sequencing PC to free up space for the next run.\n\nHave a nice day!' | mail -s '[{config[name_program]}] backup complete for {wildcards.run}' {config[emails][backup_validated]}"
+        " && echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nIllumina raw data for run {wildcards.run} have been succesfully transferred to the backup NAS {config[credentials][backup][host]} and double checked.\nYou can now safely delete those data from the sequencing PC to free up space for the next run.\n\nHave a nice day!' | mail -s '[{config[name_program]}] backup complete for {wildcards.run}' {config[emails][backup_validated]}"
 
         # BACKUP_CHECK=$(mktemp -d -p . -t ${RUNNAME}_backup_check.XXXXXX)
         # TEMPFILES+=( "$PWD/$BACKUP_CHECK" )

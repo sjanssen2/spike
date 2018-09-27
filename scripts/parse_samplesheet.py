@@ -213,7 +213,8 @@ def get_samples(samplesheets, config):
     samples = []
     for sample, g in background_samples.groupby(['Sample_Project', 'fastq-prefix']):
         samples.append({'Sample_Project': sample[0],
-                        'sample': sample[1]})
+                        'sample': sample[1],
+                        'spike_entity_id': g['spike_entity_id'].iloc[0]})
 
     return samples
 

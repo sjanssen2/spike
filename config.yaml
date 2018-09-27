@@ -95,19 +95,15 @@ stepnames:
   vcf_annotate: "175_vcf_annotate"
   merge_somatic: "180_merge_somatic"
 
+  snupy_upload: "190_snupy_upload"
+
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
-
-backup:
-  username: "SeqUser"
-  host: '10.2.5.12'
-  targetdirectory: "array1/Sequencing_Backups/Illumina_HiSeq"
 
 xenograft:
   references:
     mus musculus: 'GRCm'
     homo sapiens: 'GRCh'
-
 
 projects:
   Alps:
@@ -126,14 +122,18 @@ projects:
       - background
       - tumornormal
     species: mus musculus
+    snupy:
+      contact: "Julia Hauer"
   AG_Remke:
     actions:
       - demultiplex
   Keimbahn:
     actions:
       - background
-      - tumornormal
+      - trio
     species: homo sapiens
+    snupy:
+      contact: "Kuhlen"
   ALL_family_LB:
     actions:
       - persamplefastq
@@ -264,6 +264,16 @@ references:
     homo sapiens: " --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 "
     mus musculus: " --min-coverage-normal 6 --min-coverage-tumor 8 "
 
+credentials:
+  backup:
+    host: '10.2.5.12'
+    username: "SeqUser"
+    password: "thisisasecret"
+    targetdirectory: "array1/Sequencing_Backups/Illumina_HiSeq"
+  snupy:
+    host: 'https://snupy-aqua.bio.inf.h-brs.de'
+    username: "janssen"
+    password: "thisisasecret"
+
 # variables that can directly be overwritten from CML
-pwd_backup: "thisisasecret"
 num_threads: 16
