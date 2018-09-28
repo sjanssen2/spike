@@ -49,7 +49,7 @@ def get_toolname_from_stepname(config, filename):
 
 
 def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type):
-    name = 'spike_'
+    name = ''
 
     # original sample name if background else spike_entity_id
     sample_name = entity
