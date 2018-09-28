@@ -159,7 +159,10 @@ def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _
     res = pd.DataFrame(values, columns=cols).dropna()
     # add newly created VCF IDs from snupy
     for idx, name in res['snupy_Name'].iteritems():
-        res.loc[idx, 'snupy_vcfID'] = soup.find("a", title=name).get('href').split('/')[-1]
+        r = requests.get(config['credentials']['snupy']['host'] + '/vcf_files.json?_filter[name]=%s' % name,
+            auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
+            verify=False)
+        res.loc[idx, 'snupy_vcfID'] = str(r.json()[0]['id'])
 
     # add data from spike
     res['spike_entity_id'] = entity
