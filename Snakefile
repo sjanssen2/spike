@@ -8,7 +8,7 @@ from scripts.utils import exclude_sample
 from scripts.checks import check_illuminarun_complete
 from scripts.reports import report_undertermined_filesizes, report_exome_coverage
 from scripts.convert_platypus import annotate
-from scripts.snupy import upload_to_snupy
+from scripts.snupy import upload_to_snupy, extractsamples
 
 
 if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith("murks"):
@@ -58,11 +58,11 @@ rule all:
         # check exome coverage per project
         coverage_report=['%s%s%s.exome_coverage.pdf' % (config['dirs']['prefix'], config['dirs']['reports'], project) for project in get_projects_with_exomecoverage(config)],
 
-        # upload called variants to Snupy
-        background=['%s%s%s/%s.background.uploaded' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_upload'], entity)
+        # upload and extract called variants to Snupy
+        background=['%s%s%s/%s.background.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], entity)
                     for entity in set(map(lambda x: '%s/%s' % (x['Sample_Project'], x['spike_entity_id']), get_samples(SAMPLESHEETS, config)))],
-        tumornormal=['%s%s%s/%s/%s.tumornormal.uploaded' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_upload'], pair['Sample_Project'], pair['spike_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
-        trio_calling=['%s%s%s/%s/%s.trio.uploaded' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_upload'], trio['Sample_Project'], trio['spike_entity_id']) for trio in get_trios(SAMPLESHEETS, config)],
+        tumornormal=['%s%s%s/%s/%s.tumornormal.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], pair['Sample_Project'], pair['spike_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+        trio_calling=['%s%s%s/%s/%s.trio.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], trio['Sample_Project'], trio['spike_entity_id']) for trio in get_trios(SAMPLESHEETS, config)],
 
         # tumornormal calling for complete tumor/normal pairs of all runs
         tumornormal_freec=['%s%s%s/%s/%s/tumor.pileup.freec_BAF.txt'  % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'],        pair['Sample_Project'], pair['spike_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
