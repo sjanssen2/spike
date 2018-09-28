@@ -96,6 +96,7 @@ stepnames:
   merge_somatic: "180_merge_somatic"
 
   snupy_upload: "190_snupy_upload"
+  snupy_extractsamples: "200_snupy_extractsamples"
 
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
@@ -111,6 +112,9 @@ projects:
       - background
       - trio
     species: homo sapiens
+    snupy:
+      contact: "Ute Fischer"
+      project_id: 19
   Fischer_Geron:
     actions:
       - background
@@ -124,6 +128,7 @@ projects:
     species: mus musculus
     snupy:
       contact: "Julia Hauer"
+      project_id: 109
   AG_Remke:
     actions:
       - demultiplex
@@ -134,6 +139,7 @@ projects:
     species: homo sapiens
     snupy:
       contact: "Kuhlen"
+      project_id: 82
   ALL_family_LB:
     actions:
       - persamplefastq
