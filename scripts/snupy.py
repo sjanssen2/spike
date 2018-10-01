@@ -8,7 +8,6 @@ import tempfile
 from os.path import join
 import sys
 import time
-from bs4 import BeautifulSoup
 import re
 from scripts.parse_samplesheet import get_role
 
@@ -132,7 +131,7 @@ def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _
     # print(files)
     # return None
     r = requests.post(
-        str(config['credentials']['snupy']['host'] + '/vcf_files/batch_submit'),
+        str(config['credentials']['snupy']['host'] + '/vcf_files/batch_submit.json'),
         data=payload,
         auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
         verify=False,
@@ -146,34 +145,23 @@ def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _
         f.write('==== text ====\n')
         f.write(str(r.text))
 
+    # assert HTTP communication successful
     assert(r.headers.get('status') == '200 OK')
     shutil.rmtree(tmpdir, ignore_errors=True)
 
+    # assert VCF upload to Snupy was successful
+    if len(r.json()['error']) != 0:
+        raise ValueError('Snupy upload failed with error(s): "%s"\n' % '" and "'.join({err['output']['notice'] for err in r.json()['error']}))
     # parse response from snupy into pandas table
-    soup = BeautifulSoup(r.text, 'html.parser')
-    res_table = soup.find("div", re.compile('fail|success')).table
-    cols = ['snupy_%s' % name.text for name in res_table.thead.find_all('th')]
-    values = []
-    for row in res_table.find_all('tr'):
-        values.append([value.text for value in row.find_all('td')])
-    res = pd.DataFrame(values, columns=cols).dropna()
-    # add newly created VCF IDs from snupy
-    for idx, name in res['snupy_Name'].iteritems():
-        r = requests.get(config['credentials']['snupy']['host'] + '/vcf_files.json?_filter[name]=%s' % name,
-            auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
-            verify=False)
-        res.loc[idx, 'snupy_vcfID'] = str(r.json()[0]['id'])
+    res = pd.DataFrame(r.json()['success'])[["id", "sample_names", "status", "name", "updated_at", "created_at", "md5checksum"]]
+    res.columns = map(lambda x: 'snupy_%s' % x, res.columns)
 
     # add data from spike
     res['spike_entity_id'] = entity
     res['spike_project'] = project
     res['spike_type'] = _type
 
-    res = res.merge(data[['md5checksum', 'tags[TOOL]']], left_on='snupy_MD5Sum', right_on='md5checksum')
-
-    if ('snupy_Status' not in res.columns) or (list(res['snupy_Status'].unique()) != ['CREATED']):
-        sys.stderr.write(res.to_string())
-        raise ValueError("Something went wrong when files should be uploaded to snupy.")
+    res = res.merge(data[['md5checksum', 'tags[TOOL]']], left_on='snupy_md5checksum', right_on='md5checksum')
 
     # write snupys result table as output file
     res.to_csv(str(output[0]), sep="\t")
@@ -183,6 +171,7 @@ def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _
 
 def extractsamples(uploadtable, config, samplesheets, output, log, _type):
     uploaded = pd.read_csv(uploadtable[0], sep="\t", index_col=0, dtype=str)
+    uploaded.rename(columns={'snupy_id': 'vcf_file_id'}, inplace=True)
 
     extracted = uploaded.copy()
     extracted['tags'] = None
@@ -197,7 +186,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
     for idx, row in extracted.iterrows():
         if _type == 'background':
             extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"snv and indel"}'
-            extracted.loc[idx, 'snupy_Samples'] = row['snupy_Name'].split('/')[-1].split('.')[0]
+            extracted.loc[idx, 'snupy_Samples'] = row['snupy_name'].split('/')[-1].split('.')[0]
             if samplesheets[(samplesheets['Sample_ID'] == extracted.loc[idx, 'snupy_Samples']) & (samplesheets['Sample_Project'] == row['spike_project']) & (samplesheets['spike_entity_id'] == row['spike_entity_id'])]['spike_entity_role'].iloc[0] in ['healthy', 'father', 'mother']:
                 extracted.loc[idx, 'ignorefilter'] = '1'
         elif _type == 'tumornormal':
@@ -210,7 +199,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
             extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"denovo"}'
             if row['tags[TOOL]'] == str(MAP_TOOLS['VarScan2']):
                 extracted.loc[idx, 'snupy_Samples'] = 'Child'
-        extracted.loc[idx, 'nickname'] = row['snupy_Name'].split('/')[-1]
+        extracted.loc[idx, 'nickname'] = row['snupy_name'].split('/')[-1]
         extracted.loc[idx, 'project'] = str(config['projects'][row['spike_project']]['snupy']['project_id'])
         if row['spike_project'] not in cache_users:
             r = requests.get(config['credentials']['snupy']['host'] + '/experiments/109.json',
@@ -221,7 +210,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
 
     extracted.rename(columns={'snupy_vcfID': 'vcf_file_id',
                               'snupy_Samples': 'vcf_sample_name',
-                              'snupy_Name': 'name',
+                              'snupy_name': 'name',
                               'spike_entity_id': 'patient',
                               }, inplace=True)
     res = extracted[['vcf_file_id', 'vcf_sample_name', 'tags', 'name', 'nickname', 'patient', 'min_read_depth',
@@ -235,7 +224,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
     files = {'sample[sample_sheet]': (
         'SampleExtractionSheet.csv',
         open(fp, 'rb'), 'application/txt', {'Expires': '0'})}
-    r = requests.post('https://snupy-aqua.bio.inf.h-brs.de/samples',
+    r = requests.post('https://snupy-aqua.bio.inf.h-brs.de/samples.json',
                       auth=HTTPBasicAuth('janssen', 'enge9UQu'),
                       verify=False,
                       files=files,
@@ -251,23 +240,11 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
     shutil.rmtree(fp, ignore_errors=True)
 
     # parse snupy's response
-    soup = BeautifulSoup(r.text, 'html.parser')
-    snupy_table = soup.find("table", id="sample_sheet_result")
-    cols = [name.div.text.strip() for name in snupy_table.thead.find_all('th')]
-    values = []
-    for row in snupy_table.tbody.find_all('tr'):
-        vs = []
-        for col in row.find_all('td'):
-            if col.span is not None:
-                vs.append(col.span.text)
-            else:
-                vs.append("")
-        values.append(vs)
-    snupy_table = pd.DataFrame(values, columns=cols).dropna()
-
-    if list(snupy_table['error'].unique()) != ['']:
-        sys.stderr.write(snupy_table.to_string())
-        raise ValueError("Something went wrong when samples should be extracted in snupy.")
+    snupy_table = pd.DataFrame(r.json())
 
     # write snupys result table as output file
     snupy_table.to_csv(str(output[0]), sep="\t")
+
+    if any(map(lambda x: 'error' in x, r.json())):
+        sys.stderr.write(snupy_table.to_string())
+        raise ValueError('Something went wrong when samples should be extracted in snupy: "%s"' % '" and "'.join({x['error'] for x in r.json()}))
