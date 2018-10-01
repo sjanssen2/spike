@@ -59,7 +59,7 @@ rule snupy_upload_trio:
         upload_to_snupy(wildcards.project, wildcards.entity, input, config, SAMPLESHEETS, output, log, _type='trio')
 
 
-rule snupy_extractsamples_tumornormal:
+rule snupy_extractsamples:
     input:
         "{prefix}%s%s/{project}/{entity}.{type}.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
     output:
