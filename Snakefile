@@ -5,7 +5,6 @@ import glob
 from scripts.parse_samplesheet import parse_samplesheet, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets
 from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header, get_demux_samples, get_projects_with_exomecoverage, get_rejoin_fastqs, get_xenograft_hybridreference, get_xenograft_stepname, get_persamplefastq_samples
 from scripts.utils import exclude_sample
-from scripts.checks import check_illuminarun_complete
 from scripts.reports import report_undertermined_filesizes, report_exome_coverage
 from scripts.convert_platypus import annotate
 from scripts.snupy import upload_to_snupy, extractsamples
