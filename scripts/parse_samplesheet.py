@@ -142,7 +142,7 @@ def get_reference_exometrack(sample, samplesheets, config, returnfield='file'):
     # there might be a project specific exome track, like for samples we got sequenced by macrogen:
     projects = samplesheets[
         (samplesheets['fastq-prefix'] == sample) | # check samplenames
-        (('%s/%s' % (samplesheets['Sample_Project'], samplesheets['spike_entity_id'])) == sample) # or project-name / spike_entity
+        (samplesheets['Sample_Project'].astype(str) + '/' + samplesheets['spike_entity_id'].astype(str) == sample) # or project-name / spike_entity
         ]['Sample_Project'].unique()
     if len(projects) != 1:
         raise ValueError('Ambigious or missing project for sample "%s"!' % sample)
