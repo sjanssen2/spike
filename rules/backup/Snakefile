@@ -82,6 +82,7 @@ rule backup_validate:
     threads:
         1
     shell:
+        "mkdir -p {config[dirs][tmpdir]} && "
         "tmpdir=$(mktemp --tmpdir={config[dirs][tmpdir]} -d) &&"
         "tmpfile=$(mktemp) &&"
         ' echo "quote USER {config[credentials][backup][username]}" > $tmpfile &&'

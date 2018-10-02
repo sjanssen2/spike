@@ -202,7 +202,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
         extracted.loc[idx, 'nickname'] = row['snupy_name'].split('/')[-1]
         extracted.loc[idx, 'project'] = str(config['projects'][row['spike_project']]['snupy']['project_id'])
         if row['spike_project'] not in cache_users:
-            r = requests.get(config['credentials']['snupy']['host'] + '/experiments/109.json',
+            r = requests.get(config['credentials']['snupy']['host'] + ('/experiments/%s.json' % extracted.loc[idx, 'project']),
                 auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
                 verify=False)
             cache_users[row['spike_project']] = ';'.join(sorted(map(lambda x: x['name'], r.json()['users'])))
