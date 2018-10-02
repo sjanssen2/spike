@@ -1,6 +1,6 @@
 rule check_complete:
     input:
-        fp_status="{prefix}%s%s{run}/ImageAnalysis_Netcopy_complete.txt" % (config['dirs']['inputs'], config['dirs']['rawillumina'])
+        "{prefix}%s%s{run}/RTAComplete.txt" % (config['dirs']['inputs'], config['dirs']['rawillumina'])
     output:
         fp_check="{prefix}%s%s-{run}-illuminarun_complete.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])
     log:
@@ -8,7 +8,8 @@ rule check_complete:
     benchmark:
         "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['check_complete'])
     run:
-        check_illuminarun_complete(input.fp_status, output.fp_check)
+        with open(output.fp_check, 'w') as f:
+            f.write("Raw Illumina data from run are complete.\n")
 
 
 rule demultiplex:
