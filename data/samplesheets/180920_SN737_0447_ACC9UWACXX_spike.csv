@@ -44,7 +44,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 6,KB0134_f,,,,F01,GACTAGTA,Keimbahn,set4,KB0134,father,
 6,KB0134_m,,,,G01,ATTGGCTC,Keimbahn,set4,KB0134,mother,
 6,KB0151_c,,,,H01,GATGAATC,Keimbahn,set4,KB0151,patient,
-7,KB0134_c ,,,,E01,GCCAAGAC,Keimbahn,set4,KB0134 ,patient,
+7,KB0134_c,,,,E01,GCCAAGAC,Keimbahn,set4,KB0134,patient,
 7,KB0134_f,,,,F01,GACTAGTA,Keimbahn,set4,KB0134,father,
 7,KB0134_m,,,,G01,ATTGGCTC,Keimbahn,set4,KB0134,mother,
 7,KB0151_c,,,,H01,GATGAATC,Keimbahn,set4,KB0151,patient,
