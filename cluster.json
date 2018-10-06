@@ -77,7 +77,7 @@
     "gatk_HaplotypeCaller":
     {
       "ppn" : "1",
-      "time" : "02:59:59",
+      "time" : "03:59:59",
       "mem" : "8GB",
     },
 
@@ -225,11 +225,40 @@
     {
       "mem" : "5GB",
       "ppn" : "1",
+      "time" : "01:59:59",
     },
 
     "rejoin_samples":
     {
       "time" : "01:59:59",
       "ppn" : "1",
+    },
+
+    "snupy_upload_background":
+    {
+      "ppn": "1",
+      "time" : "00:19:59",
+      "mem" : "1GB",
+    },
+
+    "snupy_upload_tumornormal":
+    {
+      "ppn": "1",
+      "time" : "00:19:59",
+      "mem" : "1GB",
+    },
+
+    "snupy_upload_trio":
+    {
+      "ppn": "1",
+      "time" : "00:19:59",
+      "mem" : "1GB",
+    },
+
+    "snupy_extractsamples":
+    {
+      "ppn": "1",
+      "time" : "00:19:59",
+      "mem" : "1GB",
     },
 }
