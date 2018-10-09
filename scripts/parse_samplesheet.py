@@ -4,6 +4,7 @@ import numpy as np
 from os.path import join
 import glob
 import sys
+import re
 
 
 def parse_samplesheet(fp_samplesheet):
@@ -48,6 +49,162 @@ def parse_samplesheet(fp_samplesheet):
     return ss
 
 
+def validate_samplesheet(ss: pd.DataFrame, config, line_offset: int=22, err=sys.stderr):
+    """Checks if sample sheet is valid.
+
+    Parameters
+    ----------
+    ss : pd.DataFrame
+        Samplesheet to be validated.
+    config : dict from YAML
+        Snakemake configuration file holding information about projects.
+    line_offset : int
+        Default: 22.
+        To give user information about problematic lines, we need to go back
+        to the file (not the DataFrame) to address the correct line.
+    err : IO.stream
+        Default: sys.stderr
+        Stream onto which warnings are written.
+
+    Returns
+    -------
+    [str] : List of warnings
+
+    Raises
+    ------
+    ValueError if errors are found in the sample sheet.
+    """
+
+    errors = []
+    warnings = []
+
+    # ensure all needed columns are in the table
+    exp_columns = {'Lane', 'Sample_ID', 'Sample_Name', 'I7_Index_ID', 'index',
+                   'Sample_Project', 'spike_entity_id', 'spike_entity_role'}
+    if len(exp_columns - set(ss.columns)) > 0:
+        errors.append(
+            'Samplesheet is missing column(s): "%s".' %
+            '", "'.join(sorted(exp_columns - set(ss.columns))))
+
+    # ensure to only use [A-z0-9_] in identifiers
+    allowedChars = re.compile("^[A-z0-9_]*$")
+    for field in ['Sample_ID', 'Sample_Name', 'Sample_Project',
+                  'spike_entity_id', 'spike_entity_role']:
+        if field in ss:
+            for idx, x in ss[field].iteritems():
+                if pd.notnull(x):
+                    if allowedChars.fullmatch(x) is None:
+                        errors.append(
+                            ('%s in line %i contains a restricted char'
+                             'acter: "%s". Only a-z A-Z 0-9 and _ are al'
+                             'lowed!') % (field, line_offset+idx, x))
+
+    # ensure Sample_Project is not empty
+    if 'Sample_Project' in ss:
+        for idx, x in ss['Sample_Project'].iteritems():
+            if pd.isnull(x) or x.strip() == "":
+                errors.append('Line %i has an empty Sample_Project.' %
+                              (line_offset+idx))
+
+    if len(errors) > 0:
+        raise ValueError('The following %i errors(s) were found in your sample sheet:\n%s\n' % (len(errors), '\n'.join(['ERROR %i: %s' % (i+1, error) for i, error in enumerate(errors)])))
+
+
+    # check that sample project is describes in config.yaml
+    for prj in ss['Sample_Project'].unique():
+        if prj not in config['projects']:
+            warnings.append(('Sample_Project "%s" is not described in config.'
+                             'yaml. No processing other than demultiplexing w'
+                             'ill be applied.') % (prj))
+
+    # check that spike_entity_role is a defined one
+    exp_roles = {'trio': {'patient', 'father', 'mother'},
+                 'tumornormal': {'healthy', 'tumor'}}
+    for idx, row in ss.iterrows():
+        if pd.notnull(row['spike_entity_role']):
+            if row['Sample_Project'] in config['projects']:
+                for action in exp_roles.keys():
+                    if action in config['projects'][row['Sample_Project']]['actions']:
+                        if row['spike_entity_role'] not in exp_roles[action]:
+                            warnings.append('spike_entity_role "%s" in line %i for Sample_Project "%s" is unknown for %s-computation!' % (row['spike_entity_role'], line_offset+idx, row['Sample_Project'], action))
+
+    # test that entity name is infix of sample name
+    for idx, row in ss.iterrows():
+        if pd.notnull(row['spike_entity_id']):
+            if row['spike_entity_id'] not in row['Sample_ID']:
+                warnings.append('spike_entity_id "%s" is not part of the Sample_ID "%s" in line %i.' % (row['spike_entity_id'], row['Sample_ID'], line_offset+idx))
+
+    # check assumptions about naming schemas per project
+    exp_names = {'Keimbahn': re.compile("^KB\d{4}"),
+                 'Alps': re.compile("^ALPS")}
+    for idx, row in ss.iterrows():
+        if row['Sample_Project'] in exp_names:
+            if exp_names[row['Sample_Project']].match(row['Sample_ID']) is None:
+                warnings.append('Sample_ID "%s" does not follow expected naming schema "%s" in line %i.' % (row['Sample_ID'], exp_names[row['Sample_Project']].pattern, line_offset+idx))
+
+    # check assumptions about name suffices
+    exp_suffices = {'Keimbahn': {'patient': {'_c'},
+                                 'father': {'_f'},
+                                 'mother': {'_m'}},
+                    'Alps': {'patient': {''},
+                             'father': {'_a', 'a'},
+                             'mother': {'_b', 'b'}},
+                    'Maus_Hauer': {'healthy': {'_c', 'c', '_n', 'n'},
+                                   'tumor': {'_t', 't'}}}
+    for idx, row in ss.iterrows():
+        if pd.isnull(row['spike_entity_id']):
+            continue
+        suffix = row['Sample_ID'][len(row['spike_entity_id']):].lower()
+        if row['Sample_Project'] in exp_suffices:
+            for role in exp_suffices[row['Sample_Project']].keys():
+                if (row['spike_entity_role'] == role) and (suffix not in exp_suffices[row['Sample_Project']][role]):
+                    warnings.append('Sample_ID "%s" does not match expected spike_entity_role "%s" for Sample_Project "%s" in line %i.' % (row['Sample_ID'], row['spike_entity_role'], row['Sample_Project'], line_offset+idx))
+
+    # check assumptions about barcodes used by specific wet lab members:
+    exp_barcodes = {
+        'Keimbahn': {
+            'A01': 'ATGCCTAA',
+            'B01': 'GAATCTGA',
+            'C01': 'AACGTGAT',
+            'D01': 'CACTTCGA',
+            'E01': 'GCCAAGAC',
+            'F01': 'GACTAGTA',
+            'G01': 'ATTGGCTC',
+            'H01': 'GATGAATC'},
+        'Alps': {
+            'A01': 'ATGCCTAA',
+            'B01': 'GAATCTGA',
+            'C01': 'AACGTGAT',
+            'D01': 'CACTTCGA',
+            'E01': 'GCCAAGAC',
+            'F01': 'GACTAGTA',
+            'G01': 'ATTGGCTC',
+            'H01': 'GATGAATC'},
+        'Maus_Hauer': {
+            'A02': 'AGCAGGAA',
+            'B02': 'GAGCTGAA',
+            'C02': 'AAACATCG',
+            'D02': 'GAGTTAGC',
+            'E02': 'CGAACTTA',
+            'F02': 'GATAGACA',
+            'G02': 'AAGGACAC',
+            'H02': 'GACAGTGC'},
+    }
+    for idx, row in ss.iterrows():
+        if row['Sample_Project'] in exp_barcodes:
+            if row['I7_Index_ID'] not in exp_barcodes[row['Sample_Project']]:
+                warnings.append('Sample_ID "%s" for Sample_Project "%s" in line %i uses unexpected demultiplexing barcode %s: "%s"' % (row['Sample_ID'], row['Sample_Project'], line_offset+idx, row['I7_Index_ID'], row['index']))
+            elif (exp_barcodes[row['Sample_Project']][row['I7_Index_ID']] != row['index']):
+                warnings.append('Sample_ID "%s" for Sample_Project "%s" in line %i uses unexpected combination of index and I7_index_ID %s: "%s"' % (row['Sample_ID'], row['Sample_Project'], line_offset+idx, row['I7_Index_ID'], row['index']))
+
+    if len(warnings) > 0:
+        err.write('The following %i warning(s) are issued by your sample sheet:\n' % len(warnings))
+        for i, warning in enumerate(warnings):
+            err.write('warning %i: %s\n' % (i+1, warning))
+
+    return warnings
+
+
 def get_global_samplesheets(dir_samplesheets):
     # parse all available sample sheets
     fps_samplesheets = glob.glob('%s*_spike.csv' % dir_samplesheets)
@@ -87,7 +244,7 @@ def get_role(spike_project, spike_entity_id, spike_entity_role, samplesheets):
         x = samples[samples['Sample_Project'] == spike_project]
         x.iloc[0]
     except IndexError:
-        raise ValueError('Could not find an spike project with name "%s". Available projects are:\n\t%s\n' % (spike_project, '\n\t'.join(sorted(samples['Sample_Project'].unique()))))
+        raise ValueError('Could not find a spike project with name "%s". Available projects are:\n\t%s\n' % (spike_project, '\n\t'.join(sorted(samples['Sample_Project'].unique()))))
     else:
         samples = x
 
@@ -96,7 +253,7 @@ def get_role(spike_project, spike_entity_id, spike_entity_role, samplesheets):
         x = samples[samples['spike_entity_id'] == spike_entity_id]
         x.iloc[0]
     except IndexError:
-        raise ValueError('Could not find an spike entity group with name "%s". Available entities for projects "%s" are:\n\t%s\n' % (spike_entity_id, spike_project, '\n\t'.join(sorted(samples['spike_entity_id'].unique()))))
+        raise ValueError('Could not find a spike entity group with name "%s". Available entities for projects "%s" are:\n\t%s\n' % (spike_entity_id, spike_project, '\n\t'.join(sorted(samples['spike_entity_id'].unique()))))
     else:
         samples = x
 

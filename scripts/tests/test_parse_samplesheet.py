@@ -4,6 +4,8 @@ sys.path.append("..")
 from unittest import TestCase, main
 from scripts.parse_samplesheet import *
 import yaml
+from io import StringIO
+
 
 class ParseSamplesheetTests(TestCase):
     samplesheets = None
@@ -20,19 +22,19 @@ class ParseSamplesheetTests(TestCase):
                            'samplesheets': 'data'}}
         spike_project = 'Alpss'
         with self.assertRaisesRegex(ValueError,
-                                    ('Could not find an UKD project with name "%s". Available projects are:\n\t%s\n' % (spike_project, '\n\t'.join(sorted(['AG_Remke', 'Alps', 'Fischer_Geron', 'Keimbahn', 'Maus_Hauer', 'ALL_family_LB']))))):
+                                    ('Could not find a spike project with name "%s". Available projects are:\n\t%s\n' % (spike_project, '\n\t'.join(sorted(['AG_Remke', 'Alps', 'Fischer_Geron', 'Maus_Hauer', 'ALL_family_LB']))))):
             get_role(spike_project, None, None, self.samplesheets)
 
         spike_project = 'Alps'
         spike_entity_id = 'ALPS_6x'
         with self.assertRaisesRegex(ValueError,
-                                    ('Could not find an UKD entity group with name "%s". Available entities for projects "%s" are:\n\t%s\n' % (spike_entity_id, spike_project, '\n\t'.join(sorted(['ALPS_64', 'ALPS_65', 'ALPS_66']))))):
+                                    ('Could not find a spike entity group with name "%s". Available entities for projects "%s" are:\n\t%s\n' % (spike_entity_id, spike_project, '\n\t'.join(sorted(['ALPS_66']))))):
             get_role(spike_project, spike_entity_id, None, self.samplesheets)
 
         spike_entity_id = 'ALPS_66'
         spike_entity_role = 'grandma'
         with self.assertRaisesRegex(ValueError,
-                                    ('Could not find a role "%s" for UKD entity group with name "%s". Available roles are:\n\t%s\n' % (spike_entity_role, spike_entity_id, '\n\t'.join(sorted(['father', 'mother', 'patient']))))):
+                                    ('Could not find a role "%s" for spike entity group with name "%s". Available roles are:\n\t%s\n' % (spike_entity_role, spike_entity_id, '\n\t'.join(sorted(['father', 'mother', 'patient']))))):
             get_role(spike_project, spike_entity_id, spike_entity_role, self.samplesheets)
 
         spike_entity_role = 'father'
@@ -113,9 +115,160 @@ class ParseSamplesheetTests(TestCase):
             self.assertIn(entity, exp[obs])
 
     def test_get_bwa_mem_header(self):
-        self.assertIn('SureSelectXTV5plusUTRautomated', get_bwa_mem_header('Alps/ALPS_64', self.samplesheets, self.config))
-        self.assertIn('SureSelectXTmouse', get_bwa_mem_header('Maus_Hauer/mMicro297_T', self.samplesheets, self.config))
+        self.assertIn('SureSelectXTV5plusUTRautomated', get_bwa_mem_header('Alps/ALPS_66', self.samplesheets, self.config))
+        self.assertIn('SureSelectXTmouse', get_bwa_mem_header('Maus_Hauer/286C', self.samplesheets, self.config))
         self.assertIn('SureSelectHumanAllExonV6r2', get_bwa_mem_header('ALL_family_LB/LB_5-3', self.samplesheets, self.config))
+
+    def test_validate_samplesheet(self):
+        # WARNINGS
+        data = [{'Lane': None,
+                 'Sample_ID': "KB0005_c",
+                 'Sample_Name': None,
+                 'I7_Index_ID': 'A02',
+                 'index': 'AGCAGGAA',
+                 'Sample_Project': "Keimbahn",
+                 'spike_entity_id': "KB0005",
+                 'spike_entity_role': 'patient'}]
+        obs = StringIO()
+        validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
+        self.assertIn('Sample_ID "KB0005_c" for Sample_Project "Keimbahn" in line 22 uses unexpected demultiplexing barcode A02: "AGCAGGAA"', obs.getvalue())
+
+        data = [{'Lane': None,
+                 'Sample_ID': "KB0005_c",
+                 'Sample_Name': None,
+                 'I7_Index_ID': 'A01',
+                 'index': 'AAAACCCC',
+                 'Sample_Project': "Keimbahn",
+                 'spike_entity_id': "KB0005",
+                 'spike_entity_role': 'patient'}]
+        obs = StringIO()
+        validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
+        self.assertIn('Sample_ID "KB0005_c" for Sample_Project "Keimbahn" in line 22 uses unexpected combination of index and I7_index_ID A01: "AAAACCCC"', obs.getvalue())
+
+        data = [{'Lane': None,
+                 'Sample_ID': "KB0005_x",
+                 'Sample_Name': None,
+                 'I7_Index_ID': 'A01',
+                 'index': 'ATGCCTAA',
+                 'Sample_Project': "Keimbahn",
+                 'spike_entity_id': "KB0005",
+                 'spike_entity_role': 'patient'}]
+        obs = StringIO()
+        validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
+        self.assertIn('Sample_ID "KB0005_x" does not match expected spike_entity_role "patient" for Sample_Project "Keimbahn" in line 22.', obs.getvalue())
+
+        data = [{'Lane': None,
+                 'Sample_ID': "KB0004_c",
+                 'Sample_Name': None,
+                 'I7_Index_ID': 'A01',
+                 'index': 'ATGCCTAA',
+                 'Sample_Project': "Keimbahn",
+                 'spike_entity_id': "KB0005",
+                 'spike_entity_role': 'patient'}]
+        obs = StringIO()
+        validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
+        self.assertIn('spike_entity_id "KB0005" is not part of the Sample_ID "KB0004_c" in line 22.', obs.getvalue())
+
+        data = [{'Lane': None,
+                 'Sample_ID': "Kb0004_c",
+                 'Sample_Name': None,
+                 'I7_Index_ID': 'A01',
+                 'index': 'ATGCCTAA',
+                 'Sample_Project': "Keimbahn",
+                 'spike_entity_id': "KB0005",
+                 'spike_entity_role': 'patient'}]
+        obs = StringIO()
+        validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
+        self.assertIn('Sample_ID "Kb0004_c" does not follow expected naming schema "^KB\d{4}" in line 22.', obs.getvalue())
+
+        data = [{'Lane': None,
+                 'Sample_ID': "paul_c",
+                 'Sample_Name': None,
+                 'I7_Index_ID': None,
+                 'index': None,
+                 'Sample_Project': "Alps",
+                 'spike_entity_id': "paul",
+                 'spike_entity_role': 'healthy'}]
+        obs = StringIO()
+        validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
+        self.assertIn('spike_entity_role "healthy" in line 22 for Sample_Project "Alps" is unknown for trio-computation!', obs.getvalue())
+        self.assertIn('Sample_ID "paul_c" does not follow expected naming schema "^ALPS" in line 22.', obs.getvalue())
+
+        data = [{'Lane': None,
+                 'Sample_ID': "kurt_c",
+                 'Sample_Name': None,
+                 'I7_Index_ID': None,
+                 'index': None,
+                 'Sample_Project': "Maus_Hauer",
+                 'spike_entity_id': "paul",
+                 'spike_entity_role': 'healthy'}]
+        obs = StringIO()
+        validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
+        self.assertIn('spike_entity_id "paul" is not part of the Sample_ID "kurt_c" in line 22.', obs.getvalue())
+
+        data = [{'Lane': None,
+                 'Sample_ID': "samplea",
+                 'Sample_Name': None,
+                 'I7_Index_ID': None,
+                 'index': None,
+                 'Sample_Project': "Maus_Hauer",
+                 'spike_entity_id': None,
+                 'spike_entity_role': 'brother'}]
+        obs = StringIO()
+        validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
+        self.assertIn('spike_entity_role "brother" in line 22 for Sample_Project "Maus_Hauer" is unknown for tumornormal-computation!', obs.getvalue())
+
+        data = [{'Lane': None,
+                 'Sample_ID': "samplea",
+                 'Sample_Name': None,
+                 'I7_Index_ID': None,
+                 'index': None,
+                 'Sample_Project': "Keimbahn",
+                 'spike_entity_id': None,
+                 'spike_entity_role': 'brother'}]
+        obs = StringIO()
+        validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
+        self.assertIn('spike_entity_role "brother" in line 22 for Sample_Project "Keimbahn" is unknown for trio-computation!', obs.getvalue())
+
+        data = [{'Lane': None,
+                 'Sample_ID': None,
+                 'Sample_Name': "samplea",
+                 'I7_Index_ID': None,
+                 'index': None,
+                 'Sample_Project': "NoProject",
+                 'spike_entity_id': None,
+                 'spike_entity_role': None}]
+        obs = StringIO()
+        validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
+        self.assertIn('is not described in config.yaml. No processing other than demultiplexing', obs.getvalue())
+
+
+        # ERRORS
+        with self.assertRaisesRegex(ValueError, 'Samplesheet is missing column\(s\)'):
+            data = pd.DataFrame(data=None, columns=['Sample_ID', 'Lane'])
+            validate_samplesheet(pd.DataFrame(data), self.config)
+
+        with self.assertRaisesRegex(ValueError, 'contains a restricted character: "Wrong-Chars"'):
+            data = [{'Lane': None,
+                     'Sample_ID': None,
+                     'Sample_Name': "Wrong-Chars",
+                     'I7_Index_ID': None,
+                     'index': None,
+                     'Sample_Project': None,
+                     'spike_entity_id': None,
+                     'spike_entity_role': None}]
+            validate_samplesheet(pd.DataFrame(data), self.config)
+
+        with self.assertRaisesRegex(ValueError, 'has an empty Sample_Project'):
+            data = [{'Lane': None,
+                     'Sample_ID': None,
+                     'Sample_Name': "samplea",
+                     'I7_Index_ID': None,
+                     'index': None,
+                     'Sample_Project': "",
+                     'spike_entity_id': None,
+                     'spike_entity_role': None}]
+            validate_samplesheet(pd.DataFrame(data), self.config)
 
 
 if __name__ == '__main__':
