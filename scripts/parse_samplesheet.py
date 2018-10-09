@@ -147,14 +147,14 @@ def validate_samplesheet(ss: pd.DataFrame, config, line_offset: int=22, err=sys.
                                  'father': {'_f'},
                                  'mother': {'_m'}},
                     'Alps': {'patient': {''},
-                             'father': {'_a'},
-                             'mother': {'_b'}},
+                             'father': {'_a', 'a'},
+                             'mother': {'_b', 'b'}},
                     'Maus_Hauer': {'healthy': {'_c', 'c', '_n', 'n'},
                                    'tumor': {'_t', 't'}}}
     for idx, row in ss.iterrows():
         if pd.isnull(row['spike_entity_id']):
             continue
-        suffix = row['Sample_ID'][len(row['spike_entity_id']):]
+        suffix = row['Sample_ID'][len(row['spike_entity_id']):].lower()
         if row['Sample_Project'] in exp_suffices:
             for role in exp_suffices[row['Sample_Project']].keys():
                 if (row['spike_entity_role'] == role) and (suffix not in exp_suffices[row['Sample_Project']][role]):
