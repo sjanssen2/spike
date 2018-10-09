@@ -25,7 +25,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 1,ATRT_VU397,,,,A013,AGTCAA,AG_Remke,,,,
 1,BT16,,,,A014,AGTTCC,AG_Remke,,,,
 2,CHLA02,,,,A015,ATGTCA,AG_Remke,,,,
-2,CHLA-05,,,,A016,CCGTCC,AG_Remke,,,,
+2,CHLA_05,,,,A016,CCGTCC,AG_Remke,,,,
 2,CHLA06,,,,A018,GTCCGC,AG_Remke,,,,
 2,CHLA266,,,,A019,GTGAAA,AG_Remke,,,,
 3,CHLA04,,,,A002,CGATGT,AG_Remke,,,,

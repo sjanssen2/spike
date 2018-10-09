@@ -240,7 +240,7 @@ class ParseSamplesheetTests(TestCase):
                  'spike_entity_role': None}]
         obs = StringIO()
         validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
-        self.assertIn('is not describes in config.yaml. No processing other than demultiplexing', obs.getvalue())
+        self.assertIn('is not described in config.yaml. No processing other than demultiplexing', obs.getvalue())
 
 
         # ERRORS

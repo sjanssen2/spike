@@ -113,7 +113,7 @@ def validate_samplesheet(ss: pd.DataFrame, config, line_offset: int=22, err=sys.
     # check that sample project is describes in config.yaml
     for prj in ss['Sample_Project'].unique():
         if prj not in config['projects']:
-            warnings.append(('Sample_Project "%s" is not describes in config.'
+            warnings.append(('Sample_Project "%s" is not described in config.'
                              'yaml. No processing other than demultiplexing w'
                              'ill be applied.') % (prj))
 
