@@ -5,7 +5,7 @@ import glob
 from scripts.parse_samplesheet import parse_samplesheet, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets
 from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header, get_demux_samples, get_projects_with_exomecoverage, get_rejoin_fastqs, get_xenograft_hybridreference, get_xenograft_stepname, get_persamplefastq_samples
 from scripts.utils import exclude_sample
-from scripts.reports import report_undertermined_filesizes, report_exome_coverage
+from scripts.reports import report_undertermined_filesizes, report_exome_coverage, write_status_update, get_status_data
 from scripts.convert_platypus import annotate
 from scripts.snupy import upload_to_snupy, extractsamples
 
@@ -65,6 +65,12 @@ rule all:
 
         # tumornormal calling for complete tumor/normal pairs of all runs
         tumornormal_freec=['%s%s%s/%s/%s/tumor.pileup.freec_BAF.txt'  % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'],        pair['Sample_Project'], pair['spike_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+
+rule status:
+    output:
+        "status_update.xlsx"
+    run:
+        write_status_update(output[0], get_status_data(SAMPLESHEETS, config, prefix='/media/hhu/gpfs/project/jansses/'), config)
 
 # onerror:
 #     print("An error occurred")
