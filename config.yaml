@@ -140,6 +140,7 @@ projects:
     snupy:
       contact: "Kuhlen"
       project_id: 82
+    min_coverage: 60
   ALL_family_LB:
     actions:
       - persamplefastq
