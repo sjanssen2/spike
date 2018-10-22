@@ -6,7 +6,9 @@ from glob import glob
 import seaborn as sns
 import numpy as np
 from scipy import stats
+import xlsxwriter
 import matplotlib.pyplot as plt
+from scripts.parse_samplesheet import get_min_coverage
 plt.switch_backend('Agg')
 
 
@@ -138,3 +140,235 @@ def report_exome_coverage(
                 len(samples_below_coverage_threshold),
                 '\n\t'.join(samples_below_coverage_threshold),
                 fp_plot))
+
+
+def get_status_data(samplesheets, config, prefix=None):
+    if samplesheets.shape[0] <= 0:
+        raise ValueError("No samples specified.")
+
+    ACTION_to_PROGRAM = {
+        'background': ['GATK', 'Platypus'],
+        'trio': ['Varscan\ndenovo'],
+        'tumornormal': ['Mutect', 'Varscan'],
+        'demultiplex': ['bcl2fastq']}
+    min_targets = 80
+
+    if prefix is None:
+        prefix = config['dirs']['prefix']
+
+    # check if flowcell has been demuxed
+    check_flowcell_demuxed = dict()
+    for run, g_run in samplesheets.groupby('run'):
+        fp_yieldreport = join(prefix, config['dirs']['reports'], run, '%s.yield_report.pdf' % run)
+        check_flowcell_demuxed[run] = exists(fp_yieldreport)
+
+    results = []
+    for project, g_project in samplesheets.groupby('Sample_Project'):
+        for entity, g_entity in g_project.groupby('spike_entity_id'):
+            if project in config['projects']:
+                coverages = dict()
+                for sample, g_sample in g_entity.groupby('Sample_ID'):
+                    fp_coverage = join(prefix, config['dirs']['intermediate'], config['stepnames']['exome_coverage'], project, '%s.exome_coverage.csv' % sample)
+                    if exists(fp_coverage):
+                        coverage = pd.read_csv(fp_coverage, sep="\t")
+                        coverages[sample] = coverage.loc[coverage['percent_cumulative'].apply(lambda x: abs(x-min_targets)).idxmin(), '#coverage']
+                    else:
+                        coverages[sample] = 0
+
+                for action in config['projects'][project]['actions']:
+                    fp_extracted = join(prefix, config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], project, '%s.%s.extracted' % (entity, action))
+                    status = exists(fp_extracted)
+                    for program in ACTION_to_PROGRAM[action]:
+                        for sample, g_sample in g_entity.groupby('Sample_ID'):
+                            role = ""
+                            if pd.notnull(g_sample['spike_entity_role'].unique()[0]):
+                                role = g_sample['spike_entity_role'].unique()[0]
+                            results.append({
+                                'project': project,
+                                'entity': entity,
+                                'sample': role,
+                                'action': action,
+                                'program': program,
+                                'status': int(status),
+                                'coverage': coverages[sample]})
+                    if action == 'trio':
+                        expected_roles = set(['patient', 'father', 'mother'])
+                    elif action == 'tumornormal':
+                        expected_roles = set(['tumor', 'healthy'])
+                    elif action == 'background':
+                        expected_roles = set()
+                    elif action == 'demultiplex':
+                        expected_roles = set()
+                    else:
+                        raise ValueError("Unexpected action '%s'!" % action)
+                    if len(expected_roles - set(g_entity['spike_entity_role'].unique())) > 0:
+                        for role in (expected_roles - set(g_entity['spike_entity_role'].unique())):
+                            results.append({
+                                'project': project,
+                                'entity': entity,
+                                'sample': role,
+                                'action': action,
+                                'program': program,
+                                'status': 0,
+                                'coverage': -1})
+
+                for sample, g_sample in g_entity.groupby('Sample_ID'):
+                    role = ""
+                    if pd.notnull(g_sample['spike_entity_role'].unique()[0]):
+                        role = g_sample['spike_entity_role'].unique()[0]
+                    results.append({
+                        'project': project,
+                        'entity': entity,
+                        'sample': role,
+                        'action': 'demultiplex',
+                        'program': 'bcl2fastq',
+                        'status': int(check_flowcell_demuxed[g_sample['run'].unique()[0]]),
+                        'coverage': coverages[sample]})
+
+        for sample, g_sample in g_project[pd.isnull(g_project['spike_entity_id'])].groupby('Sample_ID'):
+            results.append({
+                'project': project,
+                'entity': "",
+                'sample': sample,
+                'action': 'demultiplex',
+                'program': 'bcl2fastq',
+                'status': int(check_flowcell_demuxed[g_sample['run'].unique()[0]]),
+                'coverage': 0})
+    #return results
+    res = pd.pivot_table(
+        data=pd.DataFrame(results),
+        index=['project', 'entity', 'sample', 'coverage'],
+        columns=['action', 'program'],
+        values='status',
+        fill_value=-1,
+    )
+
+    # reorder actions
+    res = res.loc[:, [
+        ('demultiplex', 'bcl2fastq'),
+        ('background', 'GATK'),
+        ('background', 'Platypus'),
+        ('tumornormal', 'Mutect'),
+        ('tumornormal', 'Varscan'),
+        ('trio', 'Varscan\ndenovo'),
+    ]]
+
+    return res
+
+
+def write_status_update(filename, status_table, config, offset_rows=0, offset_cols=0):
+    workbook = xlsxwriter.Workbook(filename)
+    worksheet = workbook.add_worksheet()
+
+    offset_rows = 0
+    offset_cols = 0
+
+    # column header
+    format_header = workbook.add_format({
+        'rotation': 90,
+        'bold': True,
+        'valign': 'vcenter',
+        'align': 'center'})
+    for col, program in enumerate(['coverage'] + list(status_table.columns.get_level_values(1))):
+        worksheet.write(offset_rows, offset_cols+col+3, program, format_header)
+
+    worksheet.set_column(offset_cols, offset_cols, 4)
+    worksheet.set_column(offset_cols+len(status_table.index.names)-1, offset_cols+len(status_table.index.names)+status_table.shape[1], 4)
+    worksheet.set_row(offset_rows, 80)
+
+    # row header: project
+    format_project = workbook.add_format({
+        'rotation': 90,
+        'bold': True,
+        'valign': 'vcenter',
+        'align': 'center'})
+    for pos, project in enumerate(status_table.index.levels[0]):
+        start = list(status_table.index.labels[0]).index(pos)
+        stop = len(status_table.index.labels[0]) - 1 - list(status_table.index.labels[0][::-1]).index(pos)
+        col = chr(65+offset_cols)
+        cellrange = '%s%i:%s%i' % (col, offset_rows+start+1+1, col, offset_rows+stop+1+1)
+        worksheet.merge_range(cellrange, project.replace('_', '\n'), format_project)
+
+    # row header: spike_entity_id
+    format_spike_entity_id = workbook.add_format({
+        'valign': 'vcenter',
+        'align': 'center'})
+    for pos, spike_entity_id in enumerate(status_table.index.levels[1]):
+        if spike_entity_id == "":
+            continue
+        start = list(status_table.index.labels[1]).index(pos)
+        stop = len(status_table.index.labels[1]) - 1 - list(status_table.index.labels[1][::-1]).index(pos)
+        col = chr(65+offset_cols+1)
+        cellrange = '%s%i:%s%i' % (col, offset_rows+start+1+1, col, offset_rows+stop+1+1)
+        worksheet.merge_range(cellrange, spike_entity_id, format_spike_entity_id)
+
+    # row header: sample name / role
+    format_spike_entity_role = workbook.add_format({
+        'valign': 'vcenter',
+        'align': 'center'})
+    format_spike_entity_role_missing = workbook.add_format({
+        'valign': 'vcenter',
+        'align': 'center',
+        'font_color': '#ff0000'})
+    for pos, role in enumerate(status_table.index.get_level_values(2)):
+        if status_table.index.get_level_values(1)[pos] == "":
+            cellrange = '%s%i:%s%i' % (chr(65+offset_cols+1), offset_rows+pos+1+1, chr(65+offset_cols+2), offset_rows+pos+1+1)
+            worksheet.merge_range(cellrange, role, format_spike_entity_role)
+        else:
+            worksheet.write(offset_rows+1+pos, offset_cols+2, role, format_spike_entity_role if status_table.index[pos][-1] != -1 else format_spike_entity_role_missing)
+
+    # coverage
+    format_coverage = workbook.add_format({'align': 'center'})
+    for row, coverage in enumerate(status_table.index.get_level_values(3)):
+        worksheet.write(offset_rows+1+row, offset_cols+3, coverage if coverage > 0 else '?', format_coverage)
+    format_coverage_poor = workbook.add_format({'bg_color': '#ffcccc'})
+    format_coverage_good = workbook.add_format({'bg_color': '#ccffcc'})
+    # conditional coloring based for coverage, based on project
+    for pos, project in enumerate(status_table.index.levels[0]):
+        start = list(status_table.index.labels[0]).index(pos)
+        stop = len(status_table.index.labels[0]) - 1 - list(status_table.index.labels[0][::-1]).index(pos)
+        #cellrange = '%s%i:%s%i' % (col, start+2, col, stop+2)
+        cellrange = '%s%i:%s%i' % (chr(65+offset_cols+len(status_table.index.levels)-1), offset_rows+2+start,
+                                   chr(65+offset_cols+len(status_table.index.levels)-1), offset_rows+2+stop)
+        worksheet.conditional_format(cellrange, {'type': 'cell',
+                                                 'criteria': '>=',
+                                                 'value': get_min_coverage(project, config),
+                                                 'format': format_coverage_good})
+        worksheet.conditional_format(cellrange, {'type': 'cell',
+                                                 'criteria': '<',
+                                                 'value': get_min_coverage(project, config),
+                                                 'format': format_coverage_poor})
+
+    # status
+    format_missing_sample = workbook.add_format({'align': 'center',
+                                                 'font_color': '#ff0000'})
+    for row, (idx_row, data) in enumerate(status_table.iterrows()):
+        coverage = idx_row[-1]
+        if coverage == -1:
+            cellrange = '%s%i:%s%i' % (chr(65+offset_cols+3), row+offset_rows+2, chr(65+offset_cols+3+status_table.shape[1]), row+offset_rows+2)
+            worksheet.merge_range(cellrange, 'missing sample', format_missing_sample)
+        else:
+            for col, (_, status) in enumerate(data.iteritems()):
+                if pd.isnull(status) or (status == -1):
+                    value = ""
+                elif status == 1:
+                    value = "done"
+                elif status == 0:
+                    value = "no"
+                worksheet.write(offset_rows+1+row, offset_cols+4+col, value)
+    format_processing_poor = workbook.add_format({'bg_color': '#ffcccc',
+                                                  'font_color': '#ffcccc'})
+    format_processing_good = workbook.add_format({'bg_color': '#ccffcc',
+                                                  'font_color': '#ccffcc'})
+    cellrange = '%s%i:%s%i' % (chr(65+len(idx_row)+offset_cols), offset_rows+2,
+                               chr(65+len(idx_row)+status_table.shape[1]-1+offset_cols), status_table.shape[0]+offset_rows+2-1)
+    worksheet.conditional_format(cellrange, {'type': 'cell',
+                                             'criteria': '==',
+                                             'value': '"done"',
+                                             'format': format_processing_good})
+    worksheet.conditional_format(cellrange, {'type': 'cell',
+                                             'criteria': '==',
+                                             'value': '"no"',
+                                             'format': format_processing_poor})
+
+    workbook.close()

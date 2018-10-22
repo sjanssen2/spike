@@ -445,3 +445,9 @@ def get_xenograft_stepname(sample, samplesheets, config):
         return config['stepnames']['xenograft_bwa_sampe']
     else:
         return config['stepnames']['trim']
+
+def get_min_coverage(project, config):
+    if project in config['projects']:
+        if 'min_coverage' in config['projects'][project]:
+            return int(config['projects'][project]['min_coverage'])
+    return 30
