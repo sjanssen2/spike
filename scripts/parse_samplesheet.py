@@ -239,6 +239,22 @@ def get_role(spike_project, spike_entity_id, spike_entity_role, samplesheets):
     """
     samples = samplesheets
 
+    # edge case: trios shall be computed not for patient, but for e.g. siblings
+    # Usecase in Keimbahn project, e.g. KB0164
+    # 1) check that no regular sample can be found, because of e.g. suffix _s1
+    if samples[(samples['Sample_Project'] == spike_project) &
+               (samples['spike_entity_id'] == spike_entity_id)].shape[0] == 0:
+        alt_samples = samples[(samples['Sample_Project'] == spike_project) &
+                              (samples['Sample_ID'] == spike_entity_id) &
+                              (samples['spike_entity_role'] == 'sibling')]
+        # 2) test that excatly ONE alternative sample can be found (might be merged across runs/lanes)
+        if alt_samples[['Sample_ID', 'Sample_Name', 'Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']].drop_duplicates().shape[0] != 1:
+            raise ValueError('Alternative entity name leads to none or ambiguous sample information!')
+        if spike_entity_role == 'patient':
+            return alt_samples['fastq-prefix'].unique()[0]
+        else:
+            return get_role(spike_project, alt_samples['spike_entity_id'].unique()[0], spike_entity_role, samplesheets)
+
     # select correct project
     try:
         x = samples[samples['Sample_Project'] == spike_project]
