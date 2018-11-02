@@ -426,7 +426,11 @@ def get_trios(samplesheets, config):
         if len(set(g['spike_entity_role'].unique()) & {'patient', 'mother', 'father'}) == 3:
             trios.append({'Sample_Project': trio[0],
                           'spike_entity_id': trio[1]})
-
+        # add extra trios for siblings
+        if len(set(g['spike_entity_role'].unique()) & {'sibling', 'mother', 'father'}) == 3:
+            for sibling, g_sibling in g[g['spike_entity_role'] == 'sibling'].groupby('Sample_ID'):
+                trios.append({'Sample_Project': trio[0],
+                              'spike_entity_id': sibling})
     return trios
 
 
