@@ -1,29 +1,36 @@
 rule excavator_install:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        sources="%s%sEXCAVATOR_Package_v2.2.tgz" % (config['dirs']['prefix'], config['dirs']['references'])
+        sources="%s%sEXCAVATOR_Package_v2.2.tgz" % (config['dirs']['prefix'], config['dirs']['references']),
+        wig=lambda wildcards: "%s%s%s.fa.index.gem.mappability.wig" % (wildcards.prefix, config['dirs']['references'], wildcards.assembly)
         #exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
         #references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         #bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
     output:
-        "{prefix}%s%s/res.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_install']),
+        "{prefix}%s%s/{assembly,hGRC37|Mus_musculus.GRCm38.71.dna}/{exometrack}.result" % (config['dirs']['intermediate'], config['stepnames']['excavator_install']),
+        config="{prefix}%s%s/{assembly,hGRC37|Mus_musculus.GRCm38.71.dna}/{exometrack}.sourcetarget.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_install']),
     log:
-        "{prefix}%s%s/res.log" % (config['dirs']['logs'], config['stepnames']['excavator_install'])
+        "{prefix}%s%s/{assembly}/{exometrack}.log" % (config['dirs']['logs'], config['stepnames']['excavator_install'])
     benchmark:
-        "{prefix}%s%s/res.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_install'])
+        "{prefix}%s%s/{assembly}/{exometrack}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_install'])
     conda:
         "envs/spike_excavator.yaml"
     threads:
         1
     shell:
         "cwd=`pwd` 2> {log}"
-        " && if [ ! -d $CONDA_PREFIX/src/EXCAVATOR/ ]; then"
-        " mkdir -p $CONDA_PREFIX/src 2>> {log}"
-        " && tar xzvf {input.sources} EXCAVATOR_Package_v2.2/ -C $CONDA_PREFIX/src/ 2>> {log}"
-        " && cd $CONDA_PREFIX/src/EXCAVATOR/lib/F77 2>> {log}"
-        " && R CMD SHLIB F4R.f 2>> {log}"
-        " && R CMD SHLIB FastJointSLMLibraryI.f 2>> {log}"
+        " && if [ ! -d $CONDA_PREFIX/src/EXCAVATOR_Package_v2.2/EXCAVATOR/ ]; then"
+        " mkdir -p -v $CONDA_PREFIX/src 2>> {log} 1>&2"
+        " && tar xzvf {input.sources} -C $CONDA_PREFIX/src/ 2>> {log} 1>&2"
+        " && cd $CONDA_PREFIX/src/EXCAVATOR_Package_v2.2/EXCAVATOR/lib/F77 2>> {log}"
+        " && R CMD SHLIB F4R.f 2>> {log} 1>&2"
+        " && R CMD SHLIB FastJointSLMLibraryI.f 2>> {log} 1>&2"
         " && cd $cwd"
-        " fi;"
-        " && pwd > {output}"
-        " && echo 'fake' >> {output}"
+        " ; fi"
+        ' && echo "{input.wig} xxx" > {output.config}'
+        " && perl $CONDA_PREFIX/src/EXCAVATOR_Package_v2.2/EXCAVATOR/TargetPerla.pl"
+        " --assembly {wildcards.assembly}"
+        " $CONDA_PREFIX/src/EXCAVATOR_Package_v2.2/EXCAVATOR/SourceTarget.txt"
+        " {wildcards.prefix}{config[dirs][references]}{wildcards.exometrack}.bed {wildcards.exometrack}"
+        #" && pwd > {output}"
+        #" && echo 'fake' >> {output}"

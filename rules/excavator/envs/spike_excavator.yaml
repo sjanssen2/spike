@@ -1,4 +1,11 @@
+name: spike_excavator
+
 channels:
   - anaconda
+  - bioconda
+  - r
 dependencies:
   - samtools =1.3=2
+  - r=3.5.1
+  - r-hmisc=4.1_1
+  - perl=5.26.2
