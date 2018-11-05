@@ -211,6 +211,8 @@ def get_global_samplesheets(dir_samplesheets):
         ss = parse_samplesheet(fp_samplesheet)
         ss['run'] = fp_samplesheet.split('/')[-1].replace('_spike.csv', '')
         global_samplesheet.append(ss)
+    if len(global_samplesheet) <= 0:
+        raise ValueError("Could not find a single demultiplexing sample sheet in directory '%s'." % dir_samplesheets)
     global_samplesheet = pd.concat(global_samplesheet, sort=False)
 
     return global_samplesheet
