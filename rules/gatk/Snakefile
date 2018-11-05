@@ -656,4 +656,4 @@ rule check_coverage:
     benchmark:
         "{prefix}%s%s/{project}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['check_coverage'])
     run:
-        report_exome_coverage(input, output[0])
+        report_exome_coverage(input, output[0], min_coverage=get_min_coverage(wildcards.project, config))
