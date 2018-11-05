@@ -48,4 +48,4 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 7,28_C_CD54ROCD8H1,,,,B01,GAATCTGA,Single_Cell,,,,
 7,30_C_CD45RO_CD8D4,,,,D01,CACTTCGA,Single_Cell,,,,
 8,KB0108_c,,,,E01,GCCAAGAC,Keimbahn,,KB0108,patient,
-8,KB0023_c_t,,,,H01,GATGAATC,Keimbahn,,KB0023,,
+8,KB0023_c_t_medullo,,,,H01,GATGAATC,Keimbahn,,KB0023,tumor_patient,

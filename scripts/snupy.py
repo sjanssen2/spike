@@ -58,7 +58,7 @@ def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type
     # IF sample has been sequence on more than one flowcell (i.e. at different rundates)
     # the dates are added to the name to give the user a hint about this fact
     runs = samplesheets[(samplesheets['Sample_Project'] == project) &
-                        (samplesheets['spike_entity_id'] == entity) &
+                        ((samplesheets['spike_entity_id'] == entity) | (samplesheets['Sample_ID'] == entity)) &
                         ((samplesheets['Sample_ID'] == sample_name) | (_type != 'background'))]['run'].unique()
     name += '+'.join(runs)
     name += '_' + project
@@ -187,7 +187,9 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
         if _type == 'background':
             extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"snv and indel"}'
             extracted.loc[idx, 'snupy_Samples'] = row['snupy_name'].split('/')[-1].split('.')[0]
-            if samplesheets[(samplesheets['Sample_ID'] == extracted.loc[idx, 'snupy_Samples']) & (samplesheets['Sample_Project'] == row['spike_project']) & (samplesheets['spike_entity_id'] == row['spike_entity_id'])]['spike_entity_role'].iloc[0] in ['healthy', 'father', 'mother']:
+            if samplesheets[(samplesheets['Sample_ID'] == extracted.loc[idx, 'snupy_Samples']) &
+                            (samplesheets['Sample_Project'] == row['spike_project']) &
+                            (samplesheets['spike_entity_id'] == row['spike_entity_id'])]['spike_entity_role'].iloc[0] in ['healthy', 'father', 'mother', 'sibling']:
                 extracted.loc[idx, 'ignorefilter'] = '1'
         elif _type == 'tumornormal':
             extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"somatic"}'

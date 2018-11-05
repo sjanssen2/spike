@@ -21,7 +21,7 @@ AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,
 [Data],,,,,,,,,,,
 Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,spike_entity_id,spike_entity_role,spike_ignore_sample
 1,KB0062_m,,,,A01,ATGCCTAA,Keimbahn,,KB0062,mother,
-1,KB0075_t,,,,B01,GAATCTGA,Keimbahn,,KB0075,,
+1,KB0075_c_t,,,,B01,GAATCTGA,Keimbahn,,KB0075,tumor_patient,
 1,KB0057_c,,,,C01,AACGTGAT,Keimbahn,,KB0057,patient,
 2,KB0057_f,,,,D01,CACTTCGA,Keimbahn,,KB0057,father,
 2,KB0057_m,,,,E01,GCCAAGAC,Keimbahn,,KB0057,mother,

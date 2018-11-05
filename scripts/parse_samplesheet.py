@@ -8,7 +8,7 @@ import re
 
 
 def parse_samplesheet(fp_samplesheet):
-    ss = pd.read_csv(fp_samplesheet, sep=",", skiprows=21, dtype={'Sample_Name': str, 'Sample_ID': str})
+    ss = pd.read_csv(fp_samplesheet, sep=",", skiprows=21, dtype={'Sample_Name': str, 'Sample_ID': str, 'spike_entity_id': str})
 
     # bcl2fasta automatically changes - into _ char in output filenames
     idx_rawilluminainput = ss[pd.notnull(ss['Lane'])].index
@@ -42,9 +42,6 @@ def parse_samplesheet(fp_samplesheet):
 
     # remove samples that are marked to be ignored
     ss = ss[pd.isnull(ss['spike_ignore_sample'])]
-
-    # set Lane to 0 if not defined, as in Macrogen samples
-    ss['Lane'] = ss['Lane'].fillna(0)
 
     return ss
 
@@ -214,6 +211,8 @@ def get_global_samplesheets(dir_samplesheets):
         ss = parse_samplesheet(fp_samplesheet)
         ss['run'] = fp_samplesheet.split('/')[-1].replace('_spike.csv', '')
         global_samplesheet.append(ss)
+    if len(global_samplesheet) <= 0:
+        raise ValueError("Could not find a single demultiplexing sample sheet in directory '%s'." % dir_samplesheets)
     global_samplesheet = pd.concat(global_samplesheet, sort=False)
 
     return global_samplesheet
@@ -238,6 +237,37 @@ def get_role(spike_project, spike_entity_id, spike_entity_role, samplesheets):
     str: Filepath of bam file for given entity role.
     """
     samples = samplesheets
+
+    if spike_entity_role in ['patient', 'mother', 'father', 'sibling']:
+        # edge case: trios shall be computed not for patient, but for e.g. siblings
+        # Usecase in Keimbahn project, e.g. KB0164
+        # 1) check that no regular sample can be found, because of e.g. suffix _s1
+        if samples[(samples['Sample_Project'] == spike_project) &
+                   (samples['spike_entity_id'] == spike_entity_id)].shape[0] == 0:
+            alt_samples = samples[(samples['Sample_Project'] == spike_project) &
+                                  (samples['Sample_ID'] == spike_entity_id) &
+                                  (samples['spike_entity_role'] == 'sibling')]
+            # 2) test that excatly ONE alternative sample can be found (might be merged across runs/lanes)
+            if alt_samples[['Sample_ID', 'Sample_Name', 'Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']].drop_duplicates().shape[0] != 1:
+                raise ValueError('Alternative entity name leads to none or ambiguous sample information!')
+            if spike_entity_role == 'patient':
+                return alt_samples['fastq-prefix'].unique()[0]
+            else:
+                return get_role(spike_project, alt_samples['spike_entity_id'].unique()[0], spike_entity_role, samplesheets)
+    elif spike_entity_role in ['tumor', 'healthy']:
+        # edge case 2: trios might have additional tumor samples (patient, mother, father, siblings are healthy, i.e. germline)
+        # Usecase in Keimbahn project, e.g. KB0049
+        if samples[(samples['Sample_Project'] == spike_project) &
+                   (samples['spike_entity_id'] == spike_entity_id)].shape[0] == 0:
+            alt_samples = samples[(samples['Sample_Project'] == spike_project) &
+                                  (samples['Sample_ID'] == spike_entity_id) &
+                                  (samples['spike_entity_role'].apply(lambda x: x.split('_')[0] if pd.notnull(x) else "") == 'tumor')]
+            if alt_samples[['Sample_ID', 'Sample_Name', 'Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']].drop_duplicates().shape[0] != 1:
+                raise ValueError('Alternative entity name leads to none or ambiguous sample information!')
+            if spike_entity_role == 'tumor':
+                return alt_samples['fastq-prefix'].unique()[0]
+            elif spike_entity_role == 'healthy':
+                return get_role(spike_project, alt_samples['spike_entity_id'].unique()[0], alt_samples['spike_entity_role'].unique()[0].split('_')[-1], samplesheets)
 
     # select correct project
     try:
@@ -393,6 +423,16 @@ def get_tumorNormalPairs(samplesheets, config, species=None):
             pairs.append({'Sample_Project': pair[0],
                           'spike_entity_id': pair[1]})
 
+    # add tumor/normal computations for trio-like projects, i.e. Keimbahn, where special samples stem from tumor tissue and
+    # need to be compared to the normal germline (i.e. healthy) samples, e.g. KB0049
+    samples_with_role = samplesheets[pd.notnull(samplesheets['spike_entity_role'])]
+    for (project, tumor), g in samples_with_role[samples_with_role['spike_entity_role'].apply(lambda x: x.startswith('tumor_'))].groupby(['Sample_Project', 'Sample_ID']):
+        if species is not None:
+            if get_species(g['fastq-prefix'].iloc[0], samplesheets, config) != species:
+                continue
+        pairs.append({'Sample_Project': project,
+                      'spike_entity_id': tumor})
+
     return pairs
 
 
@@ -410,7 +450,11 @@ def get_trios(samplesheets, config):
         if len(set(g['spike_entity_role'].unique()) & {'patient', 'mother', 'father'}) == 3:
             trios.append({'Sample_Project': trio[0],
                           'spike_entity_id': trio[1]})
-
+        # add extra trios for siblings
+        if len(set(g['spike_entity_role'].unique()) & {'sibling', 'mother', 'father'}) == 3:
+            for sibling, g_sibling in g[g['spike_entity_role'] == 'sibling'].groupby('Sample_ID'):
+                trios.append({'Sample_Project': trio[0],
+                              'spike_entity_id': sibling})
     return trios
 
 
@@ -422,10 +466,42 @@ def get_projects_with_exomecoverage(config):
     return res
 
 
-def get_rejoin_fastqs(sample, samplesheets, config):
+def get_rejoin_input(prefix, sample, direction, samplesheets, config, _type='files'):
+    """Returns list of raw input files; either demux results or per sample fastqs.
+
+    Parameters
+    ----------
+    prefix : str
+        Filepath for prefix directory
+    sample : str
+        fastq-prefix sample name.
+    direction : str
+        R1 or R2
+    samplesheets : pd.DataFrame
+        Global demultiplexing sample sheet.
+    config : dict
+        Global configuration.
+    _type : str
+        "files" or "dirs"
+
+    Returns
+    -------
+    Unique set of file paths for input for function rejoin_samples.
+    If _type == "dirs" the input for Snakemake is returned, i.e. dirs for demux,
+    if _type == "files" the return list contains multiple fastq.gz file paths.
+    """
     res = []
     for _, row in samplesheets[samplesheets['fastq-prefix'] == sample].iterrows():
-        res.append('%s/%s_L%03i' % (row['run'], row['fastq-prefix'], row['Lane']))
+        if pd.isnull(row['Lane']):
+            res.append('%s%s%s%s/%s_%s.fastq.gz' % (prefix, config['dirs']['inputs'], config['dirs']['persamplefastq'], row['run'], row['fastq-prefix'], direction))
+        else:
+            if _type == 'files':
+                res.append('%s%s%s/%s/%s_L%03i_%s_001.fastq.gz' % (prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], row['run'], row['fastq-prefix'], row['Lane'], direction))
+            elif _type == 'dirs':
+                res.append('%s%s%s/%s' % (prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], row['run']))
+            else:
+                raise ValueError('get_rejoin_input: Unknown function type')
+    res = list(set(res))
     return res
 
 
