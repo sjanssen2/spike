@@ -1,38 +1,84 @@
+excavator_version = 'EXCAVATOR_Package_v2.2'
+
+rule excavator_create_reference:
+    # create a bed file with four fields
+    input:
+        bed="{prefix}%s{exometrack}.bed" % (config['dirs']['references'])
+    output:
+        bed="{prefix}%s%s/{exometrack}.bed" % (config['dirs']['references'], excavator_version)
+    log:
+        "{prefix}%s%s%s/create_reference/{exometrack}.log" % (config['dirs']['logs'], config['dirs']['references'], excavator_version)
+    benchmark:
+        "{prefix}%s%s%s/create_reference/{exometrack}.benchmark" % (config['dirs']['benchmarks'], config['dirs']['references'], excavator_version)
+    threads:
+        1
+    shell:
+        'cat {input.bed} | sed "s/$/\tdummy/" > {output.bed} 2> {log}'
+
+
 rule excavator_install:
-    # Preprocessing to do a realignment of the reads with GATK
     input:
         sources="%s%sEXCAVATOR_Package_v2.2.tgz" % (config['dirs']['prefix'], config['dirs']['references']),
-        wig=lambda wildcards: "%s%s%s.fa.index.gem.mappability.wig" % (wildcards.prefix, config['dirs']['references'], wildcards.assembly),
-        fasta=lambda wildcards: "%s%s%s.fa" % (wildcards.prefix, config['dirs']['references'], wildcards.assembly),
-        #exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
-        #references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
-        #bam="{prefix}%s%s/{entity}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'])
+        bed="{prefix}%s%s/{exometrack}.bed" % (config['dirs']['references'], excavator_version),
+        wig="{prefix}%s{assembly}.fa.index.gem.mappability.wig" % (config['dirs']['references']),
+        fasta="{prefix}%s{assembly}.fa" % (config['dirs']['references']),
+        centromeres="{prefix}%s{assembly}.centromeres" % (config['dirs']['references']),
     output:
-        #"{prefix}%s%s/{assembly,hGRC37|Mus_musculus.GRCm38.71.dna}/{exometrack}.result" % (config['dirs']['intermediate'], config['stepnames']['excavator_install']),
-        config="{prefix}%s%s/{assembly,hGRC37|Mus_musculus.GRCm38.71.dna}/{exometrack}.sourcetarget.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_install']),
+        config="{prefix}%s%s/{assembly,hGRC37|Mus_musculus.GRCm38.71.dna}/{exometrack}.sourcetarget.txt" % (config['dirs']['references'], excavator_version),
+        target=directory("{prefix}%s%s/targets/{assembly,hGRC37|Mus_musculus.GRCm38.71.dna}/{exometrack}" % (config['dirs']['references'], excavator_version))
     log:
-        "{prefix}%s%s/{assembly}/{exometrack}.log" % (config['dirs']['logs'], config['stepnames']['excavator_install'])
+        "{prefix}%s%s%s/install/{assembly}/{exometrack}.log" % (config['dirs']['logs'], config['dirs']['references'], excavator_version)
     benchmark:
-        "{prefix}%s%s/{assembly}/{exometrack}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_install'])
+        "{prefix}%s%s%s/install/{assembly}/{exometrack}.benchmark" % (config['dirs']['logs'], config['dirs']['references'], excavator_version)
     conda:
         "envs/spike_excavator.yaml"
     threads:
         1
     shell:
         "cwd=`pwd` 2> {log}"
-        " && if [ ! -d $CONDA_PREFIX/src/EXCAVATOR_Package_v2.2/EXCAVATOR/ ]; then"
+        " && if [ ! -d $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/ ]; then"
         " mkdir -p -v $CONDA_PREFIX/src 2>> {log} 1>&2"
         " && tar xzvf {input.sources} -C $CONDA_PREFIX/src/ 2>> {log} 1>&2"
-        " && cd $CONDA_PREFIX/src/EXCAVATOR_Package_v2.2/EXCAVATOR/lib/F77 2>> {log}"
+        " && cd $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/lib/F77 2>> {log}"
         " && R CMD SHLIB F4R.f 2>> {log} 1>&2"
         " && R CMD SHLIB FastJointSLMLibraryI.f 2>> {log} 1>&2"
         " && cd $cwd"
         " ; fi"
         ' && echo "{input.wig} {input.fasta}" > {output.config}'
-        " && perl $CONDA_PREFIX/src/EXCAVATOR_Package_v2.2/EXCAVATOR/TargetPerla.pl"
+        " && perl $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/TargetPerla.pl"
         " --assembly {wildcards.assembly}"
         " {output.config}"
-        " {wildcards.prefix}{config[dirs][references]}{wildcards.exometrack}.bed {wildcards.exometrack}"
+        " {input.bed} {wildcards.exometrack}"
         " 2>> {log} 1>&2"
-        #" && pwd > {output}"
-        #" && echo 'fake' >> {output}"
+        " && mkdir -v -p $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/data/centromere/ 2>> {log} 1>&2"
+        " && cp -v {input.centromeres} $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/data/centromere/CentromerePosition_{wildcards.assembly}.txt 2>> {log} 1>&2"
+        " && cp -v -r $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/data/targets/{wildcards.assembly}/{wildcards.exometrack} {output.target} 2>> {log} 1>&2"
+
+
+rule excavator_somatic:
+    input:
+        assembly=lambda wildcards: "%s%s%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
+        tumor=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
+        healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
+    output:
+        config="{prefix}%s%s/{entity}/ReadInput.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic']),
+        excavator=directory("{prefix}%s%s/{entity}/results") % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic']),
+    log:
+        "{prefix}%s%s/{entity}.log" % (config['dirs']['logs'], config['stepnames']['excavator_somatic'])
+    benchmark:
+        "{prefix}%s%s/{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_somatic'])
+    conda:
+        "envs/spike_excavator.yaml"
+    threads:
+        1
+    shell:
+        'assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2> {log}'
+        ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2> {log}'
+        ' && echo "$exometrack\t$assembly\t{input.healthy}\thealthy\tC1" > {output.config} 2>> {log}'
+        ' && echo "$exometrack\t$assembly\t{input.tumor}\ttumor\tT1"  >> {output.config} 2>> {log}'
+        " && perl $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/ReadPerla.pl"
+        " {output.config}"
+        " {output.excavator}xx"
+        " --mode pooling"
+        " 2>> {log} 1>&2"
