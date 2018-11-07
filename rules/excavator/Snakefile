@@ -1,4 +1,4 @@
-excavator_version = 'EXCAVATOR_Package_v2.2'
+excavator_version = 'EXCAVATOR2_Package_v1.1.2'
 
 rule excavator_create_reference:
     # create a bed file with four fields
@@ -18,52 +18,122 @@ rule excavator_create_reference:
 
 rule excavator_install:
     input:
-        sources="%s%sEXCAVATOR_Package_v2.2.tgz" % (config['dirs']['prefix'], config['dirs']['references']),
-        bed="{prefix}%s%s/{exometrack}.bed" % (config['dirs']['references'], excavator_version),
-        wig="{prefix}%s{assembly}.fa.index.gem.mappability.wig" % (config['dirs']['references']),
+        sources="%s%sEXCAVATOR2_Package_v1.1.2.tgz" % (config['dirs']['prefix'], config['dirs']['references']),
+        bed="{prefix}%s{exometrack}.bed" % (config['dirs']['references']),
+        bigwig="{prefix}%s{assembly}.fa.index.gem.mappability.bw" % (config['dirs']['references']),
         fasta="{prefix}%s{assembly}.fa" % (config['dirs']['references']),
-        centromeres="{prefix}%s{assembly}.centromeres" % (config['dirs']['references']),
+        mouse_coord="{prefix}%sChromosomeCoordinate_Mus_musculus.GRCm38.71.dna.txt" % (config['dirs']['references']),
+        mouse_ucsd="{prefix}%sMus_musculus.GRCm38.71.dna.UCSC.txt" % (config['dirs']['references']),
+        mouse_centromeres="{prefix}%sCentromerePosition_Mus_musculus.GRCm38.71.dna.txt" % (config['dirs']['references']),
     output:
-        config="{prefix}%s%s/{assembly,hGRC37|Mus_musculus.GRCm38.71.dna}/{exometrack}.sourcetarget.txt" % (config['dirs']['references'], excavator_version),
-        target=directory("{prefix}%s%s/targets/{assembly,hGRC37|Mus_musculus.GRCm38.71.dna}/{exometrack}" % (config['dirs']['references'], excavator_version))
+        config="{prefix}%s%s/{assembly,hGRC37|Mus_musculus.GRCm38.71.dna}/{exometrack}/SourceTarget.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_install']),
+        target=directory("{prefix}%s%s/%s/data/targets/{assembly,hGRC37|Mus_musculus.GRCm38.71.dna}/{exometrack}" % (config['dirs']['intermediate'], config['stepnames']['excavator_install'], excavator_version)),
+        #src=directory("{prefix}%s%s/src") % (config['dirs']['intermediate'], config['stepnames']['excavator_install']),
+        #dummy="{prefix}here-{assembly}-{exometrack}.txt"
     log:
-        "{prefix}%s%s%s/install/{assembly}/{exometrack}.log" % (config['dirs']['logs'], config['dirs']['references'], excavator_version)
+        "{prefix}%s%s/{assembly}/{exometrack}.log" % (config['dirs']['logs'], config['stepnames']['excavator_install'])
     benchmark:
-        "{prefix}%s%s%s/install/{assembly}/{exometrack}.benchmark" % (config['dirs']['logs'], config['dirs']['references'], excavator_version)
+        "{prefix}%s%s/{assembly}/{exometrack}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_install'])
+    conda:
+        "envs/spike_excavator.yaml"
+    threads:
+        1
+    params:
+        windowsize="20000"
+        #assembly=lambda wildcards: wildcards.assembly if wildcards.assembly != 'hGRC37' else 'hg19'
+    shell:
+        "cwd=`pwd` 2> {log}"
+        " && if [ ! -d {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version} ]; then"
+        " mkdir -p -v {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]} 2>> {log} 1>&2"
+        " && tar xzvf {input.sources} -C {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]} 2>> {log} 1>&2"
+        # we need to patch the Perl program to fix detection of working directory
+        ' && sed -i "s/^use File::Path;/use File::Path; use File::Basename;/" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/TargetPerla.pl 2>>{log}'
+        ' && sed -i "s/\$workingfolder=substr \$myscript, 0, (\$L1 - \$L2 - 1);/\$workingfolder=dirname\(\$0\);/" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/TargetPerla.pl 2>>{log}'
+        ' && sed -i "s/^use File::Path;/use File::Path; use File::Basename;/" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataPrepare.pl 2>>{log}'
+        ' && sed -i "s/\$workingfolder=substr \$myscript, 0, (\$L1 - \$L2 - 1);/\$workingfolder=dirname\(\$0\);/" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataPrepare.pl 2>>{log}'
+        ' && sed -i "s/^use File::Path;/use File::Path; use File::Basename;/" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataAnalysis.pl 2>>{log}'
+        ' && sed -i "s/\$workingfolder=substr \$myscript, 0, (\$L1 - \$L2 - 1);/\$workingfolder=dirname\(\$0\);/" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataAnalysis.pl 2>>{log}'
+
+        # we also need to patch lib/R/FilterTarget.R to allow mouse assembly as input
+        ' && head -n 22 {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/R/FilterTarget.R | sed "s/hg19/hGRC37/" > help 2>>{log}'
+        ' && echo "if (assembly==\\\"Mus_musculus.GRCm38.71.dna\\\"){{\n  CoordIn <- paste(ProgramFolder,\\\"data/support\\\",assembly,\\\"ChromosomeCoordinate_Mus_musculus.GRCm38.71.dna.txt\\\",sep=\\\"/\\\")\n  FileGap <- paste(ProgramFolder,\\\"data/support\\\",assembly,\\\"Mus_musculus.GRCm38.71.dna.UCSC.txt\\\",sep=\\\"/\\\")\n}}" >> help 2>>{log}'
+        ' && tail -n +22 {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/R/FilterTarget.R >> help 2>> {log}'
+        ' && mv -v help {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/R/FilterTarget.R 2>>{log} 1>&2'
+        # patch chromosome numbering for mouse
+        ' && head -n 54 {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/R/FilterTarget.R > help 2>>{log}'
+        ' && echo "if (assembly==\\\"Mus_musculus.GRCm38.71.dna\\\") {{\n  if (nchar(Chr[1])<3) {{\n    ChrVec<-c(1:19,\\\"X\\\")\n    ChrCoord<-c(1:19,\\\"X\\\")\n  }}\n  if (nchar(Chr[1])>3) {{\n    ChrVec<-paste(\\\"chr\\\",c(1:19,\\\"X\\\"),sep=\\\"\\\")\n    ChrCoord<-paste(\\\"chr\\\",c(1:19,\\\"X\\\"),sep="")\n  }}\n}}" >> help 2>>{log}'
+        ' && tail -n +54 {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/R/FilterTarget.R >> help 2>> {log}'
+        ' && mv -v help {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/R/FilterTarget.R 2>>{log} 1>&2'
+
+        # and copy according files into correct directory
+        ' && mkdir -p {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/support/Mus_musculus.GRCm38.71.dna 2>>{log}'
+        ' && cp -v {input.mouse_coord} {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/support/Mus_musculus.GRCm38.71.dna/ 2>>{log} 1>&2'
+        ' && cp -v {input.mouse_ucsd} {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/support/Mus_musculus.GRCm38.71.dna/ 2>>{log} 1>&2'
+        # and rename hg19 data directory
+        ' && mv -v {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/support/hg19 {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/support/hGRC37 2>>{log} 1>&2'
+
+        ' && cp -v {input.mouse_centromeres} {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/centromere/ 2>>{log} 1>&2'
+        ' && mv -v {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/centromere/CentromerePosition_hg19.txt {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/centromere/CentromerePosition_hGRC37.txt 2>>{log} 1>&2'
+        " && cd {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/F77 2>> {log}"
+        " && R CMD SHLIB F4R.f 2>> {log} 1>&2"
+        " && R CMD SHLIB FastJointSLMLibraryI.f 2>> {log} 1>&2"
+        " && cd $cwd"
+        " ; fi"
+
+        # create configuration file
+        ' && echo "{input.bigwig} {input.fasta}" > {output.config}'
+
+        # execute target initialization
+        " && perl {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/TargetPerla.pl"
+        " {output.config}"
+        " {input.bed}"
+        " {wildcards.exometrack}"
+        " {params.windowsize}"
+        " {wildcards.assembly}"
+        " 2>> {log} 1>&2"
+
+
+rule excavator_dataprepare:
+    input:
+        assembly=lambda wildcards: "%s%s%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
+        tumor=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
+        healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
+        target=lambda wildcards: directory("%s%s%s/%s/data/targets/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_install'], excavator_version, get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'].split('/')[-1], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config).split('/')[-1][:-4]))
+    output:
+        config="{prefix}%s%s/{entity}/ExperimentalFilePrepare.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare']),
+        healthy=directory("{prefix}%s%s/{entity}/healthy" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
+        tumor=directory("{prefix}%s%s/{entity}/tumor" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
+    log:
+        "{prefix}%s%s/{entity}.log" % (config['dirs']['logs'], config['stepnames']['excavator_dataprepare'])
+    benchmark:
+        "{prefix}%s%s/{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_dataprepare'])
     conda:
         "envs/spike_excavator.yaml"
     threads:
         1
     shell:
-        "cwd=`pwd` 2> {log}"
-        " && if [ ! -d $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/ ]; then"
-        " mkdir -p -v $CONDA_PREFIX/src 2>> {log} 1>&2"
-        " && tar xzvf {input.sources} -C $CONDA_PREFIX/src/ 2>> {log} 1>&2"
-        " && cd $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/lib/F77 2>> {log}"
-        " && R CMD SHLIB F4R.f 2>> {log} 1>&2"
-        " && R CMD SHLIB FastJointSLMLibraryI.f 2>> {log} 1>&2"
-        " && cd $cwd"
-        " ; fi"
-        ' && echo "{input.wig} {input.fasta}" > {output.config}'
-        " && perl $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/TargetPerla.pl"
-        " --assembly {wildcards.assembly}"
+        'assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2> {log}'
+        ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2> {log}'
+        ' && echo "`readlink -f {input.healthy}` {output.healthy} healthy" > {output.config} 2>> {log}'
+        ' && echo "`readlink -f {input.tumor}` {output.tumor} tumor" >> {output.config} 2>> {log}'
+        " && perl {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataPrepare.pl"
         " {output.config}"
-        " {input.bed} {wildcards.exometrack}"
+        " --processors {threads}"
+        " --target $exometrack"
+        " --assembly $assembly"
         " 2>> {log} 1>&2"
-        " && mkdir -v -p $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/data/centromere/ 2>> {log} 1>&2"
-        " && cp -v {input.centromeres} $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/data/centromere/CentromerePosition_{wildcards.assembly}.txt 2>> {log} 1>&2"
-        " && cp -v -r $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/data/targets/{wildcards.assembly}/{wildcards.exometrack} {output.target} 2>> {log} 1>&2"
 
 
 rule excavator_somatic:
     input:
         assembly=lambda wildcards: "%s%s%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file']),
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
-        tumor=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
-        healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
+        healthy=directory("{prefix}%s%s/{entity}/healthy" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
+        tumor=directory("{prefix}%s%s/{entity}/tumor" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
     output:
-        config="{prefix}%s%s/{entity}/ReadInput.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic']),
-        excavator=directory("{prefix}%s%s/{entity}/results") % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic']),
+        config="{prefix}%s%s/{entity}/ExperimentalFileAnalysis.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic']),
+        excavator=directory("{prefix}%s%s/{entity}/Results" % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic'])),
     log:
         "{prefix}%s%s/{entity}.log" % (config['dirs']['logs'], config['stepnames']['excavator_somatic'])
     benchmark:
@@ -75,10 +145,13 @@ rule excavator_somatic:
     shell:
         'assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2> {log}'
         ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2> {log}'
-        ' && echo "$exometrack\t$assembly\t{input.healthy}\thealthy\tC1" > {output.config} 2>> {log}'
-        ' && echo "$exometrack\t$assembly\t{input.tumor}\ttumor\tT1"  >> {output.config} 2>> {log}'
-        " && perl $CONDA_PREFIX/src/{excavator_version}/EXCAVATOR/ReadPerla.pl"
+        ' && echo "C1 {input.healthy} healthy" > {output.config} 2>> {log}'
+        ' && echo "T1 {input.tumor} tumor" >> {output.config} 2>> {log}'
+        " && perl {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataAnalysis.pl"
         " {output.config}"
-        " {output.excavator}xx"
-        " --mode pooling"
+        " --processors {threads}"
+        " --target $exometrack"
+        " --assembly $assembly"
+        " --output {output.excavator}"
+        " --mode paired"
         " 2>> {log} 1>&2"
