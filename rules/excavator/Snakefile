@@ -95,30 +95,31 @@ rule excavator_install:
 
 rule excavator_dataprepare:
     input:
-        assembly=lambda wildcards: "%s%s%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file']),
-        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
-        tumor=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
-        healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
-        target=lambda wildcards: directory("%s%s%s/%s/data/targets/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_install'], excavator_version, get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'].split('/')[-1], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config).split('/')[-1][:-4]))
+        assembly=lambda wildcards: "%s%s%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.sample, SAMPLESHEETS, config)),
+        sample="{prefix}%s%s/{sample}.reCal.reAl.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads']),
+        #healthy=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS)),
+        target=lambda wildcards: directory("%s%s%s/%s/data/targets/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_install'], excavator_version, get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'].split('/')[-1], get_reference_exometrack(wildcards.sample, SAMPLESHEETS, config).split('/')[-1][:-4]))
     output:
-        config="{prefix}%s%s/{entity}/ExperimentalFilePrepare.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare']),
-        healthy=directory("{prefix}%s%s/{entity}/healthy" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
-        tumor=directory("{prefix}%s%s/{entity}/tumor" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
+        #config="{prefix}%s%s/{sample}/ExperimentalFilePrepare.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare']),
+        #healthy=directory("{prefix}%s%s/{entity}/healthy" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
+        sample=directory("{prefix}%s%s/{sample}" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
     log:
-        "{prefix}%s%s/{entity}.log" % (config['dirs']['logs'], config['stepnames']['excavator_dataprepare'])
+        "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['excavator_dataprepare'])
     benchmark:
-        "{prefix}%s%s/{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_dataprepare'])
+        "{prefix}%s%s/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_dataprepare'])
     conda:
         "envs/spike_excavator.yaml"
     threads:
         1
     shell:
         'assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2> {log}'
-        ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2> {log}'
-        ' && echo "`readlink -f {input.healthy}` {output.healthy} healthy" > {output.config} 2>> {log}'
-        ' && echo "`readlink -f {input.tumor}` {output.tumor} tumor" >> {output.config} 2>> {log}'
+        ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2>> {log}'
+        ' && configfile=$(mktemp) 2>> {log} 1>&2'
+        ' && echo "`readlink -f {input.sample}` {output.sample} `basename {output.sample}`" > $configfile 2>> {log}'
+        #' && echo "`readlink -f {input.tumor}` {output.tumor} tumor" >> {output.config} 2>> {log}'
         " && perl {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataPrepare.pl"
-        " {output.config}"
+        " $configfile"
         " --processors {threads}"
         " --target $exometrack"
         " --assembly $assembly"
@@ -129,11 +130,12 @@ rule excavator_somatic:
     input:
         assembly=lambda wildcards: "%s%s%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file']),
         exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
-        healthy=directory("{prefix}%s%s/{entity}/healthy" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
-        tumor=directory("{prefix}%s%s/{entity}/tumor" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
+        #healthy=directory("{prefix}%s%s/{entity}/healthy" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
+        #tumor=directory("{prefix}%s%s/{entity}/tumor" % (config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'])),
+        tumor=directory(lambda wildcards: "%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS))),
+        healthy=directory(lambda wildcards: "%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'healthy', SAMPLESHEETS))),
     output:
-        config="{prefix}%s%s/{entity}/ExperimentalFileAnalysis.txt" % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic']),
-        excavator=directory("{prefix}%s%s/{entity}/Results" % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic'])),
+        directory("{prefix}%s%s/{entity}" % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic']))
     log:
         "{prefix}%s%s/{entity}.log" % (config['dirs']['logs'], config['stepnames']['excavator_somatic'])
     benchmark:
@@ -145,13 +147,59 @@ rule excavator_somatic:
     shell:
         'assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2> {log}'
         ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2> {log}'
-        ' && echo "C1 {input.healthy} healthy" > {output.config} 2>> {log}'
-        ' && echo "T1 {input.tumor} tumor" >> {output.config} 2>> {log}'
+        ' && configfile=$(mktemp) 2>> {log} 1>&2'
+        ' && echo "C1 {input.healthy} `basename {input.healthy}`" > $configfile 2>> {log}'
+        ' && echo "T1 {input.tumor} `basename {input.tumor}`" >> $configfile 2>> {log}'
         " && perl {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataAnalysis.pl"
-        " {output.config}"
+        " $configfile"
         " --processors {threads}"
         " --target $exometrack"
         " --assembly $assembly"
-        " --output {output.excavator}"
+        " --output {output}"
         " --mode paired"
+        " 2>> {log} 1>&2"
+
+
+def _helper(entity, samplesheets, role):
+    """Obtain all samples for a given project and a given role, i.e. all "Maus_Hauer" samples that are "healthy"."""
+    project_samples = samplesheets[(samplesheets['Sample_Project'] == entity.split('/')[0]) &
+                                   (samplesheets['spike_entity_role'] == role)]
+    return project_samples['Sample_ID'].unique()
+rule excavator_pooled:
+    input:
+        assembly=lambda wildcards: "%s%s%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
+        controls=lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'], wildcards.entity.split('/')[0], sample) for sample in _helper(wildcards.entity, SAMPLESHEETS, 'healthy')],
+        tumors=lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'], wildcards.entity.split('/')[0], sample) for sample in _helper(wildcards.entity, SAMPLESHEETS, 'tumor')],
+    output:
+        directory("{prefix}%s%s/{entity}" % (config['dirs']['intermediate'], config['stepnames']['excavator_pooled']))
+    log:
+        "{prefix}%s%s/{entity}.log" % (config['dirs']['logs'], config['stepnames']['excavator_pooled'])
+    benchmark:
+        "{prefix}%s%s/{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_pooled'])
+    conda:
+        "envs/spike_excavator.yaml"
+    threads:
+        1
+    shell:
+        'assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2> {log}'
+        ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2> {log}'
+        ' && configfile=$(mktemp) 2>> {log} 1>&2'
+        ' && declare -i counter=1'
+        ' && for f in `echo {input.controls}`; do'
+        '    echo "C${{counter}} $f `basename $f`" >> $configfile 2>> {log};'
+        '    let counter++;'
+        ' done'
+        ' && declare -i counter=1'
+        ' && for f in `echo {input.tumors}`; do'
+        '    echo "T${{counter}} $f `basename $f`" >> $configfile 2>> {log};'
+        '    let counter++;'
+        ' done'
+        " && perl {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataAnalysis.pl"
+        " $configfile"
+        " --processors {threads}"
+        " --target $exometrack"
+        " --assembly $assembly"
+        " --output {output}"
+        " --mode pooling"
         " 2>> {log} 1>&2"
