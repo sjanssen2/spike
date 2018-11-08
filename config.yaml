@@ -97,6 +97,11 @@ stepnames:
   snupy_upload: "190_snupy_upload"
   snupy_extractsamples: "200_snupy_extractsamples"
 
+  excavator_install: "205_excavator_install"
+  excavator_dataprepare: "210_excavator_dataprepare"
+  excavator_somatic: "215_excavator_somatic"
+  excavator_pooled: "220_excavator_pooled"
+
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
 
