@@ -15,10 +15,10 @@ rule check_complete:
 rule demultiplex:
     input:
         status="{prefix}%s%s-{run}-illuminarun_complete.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex']),
-        raw="{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
+        raw=directory("{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina'])),
         samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
     output:
-        fastqs=directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+        directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
     log:
         "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
     benchmark:
@@ -31,7 +31,7 @@ rule demultiplex:
         "uname -a > {log} 2>&1 &&"
         "bcl2fastq"
         " --runfolder-dir {input.raw}/"
-        " --output-dir {output.fastqs}/"
+        " --output-dir {output}/"
         " --ignore-missing-bcls"
         " --sample-sheet {input.samplesheet}"
         " --loading-threads {threads}"
@@ -40,13 +40,13 @@ rule demultiplex:
         " 2>> {log}"
         " 1>&2"
         # rename demux fastq files such that S\d+ are removed from filenames
-        ' && for f in `find {output.fastqs}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
-        ' && cp -l -v {output.fastqs}/Reports/html/*/all/all/all/laneBarcode.html {output.fastqs}/laneBarcode.html 2>> {log} >&2'
+        ' && for f in `find {output}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
+        ' && cp -l -v {output}/Reports/html/*/all/all/all/laneBarcode.html {output}/laneBarcode.html 2>> {log} >&2'
 
 
 rule aggregate_undetermined_filesizes:
     input:
-        "{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])
+        directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex']))
     output:
         sizes="{prefix}%sUndeterminedFilesizes/{run}.txt" % (config['dirs']['aggregation']),
         fp_check="{prefix}%s%s-{run}-aggregate_undetermined_filesizes.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])
@@ -76,7 +76,7 @@ rule check_undetermined_filesizes:
 
 rule convert_illumina_report:
     input:
-        rules.demultiplex.output.fastqs,
+        directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
         undetermined=rules.check_undetermined_filesizes.output
     output:
         "{prefix}%s{run}/{run}.yield_report.pdf" % (config['dirs']['reports'])
