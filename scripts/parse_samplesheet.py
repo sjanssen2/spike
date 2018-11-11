@@ -501,7 +501,7 @@ def get_rejoin_input(prefix, sample, direction, samplesheets, config, _type='fil
                 res.append('%s%s%s/%s' % (prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], row['run']))
             else:
                 raise ValueError('get_rejoin_input: Unknown function type')
-    res = list(set(res))
+    res = sorted(list(set(res)))
     return res
 
 
