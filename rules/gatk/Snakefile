@@ -132,7 +132,7 @@ rule gatk_PrintReads:
     conda:
         "envs/spike_gatk.yaml"
     threads:
-        config['num_threads']
+        16
     params:
         disable=lambda wildcards: " --disable_indel_quals" if get_species(wildcards.sample, SAMPLESHEETS, config) == 'homo sapiens' else ""
     shell:
