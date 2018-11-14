@@ -24,7 +24,7 @@ rule demultiplex:
     benchmark:
         "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
     threads:
-        config['num_threads']
+        16
     conda:
         "envs/spike_demux.yaml"
     shell:

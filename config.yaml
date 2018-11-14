@@ -282,6 +282,3 @@ credentials:
     host: 'https://snupy-aqua.bio.inf.h-brs.de'
     username: "janssen"
     password: "thisisasecret"
-
-# variables that can directly be overwritten from CML
-num_threads: 16

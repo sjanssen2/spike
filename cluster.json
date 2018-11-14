@@ -71,7 +71,7 @@
     {
       "time" : "02:59:59",
       "mem" : "16GB",
-      "ppn" : "5",
+      "ppn" : "16",
     },
 
     "gatk_HaplotypeCaller":
