@@ -12,7 +12,6 @@ rule xenograft_bwa_aln:
         "envs/spike_xenograft_bwa_sampe.yaml"
     threads:
         4  # fix to 4 right now, to check if results are identical to Michael's pipeline.
-        #config['num_threads']
     shell:
         "bwa"
         " aln"
