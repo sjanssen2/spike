@@ -2,7 +2,7 @@
 IEMFileVersion,5,,,,,,,,,,
 Date,01/19/18,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
-Application,HiSeq FASTQ Only by Illumina,,,,,,,,,,
+Application,HiSeq FASTQ,,,,,,,,,,
 Instrument Type,HiSeq 1500/2500,,,,,,,,,,
 Assay,Agilent_Sure_SelectXT,,,,,,,,,,
 Index Adapters,Agilent_Sure_SelectXT,,,,,,,,,,
