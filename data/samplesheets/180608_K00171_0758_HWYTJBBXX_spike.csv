@@ -22,6 +22,6 @@ AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,
 Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,spike_entity_id,spike_entity_role,spike_ignore_sample
 ,LB_4_2,,,,,,ALL_family_LB,,LB,father,
 ,LB_4_3,,,,,,ALL_family_LB,,LB,mother,
-,LB_5_1,,,,,,ALL_family_LB,,LB,sister,
+,LB_5_1,,,,,,ALL_family_LB,sister,LB,sibling,
 ,LB_5_2,,,,,,ALL_family_LB,,LB,patient,
-,LB_5_3,,,,,,ALL_family_LB,,LB,brother,
+,LB_5_3,,,,,,ALL_family_LB,brother,LB,sibling,
