@@ -1,6 +1,5 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,5,,,,,,,,,,
-Project Name,TCR_sequencing,,,,,,,,,,
 Experiment Name,TCR_RNA_Test,,,,,,,,,,
 Date,02/06/14,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
