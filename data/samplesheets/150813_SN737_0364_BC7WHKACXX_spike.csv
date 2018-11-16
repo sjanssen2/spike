@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator Name,123,,,,,,,,,,
+Investigator,123,,,,,,,,,,
 Experiment Name,150818_aghoell,,,,,,,,,,
 Date,18.08.2015,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

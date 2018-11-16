@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator Name,gombert,,,,,,,,,,
+Investigator,gombert,,,,,,,,,,
 Experiment Name,170704_exomes_keimbahn,,,,,,,,,,
 Date,04.07.2017,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator Name,gombert_meyer,,,,,,,,,,
+Investigator,gombert_meyer,,,,,,,,,,
 Experiment Name,rnaseq,,,,,,,,,,
 Date,28.02.2017,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

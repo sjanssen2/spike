@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,,,
-Investigator Name,Michael Gombert,,,,,,,,,,,,
+Investigator,Michael Gombert,,,,,,,,,,,,
 Experiment Name,160406_mikrobiom_4,,,,,,,,,,,,
 Date,06.04.2016,,,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,,,

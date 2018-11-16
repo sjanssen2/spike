@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator Name,Gombert,,,,,,,,,,
+Investigator,Gombert,,,,,,,,,,
 Experiment Name,step_kb_alps,,,,,,,,,,
 Date,19.10.2016,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

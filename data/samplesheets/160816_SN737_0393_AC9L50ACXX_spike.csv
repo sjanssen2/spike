@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator Name,Gombert,,,,,,,,,,
+Investigator,Gombert,,,,,,,,,,
 Experiment Name,C9L50ACXX_mouse_exome,,,,,,,,,,
 Date,16.08.2016,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

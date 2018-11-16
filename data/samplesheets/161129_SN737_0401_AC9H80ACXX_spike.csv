@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator Name,Gombert,,,,,,,,,,
+Investigator,Gombert,,,,,,,,,,
 Experiment Name,161129_agremke,,,,,,,,,,
 Date,29.11.2016,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
