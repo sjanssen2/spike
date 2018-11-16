@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,exome_mixed,,,,,,,,,,
-Date,01.03.2016,,,,,,,,,,
+Date,03/01/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,TruSeq HT,,,,,,,,,,

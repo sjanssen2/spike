@@ -2,7 +2,7 @@
 IEMFileVersion,4,,,,,,,,,,
 Investigator,Gombert,,,,,,,,,,
 Experiment Name,C9L50ACXX_mouse_exome,,,,,,,,,,
-Date,16.08.2016,,,,,,,,,,
+Date,08/16/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,Agilent_Sure_SelectXT,,,,,,,,,,

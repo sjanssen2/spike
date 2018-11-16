@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,150929_mouse,,,,,,,,,,
-Date,09.10.2015,,,,,,,,,,
+Date,09/29/15,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,TruSeq LT,,,,,,,,,,

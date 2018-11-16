@@ -2,7 +2,7 @@
 IEMFileVersion,4,,,,,,,,,,
 Investigator,Gombert,,,,,,,,,,
 Experiment Name,160112_mouse_exomes,,,,,,,,,,
-Date,12.01.2016,,,,,,,,,,
+Date,01/12/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,TruSeq HT,,,,,,,,,,

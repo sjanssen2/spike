@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,151203_Ag_Remke,,,,,,,,,,
-Date,14.12.2015,,,,,,,,,,
+Date,12/03/15,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,TruSeq LT,,,,,,,,,,

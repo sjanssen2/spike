@@ -2,7 +2,7 @@
 IEMFileVersion,4,,,,,,,,,,,,
 Investigator,gombert,,,,,,,,,,,,
 Experiment Name,mouse_microbiome_plate1,,,,,,,,,,,,
-Date,24.03.2017,,,,,,,,,,,,
+Date,03/31/17,,,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,,,
 Application,FASTQ Only,,,,,,,,,,,,
 Assay,Nextera XT,,,,,,,,,,,,

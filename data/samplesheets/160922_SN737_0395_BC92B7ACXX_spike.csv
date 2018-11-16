@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,C92B7ACXX_exomes,,,,,,,,,,
-Date,30.09.2016,,,,,,,,,,
+Date,09/22/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,Agilent_Sure_SelectXT,,,,,,,,,,

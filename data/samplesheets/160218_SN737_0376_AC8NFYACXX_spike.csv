@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,mouse_exome,,,,,,,,,,
-Date,18.02.2016,,,,,,,,,,
+Date,02/18/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,TruSeq HT,,,,,,,,,,

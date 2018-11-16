@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Investigator,Michael_Gombert,,,,,,,,,,
-Date,17.08.2015,,,,,,,,,,
+Date,08/07/15,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq_FASTQ_Only,,,,,,,,,,
 Assay,TruSeq_HT,,,,,,,,,,

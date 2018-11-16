@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,remke_RNASeq,,,,,,,,,,
-Date,24.03.2016,,,,,,,,,,
+Date,03/15/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,TruSeq LT,,,,,,,,,,

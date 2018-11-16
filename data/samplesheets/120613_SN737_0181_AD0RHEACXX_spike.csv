@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,5,,,,,,,,,,
-Date,106/13/12,,,,,,,,,,
+Date,06/13/12,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Instrument Type,HiSeq 1500/2500,,,,,,,,,,

@@ -2,7 +2,7 @@
 IEMFileVersion,4,,,,,,,,,,
 Investigator,gombert_meyer,,,,,,,,,,
 Experiment Name,rnaseq,,,,,,,,,,
-Date,28.02.2017,,,,,,,,,,
+Date,02/17/17,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,TruSeq LT,,,,,,,,,,

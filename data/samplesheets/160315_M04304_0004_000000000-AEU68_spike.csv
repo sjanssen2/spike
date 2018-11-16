@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,,,
 Experiment Name,Microbiome_run_3,,,,,,,,,,,,
-Date,02.11.2015,,,,,,,,,,,,
+Date,03/15/16,,,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,,,
 Application,FASTQ Only,,,,,,,,,,,,
 Assay,Nextera XT,,,,,,,,,,,,

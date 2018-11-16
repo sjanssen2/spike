@@ -2,7 +2,7 @@
 IEMFileVersion,4,,,,,,,,,,
 Investigator,Gombert,,,,,,,,,,
 Experiment Name,170505_exome,,,,,,,,,,
-Date,05.05.2017,,,,,,,,,,
+Date,05/05/17,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,Agilent_Sure_SelectXT,,,,,,,,,,
