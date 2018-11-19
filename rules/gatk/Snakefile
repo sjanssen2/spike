@@ -650,7 +650,7 @@ rule check_coverage:
                            for sample in get_samples(SAMPLESHEETS, config)
                            if sample['Sample_Project'] == wildcards.project]
     output:
-        "{prefix}%s{project}.exome_coverage.pdf" % config['dirs']['reports']
+        "{prefix}%s%s/{project}.exome_coverage.pdf" % (config['dirs']['intermediate'], config['stepnames']['exome_coverage'])
     log:
         "{prefix}%s%s/{project}.log" % (config['dirs']['logs'], config['stepnames']['check_coverage'])
     benchmark:

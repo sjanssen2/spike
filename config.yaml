@@ -27,9 +27,6 @@ dirs:
 
   intermediate: "Intermediate/"
   inputs: "Inputs/"
-  aggregation: "Aggregation/"
-  reports: "Reports/"
-  checks: "Checks/"
   references: "References/"
 
   samplesheets: "SampleSheets/"

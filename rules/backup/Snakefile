@@ -1,7 +1,7 @@
 rule backup_compress:
     # Realign the the reads
     input:
-        rules.check_complete.output.fp_check,
+        "{prefix}%s%s/{run}.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete']),
         dir="{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina'])
     output:
         temp("{prefix}%s%s/{run}.7z" % (config['dirs']['intermediate'], config['stepnames']['backup_compress']))
@@ -32,9 +32,9 @@ rule backup_compress:
 rule backup_transfer:
     # Realign the the reads
     input:
-        rules.backup_compress.output
+        "{prefix}%s%s/{run}.7z" % (config['dirs']['intermediate'], config['stepnames']['backup_compress'])
     output:
-        "{prefix}%s{run}.%s.done" % (config['dirs']['checks'], config['stepnames']['backup_transfer'])
+        "{prefix}%s%s/{run}.done" % (config['dirs']['intermediate'], config['stepnames']['backup_transfer'])
     log:
         "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['backup_transfer'])
     benchmark:
@@ -72,9 +72,9 @@ rule backup_transfer:
 rule backup_validate:
     # Realign the the reads
     input:
-        rules.backup_transfer.output,
+        "{prefix}%s%s/{run}.done" % (config['dirs']['intermediate'], config['stepnames']['backup_transfer'])
     output:
-        "{prefix}%s{run}.%s.done" % (config['dirs']['checks'], config['stepnames']['backup_validate'])
+        "{prefix}%s%s/{run}.done" % (config['dirs']['intermediate'], config['stepnames']['backup_validate'])
     log:
         "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['backup_validate'])
     benchmark:

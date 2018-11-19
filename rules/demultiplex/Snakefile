@@ -71,7 +71,7 @@ rule check_undetermined_filesizes:
     benchmark:
         "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['check_undetermined_filesizes'])
     run:
-        report_undertermined_filesizes(input[0], output[0], os.path.join(wildcards.prefix, config['dirs']['reports'], wildcards.run, 'error_undetermined-filesizes.pdf'))
+        report_undertermined_filesizes(input[0], output[0], os.path.join(wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['check_undetermined_filesizes'], wildcards.run, 'error_undetermined-filesizes.pdf'))
 
 
 rule convert_illumina_report:
