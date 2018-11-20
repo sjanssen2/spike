@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,C92B7ACXX_exomes,,,,,,,,,,
-Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,,,
+Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,
 Date,09/22/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,

@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,amplicons,,,,,,,,,,
-Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,,,
+Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,
 Date,08/07/15,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,

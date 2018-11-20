@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,5,,,,,,,,,,
 Date,11/28/12,,,,,,,,,,
-Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,,,
+Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Instrument Type,HiSeq 1500/2500,,,,,,,,,,

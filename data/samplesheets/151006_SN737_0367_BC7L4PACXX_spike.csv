@@ -1,7 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,exomes_mixed,,,,,,,,,,
-Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,,,
+Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,
 Date,10/06/15,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
