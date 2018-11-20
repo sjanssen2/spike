@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,,,
 Experiment Name,Microbiome_run_3,,,,,,,,,,,,
+Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,,,
 Date,11/02/15,,,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,,,
 Application,FASTQ Only,,,,,,,,,,,,

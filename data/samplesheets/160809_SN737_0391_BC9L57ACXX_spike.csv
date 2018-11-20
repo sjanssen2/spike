@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,160809_SN737_0391_BC9L57ACXX,,,,,,,,,,
+Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,,,
 Date,08/09/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,

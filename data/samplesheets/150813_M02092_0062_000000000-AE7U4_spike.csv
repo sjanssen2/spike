@@ -2,6 +2,7 @@
 IEMFileVersion,4,,,,,,,,,,,,
 Experiment Name,,,,,,,,,,,,,
 Date,08/13/15,,,,,,,,,,,,
+Operator,Michael Gombert/Katayoun Alemazkour,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,,,
 Application,FASTQ Only,,,,,,,,,,,,
 Assay,Nextera,,,,,,,,,,,,

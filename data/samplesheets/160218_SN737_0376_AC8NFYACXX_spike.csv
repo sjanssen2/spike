@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,mouse_exome,,,,,,,,,,
+Operator,Daniel Scholtyssik/Katayoun Alemazkour/Michael Gombert,,,,,,,,,,
 Date,02/18/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,

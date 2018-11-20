@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,mixed_exome,,,,,,,,,,
+Operator,Daniel Scholtyssik/Katayoun Alemazkour/Michael Gombert,,,,,,,,,,
 Date,03/15/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,

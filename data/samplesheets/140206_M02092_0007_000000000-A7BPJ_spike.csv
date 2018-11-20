@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,5,,,,,,,,,,
 Experiment Name,TCR_RNA_Test,,,,,,,,,,
+Operator,Michael Gombert,,,,,,,,,,
 Date,02/06/14,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
