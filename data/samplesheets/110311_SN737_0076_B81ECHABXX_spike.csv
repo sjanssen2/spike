@@ -10,6 +10,7 @@ Notes,Illumina raw data have an abnormal structure. Illumina tech support told m
 Chemistry,Default,,,,,,,,,,
 Investigator,Gombert,,,,,,,,,,
 Backup_NAS_name,Travia,,,,,,,,,,
+kind_of_run,2x101bp,,,,,,,,,,
 [Reads],,,,,,,,,,,
 101,,,,,,,,,,,
 101,,,,,,,,,,,
