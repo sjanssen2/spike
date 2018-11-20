@@ -2,6 +2,7 @@
 IEMFileVersion,4,,,,,,,,,,
 Date,08/23/17,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
+Operator,Daniel Scholtyssik/Katayoun Alemazkour,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,Agilent_Sure_SelectXT,,,,,,,,,,
 Description,,,,,,,,,,,

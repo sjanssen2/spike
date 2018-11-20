@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator,Gombert,,,,,,,,,,
+Operator,Michael Gombert,,,,,,,,,,
 Experiment Name,170123_exome,,,,,,,,,,
 Date,01/23/17,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

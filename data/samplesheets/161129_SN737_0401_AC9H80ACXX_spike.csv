@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator,Gombert,,,,,,,,,,
+Operator,Michael Gombert,,,,,,,,,,
+Investigator,Marc Remke,,,,,,,,,,
 Experiment Name,161129_agremke,,,,,,,,,,
 Date,11/29/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

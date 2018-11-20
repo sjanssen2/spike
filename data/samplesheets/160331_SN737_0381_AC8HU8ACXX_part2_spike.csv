@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator,Michael Gombert,,,,,,,,,,
+Operator,Michael Gombert/Katayoun Alemazkour,,,,,,,,,,
+Investigator,Marc Remke,,,,,,,,,,
 Experiment Name,C8HU8ACXX_Amplicon_RNA,,,,,,,,,,
 Date,03/31/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

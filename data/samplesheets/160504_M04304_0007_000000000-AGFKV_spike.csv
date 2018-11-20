@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,,,
-Investigator,Michael Gombert,,,,,,,,,,,,
+Operator,Michael Gombert,,,,,,,,,,,,
+Investigator,Ute Fischer/Julia Hauer,,,,,,,,,,,,
 Experiment Name,160406_mikrobiom_4,,,,,,,,,,,,
 Date,05/04/16,,,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,,,

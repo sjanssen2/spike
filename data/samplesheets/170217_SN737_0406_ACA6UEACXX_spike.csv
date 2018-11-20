@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator,gombert_meyer,,,,,,,,,,
+Operator,Michael Gombert/Frauke-Dorothee Meyer,,,,,,,,,,
+Investigator,Marc Remke,,,,,,,,,,
 Experiment Name,rnaseq,,,,,,,,,,
 Date,02/17/17,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

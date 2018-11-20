@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator,Michael_Gombert,,,,,,,,,,
+Operator,Michael Gombert,,,,,,,,,,
 Date,08/07/15,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq_FASTQ_Only,,,,,,,,,,

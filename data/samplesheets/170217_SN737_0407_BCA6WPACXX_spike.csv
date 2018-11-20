@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator,Gombert,,,,,,,,,,
+Operator,Michael Gombert/Katayoun Alemazkour/Daniel Scholtyssik,,,,,,,,,,
+Investigator,Julia Hauer,,,,,,,,,,
 Experiment Name,mouse_exomes,,,,,,,,,,
 Date,02/17/17,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

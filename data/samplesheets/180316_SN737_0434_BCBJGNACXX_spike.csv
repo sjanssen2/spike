@@ -2,6 +2,7 @@
 IEMFileVersion,5,,,,,,,,,,
 Date,03/16/18,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
+Investigator,Marc Remke/Julia Hauer,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Instrument Type,HiSeq 1500/2500,,,,,,,,,,
 Assay,Agilent_Sure_SelectXT,,,,,,,,,,

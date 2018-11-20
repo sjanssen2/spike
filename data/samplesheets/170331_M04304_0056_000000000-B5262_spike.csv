@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,,,
-Investigator,gombert,,,,,,,,,,,,
+Operator,Michael Gombert,,,,,,,,,,
 Experiment Name,mouse_microbiome_plate1,,,,,,,,,,,,
 Date,03/31/17,,,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,,,

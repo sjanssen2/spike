@@ -2,6 +2,7 @@
 IEMFileVersion,4,,,,,,,,,,
 Date,02/28/18,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
+Investigator,Schipp/Julia Taeubner/David Laehnemann,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
 Assay,Agilent_Sure_SelectXT,,,,,,,,,,
 Description,,,,,,,,,,,

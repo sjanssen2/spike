@@ -1,6 +1,8 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,C8NLVACXX,,,,,,,,,,
+Investigator,Marc Remke,,,,,,,,,,
+Operator,Michael Gombert,,,,,,,,,,
 Date,05/09/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,

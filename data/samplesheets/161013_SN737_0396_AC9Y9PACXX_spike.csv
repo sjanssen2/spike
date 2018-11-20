@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator,Michael Gombert,,,,,,,,,,
+Operator,Michael Gombert,,,,,,,,,,
+Investigator,Jessica Hoell,,,,,,,,,,
 Experiment Name,1610013_aghoell,,,,,,,,,,
 Date,10/13/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

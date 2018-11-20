@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
-Investigator,Gombert,,,,,,,,,,
+Operator,Michael Gombert,,,,,,,,,,
 Experiment Name,160112_mouse_exomes,,,,,,,,,,
 Date,01/14/16,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,

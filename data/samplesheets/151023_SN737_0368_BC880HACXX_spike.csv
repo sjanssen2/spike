@@ -1,6 +1,7 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,4,,,,,,,,,,
 Experiment Name,151023_SN737_0368_BC880HACXX,,,,,,,,,,
+Investigator,Jessica Hoell,,,,,,,,,,
 Date,10/23/15,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,HiSeq FASTQ Only,,,,,,,,,,
