@@ -81,6 +81,9 @@ rule backup_validate:
         "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['backup_validate'])
     threads:
         1
+    params:
+        recipient=config['emails']['backup_validated'].split(',')[0],
+        suggested_recipients='\n'.join(config['emails']['backup_validated'].split(',')[1:])
     shell:
         "mkdir -p {config[dirs][tmpdir]} && "
         "tmpdir=$(mktemp --tmpdir={config[dirs][tmpdir]} -d) &&"
@@ -101,7 +104,7 @@ rule backup_validate:
         " && echo 'backup of {wildcards.run} validated' > {output}"
         " && rm -f $tmpfile"
         " && rm -rf $tmpdir"
-        " && echo 'Hi there,\n\nthis is an automated message from {config[name_program]}.\n\nIllumina raw data for run {wildcards.run} have been successfully transferred to the backup NAS {config[credentials][backup][host]} and double checked.\nYou can now safely delete those data from the sequencing PC to free up space for the next run.\n\nHave a nice day!' | mail -s '[{config[name_program]}] backup complete for {wildcards.run}' {config[emails][backup_validated]}"
+        " && echo 'suggested recipients:\n{params.suggested_recipients}\n\nHi there,\n\nthis is an automated message from {config[name_program]}.\n\nIllumina raw data for run {wildcards.run} have been successfully transferred to the backup NAS {config[credentials][backup][host]} and double checked.\nYou can now safely delete those data from the sequencing PC to free up space for the next run.\n\nHave a nice day!' | mail -s '[{config[name_program]}] backup complete for {wildcards.run}' {params.recipients}"
 
         # BACKUP_CHECK=$(mktemp -d -p . -t ${RUNNAME}_backup_check.XXXXXX)
         # TEMPFILES+=( "$PWD/$BACKUP_CHECK" )

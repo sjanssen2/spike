@@ -88,10 +88,12 @@ rule convert_illumina_report:
     params:
         yield_report=lambda wildcards: "%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, wildcards.run.split('_')[-1][1:]),
         firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
+        recipient=config['emails']['demultiplexreport'].split(',')[0],
+        suggested_recipients='\n'.join(config['emails']['demultiplexreport'].split(',')[1:])
     shell:
         "wkhtmltopdf --orientation Landscape {params.yield_report} {output} 2> {log} &&"
-        "echo 'Hi there,\n\n"
+        "echo 'suggested recipients:\n{params.suggested_recipients}\n\nHi there,\n\n"
         "this is an automated message from {config[name_program]}.\n\n"
-        "Demultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report, some statistics about the file sizes of undetermined reads and the first base report.\n\n"
-        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' {config[mail_attachment_parameter]} {output} {config[mail_attachment_parameter]} {params.firstbase} {config[emails][demultiplexreport]}"
+        "Demultiplexing for flowcell {wildcards.run} finished. Please find attached the yield report and the first base report.\n\n"
+        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' {config[mail_attachment_parameter]} {output} {config[mail_attachment_parameter]} {params.firstbase} {params.recipient}"
         " 2>> {log}"
