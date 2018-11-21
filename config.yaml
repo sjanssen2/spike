@@ -55,7 +55,7 @@ stepnames:
   gatk_IndelRealigner: "075_gatk_IndelRealigner"
   gatk_BaseRecalibrator: "080_gatk_BaseRecalibrator"
   gatk_PrintReads: "085_gatk_PrintReads"
-  check_coverage: "090_check_coverage"
+  exome_coverage: "090_exome_coverage"
   gatk_HaplotypeCaller: "095_gatk_HaplotypeCaller"
   gatk_SelectVariants: "100_gatk_SelectVariants"
   gatk_VariantRecalibrator: "105_gatk_VariantRecalibrator"
@@ -76,6 +76,7 @@ stepnames:
 
   # somatic
   mutect: "170_mutect"
+  samtools_mpileup: "172_samtools_mpileup"
   varscan_somatic: "175_varscan_somatic"
   varscan_processSomatic: "180_varscan_processSomatic"
   bam_readcount_somatic: "185_bam_readcount_somatic"
@@ -98,9 +99,8 @@ stepnames:
   aggregate_undetermined_filesizes: "000_aggregate_undetermined_filesizes"
   check_undetermined_filesizes: "000_check_undetermined_filesizes"
   gatk_DepthOfCoverage: "00_gatk_DepthOfCoverage"
-  samtools_mpileup: "000_samtools_mpileup"
   freec: "000_freec"
-  exome_coverage: "000_exome_coverage"
+  check_coverage: "000_check_coverage"
 
 gatk:
   HaplotypeCallerQualityArguments: " -stand_call_conf 50.0 -stand_emit_conf 50.0 "
