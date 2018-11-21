@@ -204,15 +204,18 @@ def get_status_data(samplesheets, config, prefix=None):
                                 role = g_sample['spike_entity_role'].unique()[0]
                             if role == 'sibling':
                                 role = 'sibling: %s' % sample[len(entity):]
-                            results.append({
-                                'project': project,
-                                'entity': entity,
-                                'sample': role,
-                                'action': action,
-                                'program': program,
-                                'status': int(status),
-                                'coverage': coverages[sample],
-                                'yield': _get_yield(demux_yields, sample)})
+                            if ((action in ['trio']) and (role.split(':')[0] in ['patient', 'sibling'])) or\
+                               ((action in ['tumornormal']) and (role.split(':')[0] in ['tumor'])) or\
+                               ((action in ['background'])):
+                                results.append({
+                                    'project': project,
+                                    'entity': entity,
+                                    'sample': role,
+                                    'action': action,
+                                    'program': program,
+                                    'status': int(status),
+                                    'coverage': coverages[sample],
+                                    'yield': _get_yield(demux_yields, sample)})
                     if action == 'trio':
                         expected_roles = set(['patient', 'father', 'mother'])
                     elif action == 'tumornormal':
