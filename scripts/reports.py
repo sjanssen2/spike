@@ -10,6 +10,8 @@ import xlsxwriter
 import matplotlib.pyplot as plt
 from scripts.parse_samplesheet import get_min_coverage
 import json
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 plt.switch_backend('Agg')
 
 
@@ -142,166 +144,139 @@ def report_exome_coverage(
                 '\n\t'.join(samples_below_coverage_threshold),
                 fp_plot))
 
-def _get_yield(demux_yields, sample):
-    if demux_yields.shape[0] <= 0:
-        return 0
-    if demux_yields[demux_yields['Sample_ID'] == sample].shape[0] <= 0:
-        return 0
-    return demux_yields[demux_yields['Sample_ID'] == sample]['yield'].sum()
 
-def get_status_data(samplesheets, config, prefix=None):
-    if samplesheets.shape[0] <= 0:
-        raise ValueError("No samples specified.")
-
-    ACTION_to_PROGRAM = {
-        'background': ['GATK', 'Platypus'],
-        'trio': ['Varscan\ndenovo'],
-        'tumornormal': ['Mutect', 'Varscan'],
-        'demultiplex': ['bcl2fastq']}
-    min_targets = 80
-
-    if prefix is None:
-        prefix = config['dirs']['prefix']
-
-    # check if flowcell has been demuxed
+def _get_statusdata_demultiplex(samplesheets, prefix, config):
     demux_yields = []
-    check_flowcell_demuxed = dict()
-    for run, g_run in samplesheets.groupby('run'):
-        fp_yieldreport = join(prefix, config['dirs']['intermediate'], config['stepnames']['convert_illumina_report'], '%s.yield_report.pdf' % run)
-        check_flowcell_demuxed[run] = exists(fp_yieldreport)
-        if check_flowcell_demuxed[run]:
-            # if run is already demultiplexed, obtain yield results
-            demux_res = json.load(open('%s%s%s/%s/Stats/Stats.json' % (prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], run), 'r'))
+    for flowcell in samplesheets['run'].unique():
+        fp_demuxstats = '%s%s%s/%s/Stats/Stats.json' % (prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], flowcell)
+        if exists(fp_demuxstats):
+            demux_res = json.load(open(fp_demuxstats, 'r'))
             for lane_res in demux_res['ConversionResults']:
                 for sample_res in lane_res['DemuxResults']:
+                    inferred_sample_project = samplesheets[
+                        (samplesheets['Sample_ID'] == sample_res['SampleId']) &
+                        (samplesheets['Lane'] == lane_res['LaneNumber']) &
+                        (samplesheets['run'] == demux_res['RunId'])]['Sample_Project'].unique()
+                    if len(inferred_sample_project) > 1:
+                        raise ValueError('Conflicting Sample_Project description for sample %s in run %s.' % (sample_res['SampleId'], demux_res['RunId']))
+                    if len(inferred_sample_project) < 1:
+                        # this means, that samples in the demux stats but not in the provided samplesheets are
+                        # NOT part of the result
+                        continue
                     demux_yields.append({
                         'Lane': lane_res['LaneNumber'],
                         'run': demux_res['RunId'],
+                        'Sample_Project': inferred_sample_project[0],
                         'Sample_ID': sample_res['SampleId'],
                         'yield': sample_res['Yield']})
-    demux_yields = pd.DataFrame(demux_yields)
+    return pd.DataFrame(demux_yields).groupby(['Sample_Project', 'Sample_ID'])['yield'].sum()
 
+
+def _get_statusdata_coverage(samplesheets, prefix, config, min_targets=80):
+    coverages = []
+    for (sample_project, sample_id), meta in samplesheets.groupby(['Sample_Project', 'Sample_ID']):
+        fp_coverage = join(prefix, config['dirs']['intermediate'], config['stepnames']['exome_coverage'], sample_project, '%s.exome_coverage.csv' % sample_id)
+        if exists(fp_coverage):
+            coverage = pd.read_csv(fp_coverage, sep="\t")
+            coverages.append({
+                'Sample_Project': sample_project,
+                'Sample_ID': sample_id,
+                'coverage': coverage.loc[coverage['percent_cumulative'].apply(lambda x: abs(x-min_targets)).idxmin(), '#coverage']})
+    return pd.DataFrame(coverages).set_index(['Sample_Project', 'Sample_ID'])['coverage']
+
+
+def _get_statusdata_snupyextracted(samplesheets, prefix, config):
     results = []
-    for project, g_project in samplesheets.groupby('Sample_Project'):
-        for entity, g_entity in g_project.groupby('spike_entity_id'):
-            if project in config['projects']:
-                coverages = dict()
-                for sample, g_sample in g_entity.groupby('Sample_ID'):
-                    fp_coverage = join(prefix, config['dirs']['intermediate'], config['stepnames']['exome_coverage'], project, '%s.exome_coverage.csv' % sample)
-                    if exists(fp_coverage):
-                        coverage = pd.read_csv(fp_coverage, sep="\t")
-                        coverages[sample] = coverage.loc[coverage['percent_cumulative'].apply(lambda x: abs(x-min_targets)).idxmin(), '#coverage']
-                    else:
-                        coverages[sample] = 0
+    for sample_project, meta in samplesheets.groupby('Sample_Project'):
+        if (sample_project not in config['projects']) | ('snupy' not in config['projects'][sample_project]) | ('project_id' not in config['projects'][sample_project]['snupy']):
+            # project in config file is not properly configure for snupy!
+            continue
+        r = requests.get('%s/experiments/%s.json' % (config['credentials']['snupy']['host'], config['projects'][sample_project]['snupy']['project_id']),
+            auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
+            verify=False)
+        assert(r.headers.get('status') == '200 OK')
+        samples = [sample['name'] for sample in r.json()['samples']]
 
-                for action in config['projects'][project]['actions']:
-                    fp_extracted = join(prefix, config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], project, '%s.%s.extracted' % (entity, action))
-                    status = exists(fp_extracted)
-                    for program in ACTION_to_PROGRAM[action]:
-                        for sample, g_sample in g_entity.groupby('Sample_ID'):
-                            role = ""
-                            if pd.notnull(g_sample['spike_entity_role'].unique()[0]):
-                                role = g_sample['spike_entity_role'].unique()[0]
-                            if role == 'sibling':
-                                role = 'sibling: %s' % sample[len(entity):]
-                            if ((action in ['trio']) and (role.split(':')[0] in ['patient', 'sibling'])) or\
-                               ((action in ['tumornormal']) and (role.split(':')[0] in ['tumor'])) or\
-                               ((action in ['background'])):
-                                results.append({
-                                    'project': project,
-                                    'entity': entity,
-                                    'sample': role,
-                                    'action': action,
-                                    'program': program,
-                                    'status': int(status),
-                                    'coverage': coverages[sample],
-                                    'yield': _get_yield(demux_yields, sample)})
-                    if action == 'trio':
-                        expected_roles = set(['patient', 'father', 'mother'])
-                    elif action == 'tumornormal':
-                        expected_roles = set(['tumor', 'healthy'])
-                    elif action == 'background':
-                        expected_roles = set()
-                    elif action == 'demultiplex':
-                        expected_roles = set()
-                    else:
-                        raise ValueError("Unexpected action '%s'!" % action)
-                    if len(expected_roles - set(g_entity['spike_entity_role'].unique())) > 0:
-                        for role in (expected_roles - set(g_entity['spike_entity_role'].unique())):
-                            results.append({
-                                'project': project,
-                                'entity': entity,
-                                'sample': role,
-                                'action': action,
-                                'program': program,
-                                'status': 0,
-                                'coverage': -1,
-                                'yield': _get_yield(demux_yields, role)})
+        for sample_id, meta_sample in meta.groupby('Sample_ID'):
+            for file_ending, action, program in [('.snp_indel.gatk', 'background', 'GATK'),
+                                                 ('.indel.ptp', 'background', 'Platypus'),
+                                                 ('.denovo.varscan', 'trio', 'Varscan\ndenovo'),
+                                                 ('.somatic.varscan', 'tumornormal', 'Varscan'),
+                                                 ('.somatic.mutect', 'tumornormal', 'Mutect')]:
+                # in some cases "sample name" hold spike_entity_id, in others Sample_ID
+                entity = sample_id
+                runs = '+'.join(sorted(meta_sample['run'].unique()))
+                if (action == 'trio'):
+                    if meta_sample['spike_entity_role'].unique()[0] == 'patient':
+                        entity = meta_sample['spike_entity_id'].iloc[0]
+                        runs = '+'.join(sorted(samplesheets[samplesheets['spike_entity_id'] == meta_sample['spike_entity_id'].iloc[0]]['run'].unique()))
+                if (action == 'tumornormal'):
+                    if meta_sample['spike_entity_role'].unique()[0] == 'tumor':
+                        entity = meta_sample['spike_entity_id'].iloc[0]
+                        runs = '+'.join(sorted(samplesheets[samplesheets['spike_entity_id'] == meta_sample['spike_entity_id'].iloc[0]]['run'].unique()))
+                name = '%s_%s/%s%s' % (runs, sample_project, entity, file_ending)
 
-                for sample, g_sample in g_entity.groupby('Sample_ID'):
-                    role = ""
-                    if pd.notnull(g_sample['spike_entity_role'].unique()[0]):
-                        role = g_sample['spike_entity_role'].unique()[0]
-                    if role == 'sibling':
-                        role = 'sibling: %s' % sample[len(entity):]
+                if action in config['projects'][sample_project]['actions']:
+                    if ((action == 'trio') and (meta_sample['spike_entity_role'].iloc[0] in ['patient', 'sibling'])) or\
+                       ((action == 'background')) or\
+                       ((action == 'tumornormal') and (meta_sample['spike_entity_role'].iloc[0].startswith('tumor'))):
+                        results.append({
+                            'Sample_Project': sample_project,
+                            'Sample_ID': sample_id,
+                            'action': action,
+                            'program': program,
+                            'status': name in samples,
+                            'snupy_sample_name': name
+                        })
+
+    return pd.DataFrame(results).set_index(['Sample_Project', 'Sample_ID', 'action', 'program'])
+
+
+def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT):
+    results = []
+    for (sample_project, sample_id), meta in samplesheets.groupby(['Sample_Project', 'Sample_ID']):
+        for file_ending, stepname, action, program in [
+            ('.gatk.snp_indel.vcf', 'gatk_CombineVariants', 'background', 'GATK'),
+            ('.ptp.annotated.filtered.indels.vcf', 'platypus_filtered', 'background', 'Platypus'),
+            ('.var2denovo.vcf', 'writing_headers', 'trio', 'Varscan\ndenovo'),
+            ('.indel_snp.vcf', 'merge_somatic', 'tumornormal', 'Varscan'),
+            ('.all_calls.vcf', 'mutect', 'tumornormal', 'Mutect')
+            ]:
+            name = sample_id
+            if (action == 'trio'):
+                if meta['spike_entity_role'].unique()[0] == 'patient':
+                    name = meta['spike_entity_id'].iloc[0]
+            if (action == 'tumornormal'):
+                if meta['spike_entity_role'].unique()[0] == 'tumor':
+                    name = meta['spike_entity_id'].iloc[0]
+            fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][stepname], sample_project, name, file_ending)
+
+            nr_calls = RESULT_NOT_PRESENT
+            if exists(fp_vcf):
+                nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
+
+            if action in config['projects'][sample_project]['actions']:
+                if ((action == 'trio') and (meta['spike_entity_role'].iloc[0] in ['patient', 'sibling'])) or\
+                   ((action == 'background')) or\
+                   ((action == 'tumornormal') and (meta['spike_entity_role'].iloc[0].startswith('tumor'))):
                     results.append({
-                        'project': project,
-                        'entity': entity,
-                        'sample': role,
-                        'action': 'demultiplex',
-                        'program': 'bcl2fastq',
-                        'status': int(check_flowcell_demuxed[g_sample['run'].unique()[0]]),
-                        'coverage': coverages[sample],
-                        'yield': _get_yield(demux_yields, sample)})
-
-        for sample, g_sample in g_project[pd.isnull(g_project['spike_entity_id'])].groupby('Sample_ID'):
-            results.append({
-                'project': project,
-                'entity': "",
-                'sample': sample,
-                'action': 'demultiplex',
-                'program': 'bcl2fastq',
-                'status': int(check_flowcell_demuxed[g_sample['run'].unique()[0]]),
-                'coverage': 0,
-                'yield': _get_yield(demux_yields, sample)})
-    #return results
-    res = pd.pivot_table(
-        data=pd.DataFrame(results),
-        index=['project', 'entity', 'sample', 'yield', 'coverage'],
-        columns=['action', 'program'],
-        values='status',
-        fill_value=-1,
-    )
-
-    # reorder actions
-    res = res.loc[:, [
-        ('demultiplex', 'bcl2fastq'),
-        ('background', 'GATK'),
-        ('background', 'Platypus'),
-        ('tumornormal', 'Mutect'),
-        ('tumornormal', 'Varscan'),
-        ('trio', 'Varscan\ndenovo'),
-    ]]
+                        'Sample_Project': sample_project,
+                        'Sample_ID': sample_id,
+                        'action': action,
+                        'program': program,
+                        'number_calls': nr_calls,
+                    })
+    return pd.DataFrame(results).set_index(['Sample_Project', 'Sample_ID', 'action', 'program'])['number_calls']
 
 
-    # if status:
-    #     if (action in ['trio']) and (role.split(':')[0] in ['patient', 'sibling']):
-    #         fp_calls = join(prefix, config['dirs']['intermediate'], config['stepnames']['writing_headers'], project, '%s.var2denovo.vcf' % sample)
-    #         with open(fp_calls, 'r') as f:
-    #             status = sum([1 for line in f.readlines() if (not line.startswith('#'))])
-
-
-    return res
-
-
-def write_status_update(filename, status_table, config, offset_rows=0, offset_cols=0, min_yield=5.0):
+def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0, offset_cols=0, min_yield=5.0):
     """
     Parameters
     ----------
     filename : str
         Filepath to output Excel file.
-    status_table : pd.DataFrame
-        Result from function "get_status_data".
+    samplesheets : pd.DataFrame
+        The global samplesheets.
     config : dict()
         Snakemake configuration object.
     offset_rows : int
@@ -315,140 +290,97 @@ def write_status_update(filename, status_table, config, offset_rows=0, offset_co
         Threshold when to color yield falling below this value in red.
         Note: I don't know what a good default looks like :-/
     """
+    RESULT_NOT_PRESENT = -5
+
+    # obtain data
+    data_yields = _get_statusdata_demultiplex(samplesheets, prefix, config)
+    data_coverage = _get_statusdata_coverage(samplesheets, prefix, config)
+    data_snupy = _get_statusdata_snupyextracted(samplesheets, prefix, config)
+    data_calls = _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT)
+
+    # start creating the Excel result
     workbook = xlsxwriter.Workbook(filename)
     worksheet = workbook.add_worksheet()
 
-    # column header
+    format_good = workbook.add_format({'bg_color': '#ccffcc'})
+    format_bad = workbook.add_format({'bg_color': '#ffcccc'})
+    actionsprograms = [
+        ('background', 'GATK'),
+        ('background', 'Platypus'),
+        ('tumornormal', 'Varscan'),
+        ('tumornormal', 'Mutect'),
+        ('trio', 'Varscan\ndenovo')]
+
+    # header
     format_header = workbook.add_format({
         'rotation': 90,
         'bold': True,
         'valign': 'vcenter',
         'align': 'center'})
-    for col, program in enumerate(['yield', 'coverage'] + list(status_table.columns.get_level_values(1))):
-        worksheet.write(offset_rows, offset_cols+col+3, program.replace('yield', 'yield (GB)'), format_header)
-
-    worksheet.set_column(offset_cols, offset_cols, 4)
-    # set width of entity name
-    worksheet.set_column(offset_cols+1, offset_cols+1, 12)
-    worksheet.set_column(offset_cols+len(status_table.index.names)-2, offset_cols+len(status_table.index.names)+status_table.shape[1], 4)
     worksheet.set_row(offset_rows, 80)
+    for i, caption in enumerate(['yield (MB)', 'coverage'] + list(map(lambda x: x[-1], actionsprograms))):
+        worksheet.write(offset_rows, offset_cols+4+i, caption, format_header)
 
-    # row header: project
+    # body
     format_project = workbook.add_format({
         'rotation': 90,
         'bold': True,
         'valign': 'vcenter',
         'align': 'center'})
-    for pos, project in enumerate(status_table.index.levels[0]):
-        start = list(status_table.index.labels[0]).index(pos)
-        stop = len(status_table.index.labels[0]) - 1 - list(status_table.index.labels[0][::-1]).index(pos)
-        col = chr(65+offset_cols)
-        cellrange = '%s%i:%s%i' % (col, offset_rows+start+1+1, col, offset_rows+stop+1+1)
-        worksheet.merge_range(cellrange, project.replace('_', '\n'), format_project)
-
-    # row header: spike_entity_id
     format_spike_entity_id = workbook.add_format({
         'valign': 'vcenter',
         'align': 'center'})
-    for pos, spike_entity_id in enumerate(status_table.index.levels[1]):
-        if spike_entity_id == "":
-            continue
-        start = list(status_table.index.labels[1]).index(pos)
-        stop = len(status_table.index.labels[1]) - 1 - list(status_table.index.labels[1][::-1]).index(pos)
-        col = chr(65+offset_cols+1)
-        cellrange = '%s%i:%s%i' % (col, offset_rows+start+1+1, col, offset_rows+stop+1+1)
-        worksheet.merge_range(cellrange, spike_entity_id, format_spike_entity_id)
+    row = offset_rows+1
+    for sample_project, grp_project in samplesheets.groupby('Sample_Project'):
+        cellrange = '%s%i:%s%i' % (chr(65+offset_cols), row+1, chr(65+offset_cols), row+len(grp_project.groupby(['spike_entity_id', 'Sample_ID'])))
+        worksheet.merge_range(cellrange, sample_project.replace('_', '\n'), format_project)
+        worksheet.set_column(offset_cols, offset_cols, 4)
 
-    # row header: sample name / role
-    format_spike_entity_role = workbook.add_format({
-        'valign': 'vcenter',
-        'align': 'center'})
-    format_spike_entity_role_missing = workbook.add_format({
-        'valign': 'vcenter',
-        'align': 'center',
-        'font_color': '#ff0000'})
-    for pos, role in enumerate(status_table.index.get_level_values(2)):
-        if status_table.index.get_level_values(1)[pos] == "":
-            cellrange = '%s%i:%s%i' % (chr(65+offset_cols+1), offset_rows+pos+1+1, chr(65+offset_cols+2), offset_rows+pos+1+1)
-            worksheet.merge_range(cellrange, role, format_spike_entity_role)
-        else:
-            worksheet.write(offset_rows+1+pos, offset_cols+2, role, format_spike_entity_role if status_table.index[pos][-1] != -1 else format_spike_entity_role_missing)
+        for spike_entity_group, grp_spike_entity_group in grp_project.groupby('spike_entity_id'):
+            #worksheet.write(row, offset_cols+1, spike_entity_group)
+            cellrange = '%s%i:%s%i' % (chr(65+offset_cols+1), row+1, chr(65+offset_cols+1), row+len(grp_spike_entity_group.groupby('Sample_ID')))
+            worksheet.merge_range(cellrange, spike_entity_group, format_spike_entity_id)
+            worksheet.set_column(offset_cols+1, offset_cols+1, 12)
 
-    # yield
-    format_yield = workbook.add_format({'align': 'center'})
-    for row, yieldvalue in enumerate(status_table.index.get_level_values('yield')):
-        worksheet.write(offset_rows+1+row, offset_cols+3, float('%.1f' % (yieldvalue / (1000**3))) if yieldvalue > 0 else '?', format_yield)
-    format_yield_poor = workbook.add_format({'bg_color': '#ffcccc'})
-    format_yield_good = workbook.add_format({'bg_color': '#ccffcc'})
-    for pos, project in enumerate(status_table.index.levels[0]):
-        start = list(status_table.index.labels[0]).index(pos)
-        stop = len(status_table.index.labels[0]) - 1 - list(status_table.index.labels[0][::-1]).index(pos)
-        #cellrange = '%s%i:%s%i' % (col, start+2, col, stop+2)
-        cellrange = '%s%i:%s%i' % (chr(65+offset_cols+len(status_table.index.levels)-2), offset_rows+2+start,
-                                   chr(65+offset_cols+len(status_table.index.levels)-2), offset_rows+2+stop)
-        worksheet.conditional_format(cellrange, {'type': 'cell',
-                                                 'criteria': '>=',
-                                                 'value': 5.0,
-                                                 'format': format_yield_good})
-        worksheet.conditional_format(cellrange, {'type': 'cell',
-                                                 'criteria': '<',
-                                                 'value': 5.0,
-                                                 'format': format_yield_poor})
-    # coverage
-    format_coverage = workbook.add_format({'align': 'center'})
-    for row, coverage in enumerate(status_table.index.get_level_values('coverage')):
-        worksheet.write(offset_rows+1+row, offset_cols+4, coverage if coverage > 0 else '?', format_coverage)
-    format_coverage_poor = workbook.add_format({'bg_color': '#ffcccc'})
-    format_coverage_good = workbook.add_format({'bg_color': '#ccffcc'})
-    # conditional coloring based for coverage, based on project
-    for pos, project in enumerate(status_table.index.levels[0]):
-        start = list(status_table.index.labels[0]).index(pos)
-        stop = len(status_table.index.labels[0]) - 1 - list(status_table.index.labels[0][::-1]).index(pos)
-        #cellrange = '%s%i:%s%i' % (col, start+2, col, stop+2)
-        cellrange = '%s%i:%s%i' % (chr(65+offset_cols+len(status_table.index.levels)-1), offset_rows+2+start,
-                                   chr(65+offset_cols+len(status_table.index.levels)-1), offset_rows+2+stop)
-        worksheet.conditional_format(cellrange, {'type': 'cell',
-                                                 'criteria': '>=',
-                                                 'value': get_min_coverage(project, config),
-                                                 'format': format_coverage_good})
-        worksheet.conditional_format(cellrange, {'type': 'cell',
-                                                 'criteria': '<',
-                                                 'value': get_min_coverage(project, config),
-                                                 'format': format_coverage_poor})
+            for sample_id, grp_sample_id in grp_spike_entity_group.sort_values(by='spike_entity_role').groupby('Sample_ID'):
+                worksheet.write(row, offset_cols+2, sample_id, format_spike_entity_id)
+                worksheet.set_column(offset_cols+2, offset_cols+2, 12)
 
-    # status
-    format_missing_sample = workbook.add_format({'align': 'center',
-                                                 'font_color': '#ff0000'})
-    for row, (idx_row, data) in enumerate(status_table.iterrows()):
-        coverage = idx_row[-1]
-        if coverage == -1:
-            cellrange = '%s%i:%s%i' % (chr(65+offset_cols+4), row+offset_rows+2, chr(65+offset_cols+4+status_table.shape[1]), row+offset_rows+2)
-            worksheet.merge_range(cellrange, 'missing sample', format_missing_sample)
-        else:
-            for col, (_, status) in enumerate(data.iteritems()):
-                if pd.isnull(status) or (status == -1):
-                    value = ""
-                elif status >= 1:
-                    value = status
-                elif status == 0:
-                    value = "no"
-                worksheet.write(offset_rows+1+row, offset_cols+5+col, value)
-    format_processing_poor = workbook.add_format({'bg_color': '#ffcccc',
-                                                  'font_color': '#ffcccc',
-                                                  'align': 'center'})
-    format_processing_good = workbook.add_format({'bg_color': '#ccffcc',
-                                                  'align': 'center'
-                                                  #'font_color': '#ccffcc'
-                                                  })
-    cellrange = '%s%i:%s%i' % (chr(65+len(idx_row)+offset_cols), offset_rows+2,
-                               chr(65+len(idx_row)+status_table.shape[1]-1+offset_cols), status_table.shape[0]+offset_rows+2-1)
-    worksheet.conditional_format(cellrange, {'type': 'cell',
-                                             'criteria': '>',
-                                             'value': '0',
-                                             'format': format_processing_good})
-    worksheet.conditional_format(cellrange, {'type': 'cell',
-                                             'criteria': '==',
-                                             'value': '"no"',
-                                             'format': format_processing_poor})
+                worksheet.write(row, offset_cols+3, grp_sample_id['spike_entity_role'].iloc[0], format_spike_entity_id)
+
+                # demultiplexing yield
+                frmt = format_bad
+                value_yield = "missing"
+                if (sample_project, sample_id) in data_yields.index:
+                    value_yield = float('%.1f' % (int(data_yields.loc[sample_project, sample_id]) / (1000**3)))
+                    if value_yield >= 5.0:
+                        frmt = format_good
+                worksheet.write(row, offset_cols+4, value_yield, frmt)
+                worksheet.set_column(offset_cols+4, offset_cols+4, 4)
+
+                # coverage
+                frmt = format_bad
+                value_coverage = "missing"
+                if (sample_project, sample_id) in data_coverage.index:
+                    value_coverage = data_coverage.loc[sample_project, sample_id]
+                    if value_coverage >= get_min_coverage(sample_project, config):
+                        frmt = format_good
+                worksheet.write(row, offset_cols+5, value_coverage, frmt)
+                worksheet.set_column(offset_cols+5, offset_cols+5, 4)
+
+                for i, (action, program) in enumerate(actionsprograms):
+                    value_numcalls = ""
+                    frmt = None
+                    if (sample_project, sample_id, action, program) in data_calls:
+                        value_numcalls = data_calls.loc[sample_project, sample_id, action, program]
+                    if (sample_project, sample_id, action, program) in data_snupy.index:
+                        if data_snupy.loc[sample_project, sample_id, action, program]['status']:
+                            frmt = format_good
+                        else:
+                            frmt = format_bad
+                    if frmt is not None:
+                        worksheet.write(row, offset_cols+6+i, value_numcalls, frmt)
+
+                row += 1
 
     workbook.close()
