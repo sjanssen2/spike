@@ -283,6 +283,14 @@ def get_status_data(samplesheets, config, prefix=None):
         ('trio', 'Varscan\ndenovo'),
     ]]
 
+
+    # if status:
+    #     if (action in ['trio']) and (role.split(':')[0] in ['patient', 'sibling']):
+    #         fp_calls = join(prefix, config['dirs']['intermediate'], config['stepnames']['writing_headers'], project, '%s.var2denovo.vcf' % sample)
+    #         with open(fp_calls, 'r') as f:
+    #             status = sum([1 for line in f.readlines() if (not line.startswith('#'))])
+
+
     return res
 
 
@@ -420,20 +428,23 @@ def write_status_update(filename, status_table, config, offset_rows=0, offset_co
             for col, (_, status) in enumerate(data.iteritems()):
                 if pd.isnull(status) or (status == -1):
                     value = ""
-                elif status == 1:
-                    value = "done"
+                elif status >= 1:
+                    value = status
                 elif status == 0:
                     value = "no"
                 worksheet.write(offset_rows+1+row, offset_cols+5+col, value)
     format_processing_poor = workbook.add_format({'bg_color': '#ffcccc',
-                                                  'font_color': '#ffcccc'})
+                                                  'font_color': '#ffcccc',
+                                                  'align': 'center'})
     format_processing_good = workbook.add_format({'bg_color': '#ccffcc',
-                                                  'font_color': '#ccffcc'})
+                                                  'align': 'center'
+                                                  #'font_color': '#ccffcc'
+                                                  })
     cellrange = '%s%i:%s%i' % (chr(65+len(idx_row)+offset_cols), offset_rows+2,
                                chr(65+len(idx_row)+status_table.shape[1]-1+offset_cols), status_table.shape[0]+offset_rows+2-1)
     worksheet.conditional_format(cellrange, {'type': 'cell',
-                                             'criteria': '==',
-                                             'value': '"done"',
+                                             'criteria': '>',
+                                             'value': '0',
                                              'format': format_processing_good})
     worksheet.conditional_format(cellrange, {'type': 'cell',
                                              'criteria': '==',
