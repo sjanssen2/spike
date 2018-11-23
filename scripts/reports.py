@@ -274,7 +274,7 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
     return pd.DataFrame(results).set_index(['Sample_Project', 'Sample_ID', 'action', 'program'])['number_calls']
 
 
-def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0, offset_cols=0, min_yield=5.0):
+def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, offset_cols=0, min_yield=5.0, verbose=sys.stderr):
     """
     Parameters
     ----------
@@ -297,16 +297,17 @@ def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0
     """
     RESULT_NOT_PRESENT = -5
 
+    print("Creating report", file=verbose)
     # obtain data
-    print("1/5) gathering demuliplexing yields: ...", file=sys.stderr, end="")
+    print("1/5) gathering demuliplexing yields: ...", file=verbose, end="")
     data_yields = _get_statusdata_demultiplex(samplesheets, prefix, config)
-    print(" done.\n2/5) gathering coverage: ...", file=sys.stderr, end="")
+    print(" done.\n2/5) gathering coverage: ...", file=verbose, end="")
     data_coverage = _get_statusdata_coverage(samplesheets, prefix, config)
-    print(" done.\n3/5) gathering snupy extraction status: ...", file=sys.stderr, end="")
+    print(" done.\n3/5) gathering snupy extraction status: ...", file=verbose, end="")
     data_snupy = _get_statusdata_snupyextracted(samplesheets, prefix, config)
-    print(" done.\n4/5) gathering number of PASSing calls: ...", file=sys.stderr, end="")
+    print(" done.\n4/5) gathering number of PASSing calls: ...", file=verbose, end="")
     data_calls = _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT)
-    print("done.\n5/5) generating Excel output: ...", file=sys.stderr, end="")
+    print("done.\n5/5) generating Excel output: ...", file=verbose, end="")
 
     # start creating the Excel result
     workbook = xlsxwriter.Workbook(filename)
@@ -396,7 +397,7 @@ def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0
                     worksheet.write(cellrange.split(':')[0], spike_entity_group, format_spike_entity_id)
             else:
                 spike_entity_group = np.nan
-            worksheet.set_column(offset_cols+1, offset_cols+1, 8)
+            worksheet.set_column(offset_cols+1, offset_cols+1, 10)
 
             for nr_sample_id, (sample_id, grp_sample_id) in enumerate(grp_spike_entity_group.sort_values(by='spike_entity_role').groupby('Sample_ID')):
                 worksheet.set_column(offset_cols+2, offset_cols+2, 4)
@@ -475,5 +476,5 @@ def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0
                     worksheet.set_column(offset_cols+6+len(actionsprograms), offset_cols+6+len(actionsprograms), 16)
 
                 row += 1
-    print("done.\n", file=sys.stderr, end="")
+    print("done.\n", file=verbose, end="")
     workbook.close()
