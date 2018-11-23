@@ -497,8 +497,8 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
                             worksheet.write(row, offset_cols+6+i, value_numcalls, frmt)
 
                     # sequencing date
-                    worksheet.write(row, offset_cols+6+len(ACTION_PROGRAMS), ' / '.join(map(
-                        lambda x: datetime.datetime.strptime('20%s' % x.split('_')[0], '%Y%m%d').strftime("%Y-%m-%d"), grp_sample_id['run'].unique())), format_spike_seqdate)
+                    worksheet.write(row, offset_cols+6+len(ACTION_PROGRAMS), ' / '.join(sorted(map(
+                        lambda x: datetime.datetime.strptime('20%s' % x.split('_')[0], '%Y%m%d').strftime("%Y-%m-%d"), grp_sample_id['run'].unique()))), format_spike_seqdate)
                     worksheet.set_column(offset_cols+6+len(ACTION_PROGRAMS), offset_cols+6+len(ACTION_PROGRAMS), 16)
 
                 row += 1
