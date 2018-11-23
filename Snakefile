@@ -6,7 +6,7 @@ import pandas as pd
 from scripts.parse_samplesheet import parse_samplesheet, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets
 from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header, get_demux_samples, get_projects_with_exomecoverage, get_rejoin_input, get_xenograft_hybridreference, get_xenograft_stepname, get_persamplefastq_samples, get_min_coverage
 from scripts.utils import exclude_sample
-from scripts.reports import report_undertermined_filesizes, report_exome_coverage, write_status_update, get_status_data
+from scripts.reports import report_undertermined_filesizes, report_exome_coverage, write_status_update
 from scripts.convert_platypus import annotate
 from scripts.snupy import upload_to_snupy, extractsamples
 
@@ -19,6 +19,8 @@ if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith
 
 configfile: "config.yaml"
 SAMPLESHEETS = get_global_samplesheets(os.path.join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets']))
+
+print("%i samples in %i projects." % (SAMPLESHEETS['Sample_ID'].unique().shape[0], SAMPLESHEETS['Sample_Project'].unique().shape[0]), file=sys.stderr)
 
 include: "rules/demultiplex/Snakefile"
 include: "rules/backup/Snakefile"
@@ -70,7 +72,7 @@ rule status:
     output:
         "status_update.xlsx"
     run:
-        write_status_update(output[0], get_status_data(SAMPLESHEETS, config, prefix='/media/hhu/gpfs/project/jansses/'), config)
+        write_status_update(output[0], SAMPLESHEETS, config, prefix=config['dirs']['prefix'])
 
 # onerror:
 #     print("An error occurred")

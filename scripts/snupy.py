@@ -60,7 +60,7 @@ def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type
     runs = samplesheets[(samplesheets['Sample_Project'] == project) &
                         ((samplesheets['spike_entity_id'] == entity) | (samplesheets['Sample_ID'] == entity)) &
                         ((samplesheets['Sample_ID'] == sample_name) | (_type != 'background'))]['run'].unique()
-    name += '+'.join(runs)
+    name += '+'.join(sorted(runs))
     name += '_' + project
     name += '/' + sample_name
 
@@ -227,7 +227,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
         'SampleExtractionSheet.csv',
         open(fp, 'rb'), 'application/txt', {'Expires': '0'})}
     r = requests.post('https://snupy-aqua.bio.inf.h-brs.de/samples.json',
-                      auth=HTTPBasicAuth('janssen', 'enge9UQu'),
+                      auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
                       verify=False,
                       files=files,
                      )
