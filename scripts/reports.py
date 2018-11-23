@@ -10,6 +10,9 @@ import xlsxwriter
 import matplotlib.pyplot as plt
 from scripts.parse_samplesheet import get_min_coverage
 import json
+import datetime
+import getpass
+import socket
 import requests
 from requests.auth import HTTPBasicAuth
 import urllib3
@@ -318,6 +321,17 @@ def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0
         ('tumornormal', 'Mutect'),
         ('trio', 'Varscan\ndenovo')]
 
+    # date information
+    format_info = workbook.add_format({
+        'valign': 'vcenter',
+        'align': 'center',
+        'font_size': 9})
+    cellrange = '%s%i:%s%i' % (chr(65+offset_cols), offset_rows+1, chr(65+offset_cols+3), offset_rows+1)
+    info_username = getpass.getuser()
+    info_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    info_machine = socket.gethostname()
+    worksheet.merge_range(cellrange, ('status report created\nat %s\nby %s\non %s' % (info_now, info_username, info_machine)),format_info)
+
     # header
     format_header = workbook.add_format({
         'rotation': 90,
@@ -327,6 +341,13 @@ def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0
     worksheet.set_row(offset_rows, 80)
     for i, caption in enumerate(['yield (MB)', 'coverage'] + list(map(lambda x: x[-1], actionsprograms))):
         worksheet.write(offset_rows, offset_cols+4+i, caption, format_header)
+    format_spike_seqdate = workbook.add_format({
+        'align': 'center',
+        'valign': 'vcenter',
+        'font_size': 8})
+    worksheet.write(offset_rows, offset_cols+6+len(actionsprograms), 'sequenced at', format_spike_seqdate)
+
+    worksheet.freeze_panes(offset_rows+1, offset_cols+4)
 
     # body
     format_project = workbook.add_format({
@@ -337,62 +358,121 @@ def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0
     format_spike_entity_id = workbook.add_format({
         'valign': 'vcenter',
         'align': 'center'})
+    format_spike_sampleID = workbook.add_format({
+        'valign': 'vcenter',
+        'align': 'center'})
+    format_spike_entity_role_missing = workbook.add_format({
+        'valign': 'vcenter',
+        'align': 'center',
+        'font_color': '#ff0000'})
     row = offset_rows+1
     for sample_project, grp_project in samplesheets.groupby('Sample_Project'):
         cellrange = '%s%i:%s%i' % (chr(65+offset_cols), row+1, chr(65+offset_cols), row+len(grp_project.groupby(['spike_entity_id', 'Sample_ID'])))
         worksheet.merge_range(cellrange, sample_project.replace('_', '\n'), format_project)
         worksheet.set_column(offset_cols, offset_cols, 4)
 
-        for spike_entity_group, grp_spike_entity_group in grp_project.fillna(value={'spike_entity_id': 'NONE'}).groupby('spike_entity_id'):
-            #worksheet.write(row, offset_cols+1, spike_entity_group)
+        # add in lines to indicate missing samples, e.g. for trios that are incomplete
+        missing_samples = []
+        if (sample_project in config['projects']) and ('actions' in config['projects'][sample_project]):
+            if 'trio' in config['projects'][sample_project]['actions']:
+                for spike_entity_id, grp_spike_entity_group in grp_project.groupby('spike_entity_id'):
+                    for role in ['patient', 'mother', 'father']:
+                        if grp_spike_entity_group[grp_spike_entity_group['spike_entity_role'] == role].shape[0] <= 0:
+                            missing_samples.append({
+                                'spike_entity_id': spike_entity_id,
+                                'Sample_ID': role,
+                                'spike_entity_role': role,
+                                'missing': True,
+                            })
+
+        # groupby excludes NaNs, thus I have to hack: replace NaN by "" here and
+        # reset to np.nan within the loop
+        for spike_entity_group, grp_spike_entity_group in pd.concat([grp_project, pd.DataFrame(missing_samples)], sort=False).fillna(value={'spike_entity_id': ''}).groupby('spike_entity_id'):
             cellrange = '%s%i:%s%i' % (chr(65+offset_cols+1), row+1, chr(65+offset_cols+1), row+len(grp_spike_entity_group.groupby('Sample_ID')))
-            if (spike_entity_group != "NONE") and (len(set(cellrange.split(':'))) > 1):
-                worksheet.merge_range(cellrange, spike_entity_group, format_spike_entity_id)
-            else:
-                worksheet.set_column(offset_cols+1, offset_cols+1, 12)
-
-            for sample_id, grp_sample_id in grp_spike_entity_group.sort_values(by='spike_entity_role').groupby('Sample_ID'):
-                if spike_entity_group != "NONE":
-                    worksheet.write(row, offset_cols+2, sample_id, format_spike_entity_id)
+            if spike_entity_group != "":
+                if len(set(cellrange.split(':'))) > 1:
+                    worksheet.merge_range(cellrange, spike_entity_group, format_spike_entity_id)
                 else:
-                    cellrange = '%s%i:%s%i' % (chr(65+offset_cols+1), row+1, chr(65+offset_cols+2), row+1)
-                    worksheet.merge_range(cellrange, sample_id, format_spike_entity_id)
-                worksheet.set_column(offset_cols+2, offset_cols+2, 12)
+                    worksheet.write(cellrange.split(':')[0], spike_entity_group, format_spike_entity_id)
+            else:
+                spike_entity_group = np.nan
+            worksheet.set_column(offset_cols+1, offset_cols+1, 8)
 
-                worksheet.write(row, offset_cols+3, str(grp_sample_id['spike_entity_role'].fillna('').iloc[0]), format_spike_entity_id)
+            for nr_sample_id, (sample_id, grp_sample_id) in enumerate(grp_spike_entity_group.sort_values(by='spike_entity_role').groupby('Sample_ID')):
+                worksheet.set_column(offset_cols+2, offset_cols+2, 4)
+                role = grp_sample_id['spike_entity_role'].iloc[0]
+                is_missing = ('missing' in grp_sample_id.columns) and (grp_sample_id[grp_sample_id['missing'] == np.True_].shape[0] > 0)
 
-                # demultiplexing yield
-                frmt = format_bad
-                value_yield = "missing"
-                if (sample_project, sample_id) in data_yields.index:
-                    value_yield = float('%.1f' % (int(data_yields.loc[sample_project, sample_id]) / (1000**3)))
-                    if value_yield >= 5.0:
-                        frmt = format_good
-                worksheet.write(row, offset_cols+4, value_yield, frmt)
-                worksheet.set_column(offset_cols+4, offset_cols+4, 4)
+                # sample_ID, extend field if no spike_entity_group or spike_entity_role is given
+                col_start = offset_cols+2
+                col_end = offset_cols+2
+                if pd.isnull(spike_entity_group):
+                    col_start -= 1
+                if pd.isnull(role):
+                    col_end += 1
+                cellrange = '%s%i:%s%i' % (chr(65+col_start), row+1, chr(65+col_end), row+1)
+                sample_id_value = sample_id
+                # if sample_id starts with name of the entity group, we are using "..." to make it visually more pleasing
+                if pd.notnull(spike_entity_group) and sample_id_value.startswith(spike_entity_group):
+                    sample_id_value = '%s' % sample_id[len(spike_entity_group):]
+                frmt = format_spike_sampleID
+                if is_missing:
+                    sample_id_value = '?'
+                    frmt = format_spike_entity_role_missing
+                if len(set(cellrange.split(':'))) > 1:
+                    worksheet.merge_range(cellrange, sample_id_value, frmt)
+                else:
+                    worksheet.write(cellrange.split(':')[0], sample_id_value, frmt)
 
-                # coverage
-                frmt = format_bad
-                value_coverage = "missing"
-                if (sample_project, sample_id) in data_coverage.index:
-                    value_coverage = data_coverage.loc[sample_project, sample_id]
-                    if value_coverage >= get_min_coverage(sample_project, config):
-                        frmt = format_good
-                worksheet.write(row, offset_cols+5, value_coverage, frmt)
-                worksheet.set_column(offset_cols+5, offset_cols+5, 4)
+                # spike_entity_role
+                if pd.notnull(role):
+                    worksheet.write(row, offset_cols+3, str(role), frmt)
 
-                for i, (action, program) in enumerate(actionsprograms):
-                    value_numcalls = ""
-                    frmt = None
-                    if (sample_project, sample_id, action, program) in data_calls:
-                        value_numcalls = data_calls.loc[sample_project, sample_id, action, program]
-                    if (sample_project, sample_id, action, program) in data_snupy.index:
-                        if data_snupy.loc[sample_project, sample_id, action, program]['status']:
+                if is_missing:
+                    cellrange = '%s%i:%s%i' % (chr(65+offset_cols+4), row+1, chr(65+offset_cols+3+2+len(actionsprograms)), row+1)
+                    worksheet.merge_range(cellrange, "missing sample", format_spike_entity_role_missing)
+                else:
+                    # demultiplexing yield
+                    frmt = format_bad
+                    value_yield = "missing"
+                    if (sample_project, sample_id) in data_yields.index:
+                        value_yield = float('%.1f' % (int(data_yields.loc[sample_project, sample_id]) / (1000**3)))
+                        if value_yield >= 5.0:
                             frmt = format_good
-                        else:
+                    worksheet.write(row, offset_cols+4, value_yield, frmt)
+                    worksheet.set_column(offset_cols+4, offset_cols+4, 4)
+
+                    # coverage
+                    if pd.notnull(role):
+                        frmt = format_bad
+                        value_coverage = "missing"
+                        if (sample_project, sample_id) in data_coverage.index:
+                            value_coverage = data_coverage.loc[sample_project, sample_id]
+                            if value_coverage >= get_min_coverage(sample_project, config):
+                                frmt = format_good
+                        worksheet.write(row, offset_cols+5, value_coverage, frmt)
+                        worksheet.set_column(offset_cols+5, offset_cols+5, 4)
+
+                    for i, (action, program) in enumerate(actionsprograms):
+                        value_numcalls = ""
+                        frmt = None
+                        if (sample_project, sample_id, action, program) in data_calls:
+                            value_numcalls = data_calls.loc[sample_project, sample_id, action, program]
+                        if (sample_project, sample_id, action, program) in data_snupy.index:
+                            if data_snupy.loc[sample_project, sample_id, action, program]['status']:
+                                frmt = format_good
+                            else:
+                                frmt = format_bad
+                        if value_numcalls == RESULT_NOT_PRESENT:
+                            value_numcalls = 'vcf missing'
                             frmt = format_bad
-                    if frmt is not None:
-                        worksheet.write(row, offset_cols+6+i, value_numcalls, frmt)
+                        if frmt is not None:
+                            worksheet.write(row, offset_cols+6+i, value_numcalls, frmt)
+
+                    # sequencing date
+                    worksheet.write(row, offset_cols+6+len(actionsprograms), ' / '.join(map(
+                        lambda x: datetime.datetime.strptime('20%s' % x.split('_')[0], '%Y%m%d').strftime("%Y-%m-%d"), grp_sample_id['run'].unique())), format_spike_seqdate)
+                    worksheet.set_column(offset_cols+6+len(actionsprograms), offset_cols+6+len(actionsprograms), 16)
 
                 row += 1
     print("done.\n", file=sys.stderr, end="")
