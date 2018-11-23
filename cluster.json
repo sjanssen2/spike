@@ -69,9 +69,9 @@
 
     "gatk_PrintReads":
     {
-      "time" : "02:59:59",
+      "time" : "04:59:59",
       "mem" : "16GB",
-      "ppn" : "5",
+      "ppn" : "16",
     },
 
     "gatk_HaplotypeCaller":
@@ -203,14 +203,14 @@
     "gatk_VariantRecalibrator_INDEL":
     {
       "ppn" : "1",
-      "time" : "00:29:59",
+      "time" : "00:49:59",
       "mem" : "4GB",
     },
 
     "gatk_VariantRecalibrator_SNP":
     {
       "ppn" : "1",
-      "time" : "00:29:59",
+      "time" : "00:49:59",
       "mem" : "5GB",
     },
 

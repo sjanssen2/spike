@@ -14,7 +14,7 @@ rule trim:
     conda:
       "envs/spike_trim.yaml"
     threads:
-        config['num_threads']
+        16
     shell:
         "java"
         " -Xmx4g"

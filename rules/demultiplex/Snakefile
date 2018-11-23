@@ -2,7 +2,7 @@ rule check_complete:
     input:
         "{prefix}%s%s{run}/RTAComplete.txt" % (config['dirs']['inputs'], config['dirs']['rawillumina'])
     output:
-        fp_check="{prefix}%s%s-{run}-illuminarun_complete.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])
+        fp_check="{prefix}%s%s/{run}.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete'])
     log:
         "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['check_complete'])
     benchmark:
@@ -14,7 +14,7 @@ rule check_complete:
 
 rule demultiplex:
     input:
-        status="{prefix}%s%s-{run}-illuminarun_complete.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex']),
+        status="{prefix}%s%s/{run}.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete']),
         raw=directory("{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina'])),
         samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
     output:
@@ -24,7 +24,7 @@ rule demultiplex:
     benchmark:
         "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
     threads:
-        config['num_threads']
+        16
     conda:
         "envs/spike_demux.yaml"
     shell:
@@ -48,8 +48,8 @@ rule aggregate_undetermined_filesizes:
     input:
         directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex']))
     output:
-        sizes="{prefix}%sUndeterminedFilesizes/{run}.txt" % (config['dirs']['aggregation']),
-        fp_check="{prefix}%s%s-{run}-aggregate_undetermined_filesizes.txt" % (config['dirs']['checks'], config['stepnames']['demultiplex'])
+        sizes="{prefix}%s%s/{run}.undetermined_filesizes.txt" % (config['dirs']['intermediate'], config['stepnames']['aggregate_undetermined_filesizes']),
+        fp_check="{prefix}%s%s/{run}.checked.txt" % (config['dirs']['intermediate'], config['stepnames']['aggregate_undetermined_filesizes'])
     log:
         "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['aggregate_undetermined_filesizes'])
     benchmark:
@@ -63,23 +63,22 @@ rule aggregate_undetermined_filesizes:
 
 rule check_undetermined_filesizes:
     input:
-        "{prefix}%sUndeterminedFilesizes/{run}.txt" % (config['dirs']['aggregation'])
+        "{prefix}%s%s/{run}.undetermined_filesizes.txt" % (config['dirs']['intermediate'], config['stepnames']['aggregate_undetermined_filesizes'])
     output:
-        "{prefix}%s{run}/{run}.undetermined-filesizes.pdf" % (config['dirs']['reports'])
+        "{prefix}%s%s/{run}.undetermined-filesizes.pdf" % (config['dirs']['intermediate'], config['stepnames']['check_undetermined_filesizes'])
     log:
         "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['check_undetermined_filesizes'])
     benchmark:
         "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['check_undetermined_filesizes'])
     run:
-        report_undertermined_filesizes(input[0], output[0], os.path.join(wildcards.prefix, config['dirs']['reports'], wildcards.run, 'error_undetermined-filesizes.pdf'))
+        report_undertermined_filesizes(input[0], output[0], os.path.join(wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['check_undetermined_filesizes'], wildcards.run, 'error_undetermined-filesizes.pdf'))
 
 
 rule convert_illumina_report:
     input:
         directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
-        undetermined=rules.check_undetermined_filesizes.output
     output:
-        "{prefix}%s{run}/{run}.yield_report.pdf" % (config['dirs']['reports'])
+        "{prefix}%s%s/{run}.yield_report.pdf" % (config['dirs']['intermediate'], config['stepnames']['convert_illumina_report'])
     log:
         "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['convert_illumina_report'])
     benchmark:
@@ -89,10 +88,12 @@ rule convert_illumina_report:
     params:
         yield_report=lambda wildcards: "%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, wildcards.run.split('_')[-1][1:]),
         firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
+        recipient=config['emails']['demultiplexreport'].split(',')[0],
+        suggested_recipients='\n'.join(config['emails']['demultiplexreport'].split(',')[1:])
     shell:
         "wkhtmltopdf --orientation Landscape {params.yield_report} {output} 2> {log} &&"
-        "echo 'Hi there,\n\n"
+        "echo 'suggested recipients:\n{params.suggested_recipients}\n\nHi there,\n\n"
         "this is an automated message from {config[name_program]}.\n\n"
-        "Demultiplexing for the flowcell mentioned in the subject line finished. Please find attached the yield report, some statistics about the file sizes of undetermined reads and the first base report.\n\n"
-        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' {config[mail_attachment_parameter]} {output} {config[mail_attachment_parameter]} {input.undetermined} {config[mail_attachment_parameter]} {params.firstbase} {config[emails][demultiplexreport]}"
+        "Demultiplexing for flowcell {wildcards.run} finished. Please find attached the yield report and the first base report.\n\n"
+        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' {config[mail_attachment_parameter]} {output} {config[mail_attachment_parameter]} {params.firstbase} {params.recipient}"
         " 2>> {log}"
