@@ -150,6 +150,41 @@ def report_exome_coverage(
                 fp_plot))
 
 
+
+ACTION_PROGRAMS = [
+    {'action': 'background',
+     'program': 'GATK',
+     'fileending_snupy_extract': '.snp_indel.gatk',
+     'fileending_spike_calls': '.gatk.snp_indel.vcf',
+     'stepname_spike_calls': 'gatk_CombineVariants',
+    },
+    {'action': 'background',
+     'program': 'Platypus',
+     'fileending_snupy_extract': '.indel.ptp',
+     'fileending_spike_calls': '.ptp.annotated.filtered.indels.vcf',
+     'stepname_spike_calls': 'platypus_filtered',
+    },
+    {'action': 'tumornormal',
+     'program': 'Varscan',
+     'fileending_snupy_extract': '.somatic.varscan',
+     'fileending_spike_calls': '.indel_snp.vcf',
+     'stepname_spike_calls': 'merge_somatic',
+    },
+    {'action': 'tumornormal',
+     'program': 'Mutect',
+     'fileending_snupy_extract': '.somatic.mutect',
+     'fileending_spike_calls': '.all_calls.vcf',
+     'stepname_spike_calls': 'mutect',
+    },
+    {'action': 'trio',
+     'program': 'Varscan\ndenovo',
+     'fileending_snupy_extract': '.denovo.varscan',
+     'fileending_spike_calls': '.var2denovo.vcf',
+     'stepname_spike_calls': 'writing_headers',
+    },
+]
+
+
 def _get_statusdata_demultiplex(samplesheets, prefix, config):
     demux_yields = []
     for flowcell in samplesheets['run'].unique():
@@ -174,6 +209,8 @@ def _get_statusdata_demultiplex(samplesheets, prefix, config):
                         'Sample_Project': inferred_sample_project[0],
                         'Sample_ID': sample_res['SampleId'],
                         'yield': sample_res['Yield']})
+    if len(demux_yields) <= 0:
+        return pd.DataFrame()
     return pd.DataFrame(demux_yields).groupby(['Sample_Project', 'Sample_ID'])['yield'].sum()
 
 
@@ -187,6 +224,8 @@ def _get_statusdata_coverage(samplesheets, prefix, config, min_targets=80):
                 'Sample_Project': sample_project,
                 'Sample_ID': sample_id,
                 'coverage': coverage.loc[coverage['percent_cumulative'].apply(lambda x: abs(x-min_targets)).idxmin(), '#coverage']})
+    if len(coverages) <= 0:
+        return pd.DataFrame()
     return pd.DataFrame(coverages).set_index(['Sample_Project', 'Sample_ID'])['coverage']
 
 
@@ -203,11 +242,7 @@ def _get_statusdata_snupyextracted(samplesheets, prefix, config):
         samples = [sample['name'] for sample in r.json()['samples']]
 
         for sample_id, meta_sample in meta.groupby('Sample_ID'):
-            for file_ending, action, program in [('.snp_indel.gatk', 'background', 'GATK'),
-                                                 ('.indel.ptp', 'background', 'Platypus'),
-                                                 ('.denovo.varscan', 'trio', 'Varscan\ndenovo'),
-                                                 ('.somatic.varscan', 'tumornormal', 'Varscan'),
-                                                 ('.somatic.mutect', 'tumornormal', 'Mutect')]:
+            for file_ending, action, program in [(ap['fileending_snupy_extract'], ap['action'], ap['program']) for ap in ACTION_PROGRAMS]:
                 # in some cases "sample name" hold spike_entity_id, in others Sample_ID
                 entity = sample_id
                 runs = '+'.join(sorted(meta_sample['run'].unique()))
@@ -233,20 +268,15 @@ def _get_statusdata_snupyextracted(samplesheets, prefix, config):
                             'status': name in samples,
                             'snupy_sample_name': name
                         })
-
+    if len(results) <= 0:
+        return pd.DataFrame()
     return pd.DataFrame(results).set_index(['Sample_Project', 'Sample_ID', 'action', 'program'])
 
 
 def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT):
     results = []
     for (sample_project, sample_id), meta in samplesheets.groupby(['Sample_Project', 'Sample_ID']):
-        for file_ending, stepname, action, program in [
-            ('.gatk.snp_indel.vcf', 'gatk_CombineVariants', 'background', 'GATK'),
-            ('.ptp.annotated.filtered.indels.vcf', 'platypus_filtered', 'background', 'Platypus'),
-            ('.var2denovo.vcf', 'writing_headers', 'trio', 'Varscan\ndenovo'),
-            ('.indel_snp.vcf', 'merge_somatic', 'tumornormal', 'Varscan'),
-            ('.all_calls.vcf', 'mutect', 'tumornormal', 'Mutect')
-            ]:
+        for file_ending, stepname, action, program in [(ap['fileending_snupy_extract'], ap['stepname_spike_calls'], ap['action'], ap['program']) for ap in ACTION_PROGRAMS]:
             name = sample_id
             if (action == 'trio'):
                 if meta['spike_entity_role'].unique()[0] == 'patient':
@@ -271,6 +301,8 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                         'program': program,
                         'number_calls': nr_calls,
                     })
+    if len(results) <= 0:
+        return pd.DataFrame()
     return pd.DataFrame(results).set_index(['Sample_Project', 'Sample_ID', 'action', 'program'])['number_calls']
 
 
@@ -315,12 +347,6 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
 
     format_good = workbook.add_format({'bg_color': '#ccffcc'})
     format_bad = workbook.add_format({'bg_color': '#ffcccc'})
-    actionsprograms = [
-        ('background', 'GATK'),
-        ('background', 'Platypus'),
-        ('tumornormal', 'Varscan'),
-        ('tumornormal', 'Mutect'),
-        ('trio', 'Varscan\ndenovo')]
 
     # date information
     format_info = workbook.add_format({
@@ -340,13 +366,13 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
         'valign': 'vcenter',
         'align': 'center'})
     worksheet.set_row(offset_rows, 80)
-    for i, caption in enumerate(['yield (MB)', 'coverage'] + list(map(lambda x: x[-1], actionsprograms))):
+    for i, caption in enumerate(['yield (MB)', 'coverage'] + [ap['program'] for ap in ACTION_PROGRAMS]):
         worksheet.write(offset_rows, offset_cols+4+i, caption, format_header)
     format_spike_seqdate = workbook.add_format({
         'align': 'center',
         'valign': 'vcenter',
         'font_size': 8})
-    worksheet.write(offset_rows, offset_cols+6+len(actionsprograms), 'sequenced at', format_spike_seqdate)
+    worksheet.write(offset_rows, offset_cols+6+len(ACTION_PROGRAMS), 'sequenced at', format_spike_seqdate)
 
     worksheet.freeze_panes(offset_rows+1, offset_cols+4)
 
@@ -430,7 +456,7 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
                     worksheet.write(row, offset_cols+3, str(role), frmt)
 
                 if is_missing:
-                    cellrange = '%s%i:%s%i' % (chr(65+offset_cols+4), row+1, chr(65+offset_cols+3+2+len(actionsprograms)), row+1)
+                    cellrange = '%s%i:%s%i' % (chr(65+offset_cols+4), row+1, chr(65+offset_cols+3+2+len(ACTION_PROGRAMS)+1), row+1)
                     worksheet.merge_range(cellrange, "missing sample", format_spike_entity_role_missing)
                 else:
                     # demultiplexing yield
@@ -454,7 +480,7 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
                         worksheet.write(row, offset_cols+5, value_coverage, frmt)
                         worksheet.set_column(offset_cols+5, offset_cols+5, 4)
 
-                    for i, (action, program) in enumerate(actionsprograms):
+                    for i, (action, program) in enumerate([(ap['action'], ap['program']) for ap in ACTION_PROGRAMS]):
                         value_numcalls = ""
                         frmt = None
                         if (sample_project, sample_id, action, program) in data_calls:
@@ -471,9 +497,9 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
                             worksheet.write(row, offset_cols+6+i, value_numcalls, frmt)
 
                     # sequencing date
-                    worksheet.write(row, offset_cols+6+len(actionsprograms), ' / '.join(map(
+                    worksheet.write(row, offset_cols+6+len(ACTION_PROGRAMS), ' / '.join(map(
                         lambda x: datetime.datetime.strptime('20%s' % x.split('_')[0], '%Y%m%d').strftime("%Y-%m-%d"), grp_sample_id['run'].unique())), format_spike_seqdate)
-                    worksheet.set_column(offset_cols+6+len(actionsprograms), offset_cols+6+len(actionsprograms), 16)
+                    worksheet.set_column(offset_cols+6+len(ACTION_PROGRAMS), offset_cols+6+len(ACTION_PROGRAMS), 16)
 
                 row += 1
     print("done.\n", file=verbose, end="")
