@@ -10,6 +10,8 @@ import xlsxwriter
 import matplotlib.pyplot as plt
 from scripts.parse_samplesheet import get_min_coverage
 import json
+import requests
+from requests.auth import HTTPBasicAuth
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 plt.switch_backend('Agg')
@@ -188,7 +190,7 @@ def _get_statusdata_coverage(samplesheets, prefix, config, min_targets=80):
 def _get_statusdata_snupyextracted(samplesheets, prefix, config):
     results = []
     for sample_project, meta in samplesheets.groupby('Sample_Project'):
-        if (sample_project not in config['projects']) | ('snupy' not in config['projects'][sample_project]) | ('project_id' not in config['projects'][sample_project]['snupy']):
+        if (sample_project not in config['projects']) or ('snupy' not in config['projects'][sample_project]) or ('project_id' not in config['projects'][sample_project]['snupy']):
             # project in config file is not properly configure for snupy!
             continue
         r = requests.get('%s/experiments/%s.json' % (config['credentials']['snupy']['host'], config['projects'][sample_project]['snupy']['project_id']),
@@ -255,7 +257,7 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
             if exists(fp_vcf):
                 nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
 
-            if action in config['projects'][sample_project]['actions']:
+            if (sample_project in config['projects']) and (action in config['projects'][sample_project]['actions']):
                 if ((action == 'trio') and (meta['spike_entity_role'].iloc[0] in ['patient', 'sibling'])) or\
                    ((action == 'background')) or\
                    ((action == 'tumornormal') and (meta['spike_entity_role'].iloc[0].startswith('tumor'))):
@@ -293,10 +295,15 @@ def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0
     RESULT_NOT_PRESENT = -5
 
     # obtain data
+    print("1/5) gathering demuliplexing yields: ...", file=sys.stderr, end="")
     data_yields = _get_statusdata_demultiplex(samplesheets, prefix, config)
+    print(" done.\n2/5) gathering coverage: ...", file=sys.stderr, end="")
     data_coverage = _get_statusdata_coverage(samplesheets, prefix, config)
+    print(" done.\n3/5) gathering snupy extraction status: ...", file=sys.stderr, end="")
     data_snupy = _get_statusdata_snupyextracted(samplesheets, prefix, config)
+    print(" done.\n4/5) gathering number of PASSing calls: ...", file=sys.stderr, end="")
     data_calls = _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT)
+    print("done.\n5/5) generating Excel output: ...", file=sys.stderr, end="")
 
     # start creating the Excel result
     workbook = xlsxwriter.Workbook(filename)
@@ -336,17 +343,23 @@ def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0
         worksheet.merge_range(cellrange, sample_project.replace('_', '\n'), format_project)
         worksheet.set_column(offset_cols, offset_cols, 4)
 
-        for spike_entity_group, grp_spike_entity_group in grp_project.groupby('spike_entity_id'):
+        for spike_entity_group, grp_spike_entity_group in grp_project.fillna(value={'spike_entity_id': 'NONE'}).groupby('spike_entity_id'):
             #worksheet.write(row, offset_cols+1, spike_entity_group)
             cellrange = '%s%i:%s%i' % (chr(65+offset_cols+1), row+1, chr(65+offset_cols+1), row+len(grp_spike_entity_group.groupby('Sample_ID')))
-            worksheet.merge_range(cellrange, spike_entity_group, format_spike_entity_id)
-            worksheet.set_column(offset_cols+1, offset_cols+1, 12)
+            if (spike_entity_group != "NONE") and (len(set(cellrange.split(':'))) > 1):
+                worksheet.merge_range(cellrange, spike_entity_group, format_spike_entity_id)
+            else:
+                worksheet.set_column(offset_cols+1, offset_cols+1, 12)
 
             for sample_id, grp_sample_id in grp_spike_entity_group.sort_values(by='spike_entity_role').groupby('Sample_ID'):
-                worksheet.write(row, offset_cols+2, sample_id, format_spike_entity_id)
+                if spike_entity_group != "NONE":
+                    worksheet.write(row, offset_cols+2, sample_id, format_spike_entity_id)
+                else:
+                    cellrange = '%s%i:%s%i' % (chr(65+offset_cols+1), row+1, chr(65+offset_cols+2), row+1)
+                    worksheet.merge_range(cellrange, sample_id, format_spike_entity_id)
                 worksheet.set_column(offset_cols+2, offset_cols+2, 12)
 
-                worksheet.write(row, offset_cols+3, grp_sample_id['spike_entity_role'].iloc[0], format_spike_entity_id)
+                worksheet.write(row, offset_cols+3, str(grp_sample_id['spike_entity_role'].fillna('').iloc[0]), format_spike_entity_id)
 
                 # demultiplexing yield
                 frmt = format_bad
@@ -382,5 +395,5 @@ def write_status_update_v2(filename, samplesheets, config, prefix, offset_rows=0
                         worksheet.write(row, offset_cols+6+i, value_numcalls, frmt)
 
                 row += 1
-
+    print("done.\n", file=sys.stderr, end="")
     workbook.close()
