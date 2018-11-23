@@ -20,6 +20,8 @@ if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith
 configfile: "config.yaml"
 SAMPLESHEETS = get_global_samplesheets(os.path.join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets']))
 
+print("%i samples in %i projects." % (SAMPLESHEETS['Sample_ID'].unique().shape[0], SAMPLESHEETS['Sample_Project'].unique().shape[0]), file=sys.stderr)
+
 include: "rules/demultiplex/Snakefile"
 include: "rules/backup/Snakefile"
 include: "rules/rejoin_samples/Snakefile"
