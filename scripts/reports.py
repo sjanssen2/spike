@@ -9,6 +9,7 @@ from scipy import stats
 import xlsxwriter
 import matplotlib.pyplot as plt
 from scripts.parse_samplesheet import get_min_coverage
+import json
 plt.switch_backend('Agg')
 
 
@@ -141,6 +142,12 @@ def report_exome_coverage(
                 '\n\t'.join(samples_below_coverage_threshold),
                 fp_plot))
 
+def _get_yield(demux_yields, sample):
+    if demux_yields.shape[0] <= 0:
+        return 0
+    if demux_yields[demux_yields['Sample_ID'] == sample].shape[0] <= 0:
+        return 0
+    return demux_yields[demux_yields['Sample_ID'] == sample]['yield'].sum()
 
 def get_status_data(samplesheets, config, prefix=None):
     if samplesheets.shape[0] <= 0:
@@ -157,10 +164,22 @@ def get_status_data(samplesheets, config, prefix=None):
         prefix = config['dirs']['prefix']
 
     # check if flowcell has been demuxed
+    demux_yields = []
     check_flowcell_demuxed = dict()
     for run, g_run in samplesheets.groupby('run'):
-        fp_yieldreport = join(prefix, config['dirs']['reports'], run, '%s.yield_report.pdf' % run)
+        fp_yieldreport = join(prefix, config['dirs']['intermediate'], config['stepnames']['convert_illumina_report'], '%s.yield_report.pdf' % run)
         check_flowcell_demuxed[run] = exists(fp_yieldreport)
+        if check_flowcell_demuxed[run]:
+            # if run is already demultiplexed, obtain yield results
+            demux_res = json.load(open('%s%s%s/%s/Stats/Stats.json' % (prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], run), 'r'))
+            for lane_res in demux_res['ConversionResults']:
+                for sample_res in lane_res['DemuxResults']:
+                    demux_yields.append({
+                        'Lane': lane_res['LaneNumber'],
+                        'run': demux_res['RunId'],
+                        'Sample_ID': sample_res['SampleId'],
+                        'yield': sample_res['Yield']})
+    demux_yields = pd.DataFrame(demux_yields)
 
     results = []
     for project, g_project in samplesheets.groupby('Sample_Project'):
@@ -183,14 +202,20 @@ def get_status_data(samplesheets, config, prefix=None):
                             role = ""
                             if pd.notnull(g_sample['spike_entity_role'].unique()[0]):
                                 role = g_sample['spike_entity_role'].unique()[0]
-                            results.append({
-                                'project': project,
-                                'entity': entity,
-                                'sample': role,
-                                'action': action,
-                                'program': program,
-                                'status': int(status),
-                                'coverage': coverages[sample]})
+                            if role == 'sibling':
+                                role = 'sibling: %s' % sample[len(entity):]
+                            if ((action in ['trio']) and (role.split(':')[0] in ['patient', 'sibling'])) or\
+                               ((action in ['tumornormal']) and (role.split(':')[0] in ['tumor'])) or\
+                               ((action in ['background'])):
+                                results.append({
+                                    'project': project,
+                                    'entity': entity,
+                                    'sample': role,
+                                    'action': action,
+                                    'program': program,
+                                    'status': int(status),
+                                    'coverage': coverages[sample],
+                                    'yield': _get_yield(demux_yields, sample)})
                     if action == 'trio':
                         expected_roles = set(['patient', 'father', 'mother'])
                     elif action == 'tumornormal':
@@ -210,12 +235,15 @@ def get_status_data(samplesheets, config, prefix=None):
                                 'action': action,
                                 'program': program,
                                 'status': 0,
-                                'coverage': -1})
+                                'coverage': -1,
+                                'yield': _get_yield(demux_yields, role)})
 
                 for sample, g_sample in g_entity.groupby('Sample_ID'):
                     role = ""
                     if pd.notnull(g_sample['spike_entity_role'].unique()[0]):
                         role = g_sample['spike_entity_role'].unique()[0]
+                    if role == 'sibling':
+                        role = 'sibling: %s' % sample[len(entity):]
                     results.append({
                         'project': project,
                         'entity': entity,
@@ -223,7 +251,8 @@ def get_status_data(samplesheets, config, prefix=None):
                         'action': 'demultiplex',
                         'program': 'bcl2fastq',
                         'status': int(check_flowcell_demuxed[g_sample['run'].unique()[0]]),
-                        'coverage': coverages[sample]})
+                        'coverage': coverages[sample],
+                        'yield': _get_yield(demux_yields, sample)})
 
         for sample, g_sample in g_project[pd.isnull(g_project['spike_entity_id'])].groupby('Sample_ID'):
             results.append({
@@ -233,11 +262,12 @@ def get_status_data(samplesheets, config, prefix=None):
                 'action': 'demultiplex',
                 'program': 'bcl2fastq',
                 'status': int(check_flowcell_demuxed[g_sample['run'].unique()[0]]),
-                'coverage': 0})
+                'coverage': 0,
+                'yield': _get_yield(demux_yields, sample)})
     #return results
     res = pd.pivot_table(
         data=pd.DataFrame(results),
-        index=['project', 'entity', 'sample', 'coverage'],
+        index=['project', 'entity', 'sample', 'yield', 'coverage'],
         columns=['action', 'program'],
         values='status',
         fill_value=-1,
@@ -253,15 +283,40 @@ def get_status_data(samplesheets, config, prefix=None):
         ('trio', 'Varscan\ndenovo'),
     ]]
 
+
+    # if status:
+    #     if (action in ['trio']) and (role.split(':')[0] in ['patient', 'sibling']):
+    #         fp_calls = join(prefix, config['dirs']['intermediate'], config['stepnames']['writing_headers'], project, '%s.var2denovo.vcf' % sample)
+    #         with open(fp_calls, 'r') as f:
+    #             status = sum([1 for line in f.readlines() if (not line.startswith('#'))])
+
+
     return res
 
 
-def write_status_update(filename, status_table, config, offset_rows=0, offset_cols=0):
+def write_status_update(filename, status_table, config, offset_rows=0, offset_cols=0, min_yield=5.0):
+    """
+    Parameters
+    ----------
+    filename : str
+        Filepath to output Excel file.
+    status_table : pd.DataFrame
+        Result from function "get_status_data".
+    config : dict()
+        Snakemake configuration object.
+    offset_rows : int
+        Default: 0
+        Number if rows to leave blank on top.
+    offset_cols : int
+        Default: 0
+        Number if columns to leave blank on the left.
+    min_yield : float
+        Default: 5.0
+        Threshold when to color yield falling below this value in red.
+        Note: I don't know what a good default looks like :-/
+    """
     workbook = xlsxwriter.Workbook(filename)
     worksheet = workbook.add_worksheet()
-
-    offset_rows = 0
-    offset_cols = 0
 
     # column header
     format_header = workbook.add_format({
@@ -269,11 +324,13 @@ def write_status_update(filename, status_table, config, offset_rows=0, offset_co
         'bold': True,
         'valign': 'vcenter',
         'align': 'center'})
-    for col, program in enumerate(['coverage'] + list(status_table.columns.get_level_values(1))):
-        worksheet.write(offset_rows, offset_cols+col+3, program, format_header)
+    for col, program in enumerate(['yield', 'coverage'] + list(status_table.columns.get_level_values(1))):
+        worksheet.write(offset_rows, offset_cols+col+3, program.replace('yield', 'yield (GB)'), format_header)
 
     worksheet.set_column(offset_cols, offset_cols, 4)
-    worksheet.set_column(offset_cols+len(status_table.index.names)-1, offset_cols+len(status_table.index.names)+status_table.shape[1], 4)
+    # set width of entity name
+    worksheet.set_column(offset_cols+1, offset_cols+1, 12)
+    worksheet.set_column(offset_cols+len(status_table.index.names)-2, offset_cols+len(status_table.index.names)+status_table.shape[1], 4)
     worksheet.set_row(offset_rows, 80)
 
     # row header: project
@@ -317,10 +374,30 @@ def write_status_update(filename, status_table, config, offset_rows=0, offset_co
         else:
             worksheet.write(offset_rows+1+pos, offset_cols+2, role, format_spike_entity_role if status_table.index[pos][-1] != -1 else format_spike_entity_role_missing)
 
+    # yield
+    format_yield = workbook.add_format({'align': 'center'})
+    for row, yieldvalue in enumerate(status_table.index.get_level_values('yield')):
+        worksheet.write(offset_rows+1+row, offset_cols+3, float('%.1f' % (yieldvalue / (1000**3))) if yieldvalue > 0 else '?', format_yield)
+    format_yield_poor = workbook.add_format({'bg_color': '#ffcccc'})
+    format_yield_good = workbook.add_format({'bg_color': '#ccffcc'})
+    for pos, project in enumerate(status_table.index.levels[0]):
+        start = list(status_table.index.labels[0]).index(pos)
+        stop = len(status_table.index.labels[0]) - 1 - list(status_table.index.labels[0][::-1]).index(pos)
+        #cellrange = '%s%i:%s%i' % (col, start+2, col, stop+2)
+        cellrange = '%s%i:%s%i' % (chr(65+offset_cols+len(status_table.index.levels)-2), offset_rows+2+start,
+                                   chr(65+offset_cols+len(status_table.index.levels)-2), offset_rows+2+stop)
+        worksheet.conditional_format(cellrange, {'type': 'cell',
+                                                 'criteria': '>=',
+                                                 'value': 5.0,
+                                                 'format': format_yield_good})
+        worksheet.conditional_format(cellrange, {'type': 'cell',
+                                                 'criteria': '<',
+                                                 'value': 5.0,
+                                                 'format': format_yield_poor})
     # coverage
     format_coverage = workbook.add_format({'align': 'center'})
-    for row, coverage in enumerate(status_table.index.get_level_values(3)):
-        worksheet.write(offset_rows+1+row, offset_cols+3, coverage if coverage > 0 else '?', format_coverage)
+    for row, coverage in enumerate(status_table.index.get_level_values('coverage')):
+        worksheet.write(offset_rows+1+row, offset_cols+4, coverage if coverage > 0 else '?', format_coverage)
     format_coverage_poor = workbook.add_format({'bg_color': '#ffcccc'})
     format_coverage_good = workbook.add_format({'bg_color': '#ccffcc'})
     # conditional coloring based for coverage, based on project
@@ -345,26 +422,29 @@ def write_status_update(filename, status_table, config, offset_rows=0, offset_co
     for row, (idx_row, data) in enumerate(status_table.iterrows()):
         coverage = idx_row[-1]
         if coverage == -1:
-            cellrange = '%s%i:%s%i' % (chr(65+offset_cols+3), row+offset_rows+2, chr(65+offset_cols+3+status_table.shape[1]), row+offset_rows+2)
+            cellrange = '%s%i:%s%i' % (chr(65+offset_cols+4), row+offset_rows+2, chr(65+offset_cols+4+status_table.shape[1]), row+offset_rows+2)
             worksheet.merge_range(cellrange, 'missing sample', format_missing_sample)
         else:
             for col, (_, status) in enumerate(data.iteritems()):
                 if pd.isnull(status) or (status == -1):
                     value = ""
-                elif status == 1:
-                    value = "done"
+                elif status >= 1:
+                    value = status
                 elif status == 0:
                     value = "no"
-                worksheet.write(offset_rows+1+row, offset_cols+4+col, value)
+                worksheet.write(offset_rows+1+row, offset_cols+5+col, value)
     format_processing_poor = workbook.add_format({'bg_color': '#ffcccc',
-                                                  'font_color': '#ffcccc'})
+                                                  'font_color': '#ffcccc',
+                                                  'align': 'center'})
     format_processing_good = workbook.add_format({'bg_color': '#ccffcc',
-                                                  'font_color': '#ccffcc'})
+                                                  'align': 'center'
+                                                  #'font_color': '#ccffcc'
+                                                  })
     cellrange = '%s%i:%s%i' % (chr(65+len(idx_row)+offset_cols), offset_rows+2,
                                chr(65+len(idx_row)+status_table.shape[1]-1+offset_cols), status_table.shape[0]+offset_rows+2-1)
     worksheet.conditional_format(cellrange, {'type': 'cell',
-                                             'criteria': '==',
-                                             'value': '"done"',
+                                             'criteria': '>',
+                                             'value': '0',
                                              'format': format_processing_good})
     worksheet.conditional_format(cellrange, {'type': 'cell',
                                              'criteria': '==',
