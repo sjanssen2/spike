@@ -227,7 +227,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
         'SampleExtractionSheet.csv',
         open(fp, 'rb'), 'application/txt', {'Expires': '0'})}
     r = requests.post('https://snupy-aqua.bio.inf.h-brs.de/samples.json',
-                      auth=HTTPBasicAuth('janssen', 'enge9UQu'),
+                      auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
                       verify=False,
                       files=files,
                      )
