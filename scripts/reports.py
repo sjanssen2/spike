@@ -276,7 +276,7 @@ def _get_statusdata_snupyextracted(samplesheets, prefix, config):
 def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT):
     results = []
     for (sample_project, sample_id), meta in samplesheets.groupby(['Sample_Project', 'Sample_ID']):
-        for file_ending, stepname, action, program in [(ap['fileending_snupy_extract'], ap['stepname_spike_calls'], ap['action'], ap['program']) for ap in ACTION_PROGRAMS]:
+        for file_ending, stepname, action, program in [(ap['fileending_spike_calls'], ap['stepname_spike_calls'], ap['action'], ap['program']) for ap in ACTION_PROGRAMS]:
             name = sample_id
             if (action == 'trio'):
                 if meta['spike_entity_role'].unique()[0] == 'patient':
