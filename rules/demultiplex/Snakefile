@@ -12,17 +12,30 @@ rule check_complete:
             f.write("Raw Illumina data from run are complete.\n")
 
 
+rule split_demultiplex:
+    output:
+        "{prefix}%s%s/{run}/samplesheet_{part}.csv" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex'])
+    log:
+        "{prefix}%s%s/{run}_{part}.log" % (config['dirs']['logs'], config['stepnames']['split_demultiplex'])
+    benchmark:
+        "{prefix}%s%s/{run}_{part}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['split_demultiplex'])
+    threads:
+        1
+    run:
+        split_samplesheets(SAMPLESHEETS[SAMPLESHEETS['run'] == wildcards.run], config, dry=False)
+
+
 rule demultiplex:
     input:
         status="{prefix}%s%s/{run}.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete']),
+        samplesheet="{prefix}%s%s/{run}/samplesheet_{part}.csv" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex']),
         raw=directory("{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina'])),
-        samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
     output:
-        directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+        directory("{prefix}%s%s/{run}/{part}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
     log:
-        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
+        "{prefix}%s%s/{run}_{part}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
     benchmark:
-        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
+        "{prefix}%s%s/{run}_{part}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
     threads:
         16
     conda:
@@ -39,9 +52,28 @@ rule demultiplex:
         " --writing-threads {threads}"
         " 2>> {log}"
         " 1>&2"
-        # rename demux fastq files such that S\d+ are removed from filenames
-        ' && for f in `find {output}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
-        ' && cp -l -v {output}/Reports/html/*/all/all/all/laneBarcode.html {output}/laneBarcode.html 2>> {log} >&2'
+
+
+rule join_demultiplex:
+    input:
+        #samplesheets=lambda wildcards: ["%s%s%s/%s/samplesheet_part_%i.csv" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['split_demultiplex'], wildcards.run, p+1) for p in range(split_samplesheets(SAMPLESHEETS[SAMPLESHEETS['run'] == wildcards.run], config, dry=True))],
+        demux_dirs=lambda wildcards: ["%s%s%s/%s/part_%i" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, p+1) for p in range(split_samplesheets(SAMPLESHEETS[SAMPLESHEETS['run'] == wildcards.run], config, dry=True))],
+    output:
+        directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['join_demultiplex']))
+    log:
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['join_demultiplex'])
+    benchmark:
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['join_demultiplex'])
+    threads:
+        1
+    run:
+        for i in input.samplesheets:
+            print("Hallo Welt", i)
+        # # rename demux fastq files such that S\d+ are removed from filenames
+        # ' && for f in `find {output}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
+        # ' && cp -l -v {output}/Reports/html/*/all/all/all/laneBarcode.html {output}/laneBarcode.html 2>> {log} >&2'
+
+
 
 
 rule aggregate_undetermined_filesizes:
