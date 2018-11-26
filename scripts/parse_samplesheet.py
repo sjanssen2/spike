@@ -355,14 +355,16 @@ def _run2date(run):
 
 def get_bwa_mem_header(sample, samplesheets, config):
     samples = samplesheets[samplesheets['fastq-prefix'] == sample]
-    res = ' -R "@RG\\tID:%s\\tCN:Department_of_Pediatric_Oncology_Dusseldorf\\tPU:%s\\tDT:%s\\tPL:ILLUMINA\\tLB:%s\\tSM:%s"' % (
-        ' and '.join(samples['run'].dropna().unique()),
-        ' and '.join(list(map(lambda x: x.split('_')[-1][1:], samples['run'].dropna().unique()))),
-        ' and '.join(list(map(_run2date, samples['run'].dropna().unique()))),
-        get_reference_exometrack(sample, samplesheets, config, returnfield='protocol_name'),
-        ' and '.join(samples['Sample_ID'].dropna().unique()),
-        )
-    return res
+    res = []
+    for run in sorted(samples['run'].dropna().unique()):
+        res.append(' -R "@RG\\tID:%s\\tCN:Department_of_Pediatric_Oncology_Dusseldorf\\tPU:%s\\tDT:%s\\tPL:ILLUMINA\\tLB:%s\\tSM:%s" ' % (
+            run,
+            run.split('_')[-1][1:],
+            _run2date(run),
+            get_reference_exometrack(sample, samplesheets, config, returnfield='protocol_name'),
+            samples['Sample_ID'].dropna().unique()[0],
+        ))
+    return "".join(res)
 
 
 def get_demux_samples(samplesheets, config):
