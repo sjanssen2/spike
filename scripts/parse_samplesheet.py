@@ -2,6 +2,7 @@ import yaml
 import pandas as pd
 import numpy as np
 from os.path import join
+from os import makedirs
 import glob
 import sys
 import re
@@ -247,6 +248,100 @@ def get_global_samplesheets(dir_samplesheets):
     global_samplesheet = pd.concat(global_samplesheet, sort=False)
 
     return global_samplesheet
+
+
+def write_samplesheet(fp_output, samplesheet):
+    with open(fp_output, 'w') as f:
+        # obtain number of data colums, which dictates number of "," in each line
+        data_cols = ['Lane',
+                     'Sample_ID',
+                     'Sample_Name',
+                     'Sample_Plate',
+                     'Sample_Well',
+                     'I7_Index_ID',
+                     'index']
+        if 'I5_Index_ID' in samplesheet.columns:
+            data_cols += ['I5_Index_ID',
+                          'index2']
+        data_cols += ['Sample_Project',
+                      'Description']
+
+        # header
+        f.write('[Header]\n')
+        header_cols = []
+        for col in sorted(samplesheet.columns):
+            if col.startswith('header_'):
+                if samplesheet[col].dropna().unique().shape[0] <= 0:
+                    continue
+                if samplesheet[col].dropna().unique().shape[0] > 1:
+                    raise ValueError("Conflicting header information!")
+                header_cols.append(col)
+        f.write(samplesheet[header_cols].drop_duplicates().rename(columns={col: col[len('header_'):] for col in header_cols}).T.to_csv(header=False))
+
+        # reads & settings
+        if 'header_kind_of_run' in samplesheet.columns:
+            f.write('\n')
+            pattern = re.compile("^(\d+)x(\d+)bp$")
+            match = pattern.fullmatch(samplesheet['header_kind_of_run'].dropna().unique()[0])
+            MAP_ADAPTERS = {0: 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCA',
+                            1: 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCA',
+                            'miseq': 'CTGTCTCTTATACACATCT'}
+            if match is not None:
+                f.write('[Reads]\n')
+                for r in range(int(match.group(1))):
+                    f.write('%s\n' % match.group(2))
+                f.write('\n')
+                f.write('[Settings]\n')
+                f.write('ReverseComplement,0\n')
+                for r in range(int(match.group(1))):
+                    if r > 0:
+                        f.write('AdapterRead%i' % (r+1))
+                    else:
+                        f.write('Adapter')
+                    f.write(',%s\n' % MAP_ADAPTERS['miseq' if '_000000000-' in samplesheet['run'].dropna().unique()[0] else r])
+            f.write('\n')
+
+        # data
+        f.write('[Data]')
+        f.write('\n')
+        f.write(samplesheet[data_cols].sort_values('Lane').fillna('').to_csv(index=False, float_format='%i'))
+
+
+def split_samplesheets(samples, config, dry=False):
+    """Creates (multiple) samplesheets for bcl2fastq according to barcode length.
+
+    Parameters
+    ----------
+    samples : pd.DataFrame
+        Sample metadata from parsing global samplesheets.
+    config : dict
+        Snakemakes config objects
+    dry : Bool
+        Default: False
+        If True, only return filepaths without creating any dirs or files.
+
+    Returns
+    -------
+        List of created samplesheet filepaths.
+    """
+    if len(samples['run'].unique()) != 1:
+        raise ValueError('Not all samples belong to one unique run.')
+
+    results = []
+    ss_split = samples.copy()
+    ss_split['barcode_len'] = ss_split['index'].dropna().apply(len)
+    for i, (barcode_len, ss_barcode) in enumerate(ss_split.sort_values(by='barcode_len').groupby('barcode_len')):
+        fp_dir = join(config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['split_demultiplex'], ss_barcode['run'].unique()[0])
+        fp_samplesheet = join(fp_dir, 'samplesheet_part_%i.csv' % (i+1))
+        results.append(fp_dir)
+        if dry is not True:
+            makedirs(fp_dir, exist_ok=True)
+            write_samplesheet(fp_samplesheet, ss_barcode)
+
+    if dry is True:
+        return len(results)
+    else:
+        return results
 
 
 def get_role(spike_project, spike_entity_id, spike_entity_role, samplesheets):
