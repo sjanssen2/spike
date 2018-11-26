@@ -8,7 +8,32 @@ import re
 
 
 def parse_samplesheet(fp_samplesheet):
-    ss = pd.read_csv(fp_samplesheet, sep=",", skiprows=21, dtype={'Sample_Name': str, 'Sample_ID': str, 'spike_entity_id': str})
+    #print(fp_samplesheet.split('/')[-1])
+    # in a first iteration, open the file, read line by line and determine start
+    # of sample information by looking for a line starting with "[Data]".
+    # the following lines will be sample information, about lines are header infos.
+    row_sampleinformation = None
+    row_reads = None
+    with open(fp_samplesheet, "r") as f:
+        for linenumber, line in enumerate(f.readlines()):
+            if line.startswith("[Data]"):
+                row_sampleinformation = linenumber+1
+            elif line.startswith("[Reads]"):
+                row_reads = linenumber+1
+    if row_sampleinformation is None:
+        raise ValueError("Could not find [Data] line in file '%s'." % fp_samplesheet)
+    if row_reads is None:
+        raise ValueError("Could not find [Reads] line in file '%s'." % fp_samplesheet)
+
+    header = pd.read_csv(fp_samplesheet, sep=",", nrows=row_reads-2).dropna(axis=1, how="all").dropna(axis=0, how="all")
+    header = header.set_index(header.columns[0])
+    header.index = list(map(lambda x: 'header_%s' % x, header.index))
+    header.dropna(axis=0, how="any", inplace=True)
+    header = header.T.reset_index()
+    del header['index']
+
+    # a xxx iteration parses sample information via pandas
+    ss = pd.read_csv(fp_samplesheet, sep=",", skiprows=row_sampleinformation, dtype={'Sample_Name': str, 'Sample_ID': str, 'spike_entity_id': str})
 
     # bcl2fasta automatically changes - into _ char in output filenames
     idx_rawilluminainput = ss[pd.notnull(ss['Lane'])].index
@@ -42,6 +67,12 @@ def parse_samplesheet(fp_samplesheet):
 
     # remove samples that are marked to be ignored
     ss = ss[pd.isnull(ss['spike_ignore_sample'])]
+
+    # merge with header information
+    if not all([c not in ss.columns for c in header.columns]):
+        raise ValueError("Header name conflicts with sample column in '%s'." % fp_samplesheet)
+    for c in header.columns:
+        ss[c] = header[c].iloc[0]
 
     return ss
 
