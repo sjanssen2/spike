@@ -329,8 +329,11 @@ def split_samplesheets(samples, config, dry=False):
 
     results = []
     ss_split = samples.copy()
-    ss_split['barcode_len'] = ss_split['index'].dropna().apply(len)
-    for i, (grp, ss_barcode) in enumerate(ss_split.sort_values(by=['barcode_len', 'Lane']).groupby(['barcode_len', 'Lane'])):
+    ss_split['barcode_len'] = ss_split['index'].fillna("").apply(len)
+    split_by = ['barcode_len']
+    if ss_split['index'].dropna().shape[0] > 1:
+        split_by.append('Lane')
+    for i, (grp, ss_barcode) in enumerate(ss_split.sort_values(by=['barcode_len', 'Lane']).groupby(split_by)):
         fp_dir = join(config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['split_demultiplex'], ss_barcode['run'].unique()[0])
         fp_samplesheet = join(fp_dir, 'samplesheet_part_%i.csv' % (i+1))
         results.append(fp_dir)
