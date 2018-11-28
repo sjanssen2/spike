@@ -544,7 +544,7 @@ def collect_yield_data(dir_flowcell):
         cluster_meta.append(clusters)
 
         meta_samples = pd.read_csv(join(dir_part, 'Stats/AdapterTrimming.txt'), sep="\t", usecols=[0,2,3,4])
-        meta_samples = meta_samples.iloc[:meta_samples[meta_samples['Sample Name'] == 'Undetermined'].index.max(),:].drop_duplicates()
+        meta_samples = meta_samples.iloc[:meta_samples[meta_samples['Lane'].apply(lambda x: x.startswith('Lane:'))].index.max()-2,:].drop_duplicates()
         meta_samples.set_index(['Lane', 'Sample Id'], inplace=True)
 
         fp_json = join(dir_part, 'Stats/Stats.json')
@@ -563,14 +563,14 @@ def collect_yield_data(dir_flowcell):
                     'Barcode length': len(res_demux['IndexMetrics'][0]['IndexSequence']),
                     'PF Clusters': res_demux['NumberReads'],
                     '% of the lane': res_demux['NumberReads'] / res_conv['TotalClustersPF'],
-                    '% Perfect barcode': sum([res_idx['MismatchCounts']['0'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'],
-                    '% One mismatch barcode': sum([res_idx['MismatchCounts']['1'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'],
+                    '% Perfect barcode': sum([res_idx['MismatchCounts']['0'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0,
+                    '% One mismatch barcode': sum([res_idx['MismatchCounts']['1'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0,
                     'Yield': res_demux['Yield'],
-                    '% PF Clusters': clusters.loc[str(res_conv['LaneNumber']), int(sample_number)+1]['NumberOfReadsPF'] / clusters.loc[str(res_conv['LaneNumber']), int(sample_number)+1]['NumberOfReadsRaw'],
-                    '% >= Q30 bases': q30bases / res_demux['Yield'],
+                    '% PF Clusters': clusters.loc[str(res_conv['LaneNumber']), int(sample_number)+1]['NumberOfReadsPF'] / clusters.loc[str(res_conv['LaneNumber']), int(sample_number)+1]['NumberOfReadsRaw'] if clusters.loc[str(res_conv['LaneNumber']), int(sample_number)+1]['NumberOfReadsRaw'] > 0 else 0,
+                    '% >= Q30 bases': q30bases / res_demux['Yield'] if res_demux['Yield'] > 0 else 0,
                     'Q30 bases': q30bases,
                     'QualityScoreSum': qualityScore,
-                    'Mean Quality Score': sum([res_metrics['QualityScoreSum'] for res_metrics in res_demux['ReadMetrics']]) / res_demux['Yield'],
+                    'Mean Quality Score': sum([res_metrics['QualityScoreSum'] for res_metrics in res_demux['ReadMetrics']]) / res_demux['Yield'] if res_demux['Yield'] > 0 else 0,
                     'Sample_Number': int(sample_number),
                 })
                 numq30bases += q30bases
@@ -695,7 +695,7 @@ def create_html_yield_report(dir_flowcell, fp_yield_report):
     lanes = []
     for lane, lane_barcodes in top_unknown_barcodes.groupby('Lane'):
         x = lane_barcodes.sort_values('Count', ascending=False).iloc[:topX][['Lane', 'Count', 'Barcode sequence']].rename(columns={'Barcode sequence': 'Sequence'})#.reset_index().set_index(['Lane', 'Count'])
-        x.index = range(1,topX+1)
+        x.index = range(1,topX+1)[:x.shape[0]]
         x['Count'] = x['Count'].apply(lambda x: '{:,}'.format(x))
         lanes.append(x)
     topunknown = pd.concat(lanes, axis=1)
