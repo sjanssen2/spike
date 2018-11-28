@@ -71,6 +71,9 @@ def parse_samplesheet(fp_samplesheet):
     if 'spike_ignore_sample' in ss.columns:
         ss = ss[pd.isnull(ss['spike_ignore_sample'])]
 
+    if 'spike_notes' not in ss.columns:
+        ss['spike_notes'] = None
+
     # merge with header information
     if not all([c not in ss.columns for c in header.columns]):
         raise ValueError("Header name conflicts with sample column in '%s'." % fp_samplesheet)
