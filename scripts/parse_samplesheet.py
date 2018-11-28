@@ -26,8 +26,8 @@ def parse_samplesheet(fp_samplesheet):
     if row_reads is None:
         raise ValueError("Could not find [Reads] line in file '%s'." % fp_samplesheet)
 
-    header = pd.read_csv(fp_samplesheet, sep=",", nrows=row_reads-2).dropna(axis=1, how="all").dropna(axis=0, how="all")
-    header = header.set_index(header.columns[0])
+    header = pd.read_csv(fp_samplesheet, sep=",", nrows=row_reads-2, index_col=0).dropna(axis=1, how="all").dropna(axis=0, how="all")
+    #header = header.set_index(header.columns[0])
     header.index = list(map(lambda x: 'header_%s' % x, header.index))
     header.dropna(axis=0, how="any", inplace=True)
     header = header.T.reset_index()
@@ -68,7 +68,8 @@ def parse_samplesheet(fp_samplesheet):
     ss['fastq-prefix'] = fp_fastqs
 
     # remove samples that are marked to be ignored
-    ss = ss[pd.isnull(ss['spike_ignore_sample'])]
+    if 'spike_ignore_sample' in ss.columns:
+        ss = ss[pd.isnull(ss['spike_ignore_sample'])]
 
     # merge with header information
     if not all([c not in ss.columns for c in header.columns]):
@@ -264,7 +265,8 @@ def write_samplesheet(fp_output, samplesheet):
             data_cols += ['I5_Index_ID',
                           'index2']
         data_cols += ['Sample_Project',
-                      'Description']
+                      'Description',
+                      'spike_notes']
 
         # header
         f.write('[Header]\n')
@@ -330,7 +332,8 @@ def split_samplesheets(samples, config, dry=False):
     results = []
     ss_split = samples.copy()
     ss_split['barcode_len'] = ss_split['index'].dropna().apply(len)
-    for i, (grp, ss_barcode) in enumerate(ss_split.sort_values(by=['barcode_len', 'Lane']).groupby(['barcode_len', 'Lane'])):
+    ss_split['collision'] = ss_split['spike_notes'] == 'colliding barcode'
+    for i, (grp, ss_barcode) in enumerate(ss_split.sort_values(by=['barcode_len', 'Lane', 'collision']).groupby(['barcode_len', 'Lane', 'collision'])):
         fp_dir = join(config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['split_demultiplex'], ss_barcode['run'].unique()[0])
         fp_samplesheet = join(fp_dir, 'samplesheet_part_%i.csv' % (i+1))
         results.append(fp_dir)
@@ -647,6 +650,7 @@ def get_xenograft_stepname(sample, samplesheets, config):
         return config['stepnames']['xenograft_bwa_sampe']
     else:
         return config['stepnames']['trim']
+
 
 def get_min_coverage(project, config):
     if project in config['projects']:
