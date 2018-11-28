@@ -544,7 +544,7 @@ def collect_yield_data(dir_flowcell):
         cluster_meta.append(clusters)
 
         meta_samples = pd.read_csv(join(dir_part, 'Stats/AdapterTrimming.txt'), sep="\t", usecols=[0,2,3,4])
-        meta_samples = meta_samples.iloc[:meta_samples[meta_samples['Sample Name'] == 'Undetermined'].index.max(),:].drop_duplicates()
+        meta_samples = meta_samples.iloc[:meta_samples[meta_samples['Lane'].apply(lambda x: x.startswith('Lane:'))].index.max()-2,:].drop_duplicates()
         meta_samples.set_index(['Lane', 'Sample Id'], inplace=True)
 
         fp_json = join(dir_part, 'Stats/Stats.json')
@@ -695,7 +695,7 @@ def create_html_yield_report(dir_flowcell, fp_yield_report):
     lanes = []
     for lane, lane_barcodes in top_unknown_barcodes.groupby('Lane'):
         x = lane_barcodes.sort_values('Count', ascending=False).iloc[:topX][['Lane', 'Count', 'Barcode sequence']].rename(columns={'Barcode sequence': 'Sequence'})#.reset_index().set_index(['Lane', 'Count'])
-        x.index = range(1,topX+1)
+        x.index = range(1,topX+1)[:x.shape[0]]
         x['Count'] = x['Count'].apply(lambda x: '{:,}'.format(x))
         lanes.append(x)
     topunknown = pd.concat(lanes, axis=1)
