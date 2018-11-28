@@ -73,8 +73,7 @@ rule join_demultiplex:
     shell:
         "mkdir -p {output} -v 2> {log} 1>&2"
         " && for inp in `echo \"{input}\"`; do "
-        # copy stats from split demux dirs over to here
-        "    cp -v -r $inp/Stats {output}/Stats_`basename $inp`/ 2>> {log} 1>&2;"
+        #"    cp -v $inp/Stats/Stats.json {output}/Stats_`basename $inp`.json 2>> {log} 1>&2;"
         "    for d in `find $inp -maxdepth 1 -mindepth 1 -type d ! -path '*Stats' ! -path '*Reports'`; do"
         "        cp -l -r -v $d {output} 2>> {log} 1>&2;"
         "    done;"
