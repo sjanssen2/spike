@@ -504,3 +504,218 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
                 row += 1
     print("done.\n", file=verbose, end="")
     workbook.close()
+
+
+def collect_yield_data(dir_flowcell):
+    """Composes yield report for (potentially) split demulitplexing.
+
+    Notes
+    -----
+    People used different length barcodes in the same lane / flowcell.
+    This should in general be avoided, due to potential clashes of barcodes.
+    Therefore Illumina's bcl2fastq fails to process sample sheets formatted
+    like this. I overcome this issue by splitting the samplesheet and running
+    bcl2fast multiple times independently. However, this requires complicated
+    logic especially for stats for the undetermined reads.
+
+    Parameters
+    ----------
+    dir_flowcell : str
+        Filepath to demultiplexing results in split fashion.
+
+    Returns
+    -------
+    3-tuple of pd.DataFrame : (Flowcell Summary, Lane Summary, Top Unknown Barcodes)
+    Formatting is required before data will resemble Illumina's original yield report.
+    """
+    lane_summary = []
+    lane_meta = []
+    cluster_meta = []
+    unknown_barcodes = []
+    for dir_part in glob(join(dir_flowcell, 'part_*')):
+        clusters = []
+        for fp_fastqsummary in glob(join(dir_part, 'Stats/FastqSummaryF*L*.txt')):
+            cluster = pd.read_csv(fp_fastqsummary, sep="\t")
+            perc_pf_clusters = pd.concat([cluster.groupby(['SampleNumber'])['NumberOfReadsPF'].sum(),
+                                          cluster.groupby(['SampleNumber'])['NumberOfReadsRaw'].sum()], axis=1)
+            perc_pf_clusters['Lane'] = fp_fastqsummary.split('/')[-1].split('.')[0].split('L')[-1]
+            clusters.append(perc_pf_clusters)
+        clusters = pd.concat(clusters).reset_index().set_index(['Lane', 'SampleNumber'])
+        cluster_meta.append(clusters)
+
+        meta_samples = pd.read_csv(join(dir_part, 'Stats/AdapterTrimming.txt'), sep="\t", usecols=[0,2,3,4])
+        meta_samples = meta_samples.iloc[:meta_samples[meta_samples['Sample Name'] == 'Undetermined'].index.max(),:].drop_duplicates()
+        meta_samples.set_index(['Lane', 'Sample Id'], inplace=True)
+
+        fp_json = join(dir_part, 'Stats/Stats.json')
+        part_stats = json.load(open(fp_json, 'r'))
+        for res_conv in part_stats['ConversionResults']:
+            numq30bases = 0
+            sumQualityScore = 0
+            for sample_number, res_demux in enumerate(res_conv['DemuxResults']):
+                q30bases = sum([res_metrics['YieldQ30'] for res_metrics in res_demux['ReadMetrics']])
+                qualityScore = sum([res_metrics['QualityScoreSum'] for res_metrics in res_demux['ReadMetrics']])
+                lane_summary.append({
+                    'Lane': res_conv['LaneNumber'],
+                    'Project': meta_samples.loc[str(res_conv['LaneNumber']), res_demux['SampleId']]['Project'],
+                    'Sample': res_demux['SampleId'],
+                    'Barcode sequence': res_demux['IndexMetrics'][0]['IndexSequence'],
+                    'Barcode length': len(res_demux['IndexMetrics'][0]['IndexSequence']),
+                    'PF Clusters': res_demux['NumberReads'],
+                    '% of the lane': res_demux['NumberReads'] / res_conv['TotalClustersPF'],
+                    '% Perfect barcode': sum([res_idx['MismatchCounts']['0'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'],
+                    '% One mismatch barcode': sum([res_idx['MismatchCounts']['1'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'],
+                    'Yield': res_demux['Yield'],
+                    '% PF Clusters': clusters.loc[str(res_conv['LaneNumber']), int(sample_number)+1]['NumberOfReadsPF'] / clusters.loc[str(res_conv['LaneNumber']), int(sample_number)+1]['NumberOfReadsRaw'],
+                    '% >= Q30 bases': q30bases / res_demux['Yield'],
+                    'Q30 bases': q30bases,
+                    'QualityScoreSum': qualityScore,
+                    'Mean Quality Score': sum([res_metrics['QualityScoreSum'] for res_metrics in res_demux['ReadMetrics']]) / res_demux['Yield'],
+                    'Sample_Number': int(sample_number),
+                })
+                numq30bases += q30bases
+                sumQualityScore += qualityScore
+            numq30bases += sum([res_metrics['YieldQ30'] for res_metrics in res_conv['Undetermined']['ReadMetrics']])
+            sumQualityScore += sum([res_metrics['QualityScoreSum'] for res_metrics in res_conv['Undetermined']['ReadMetrics']])
+
+            lane_meta.append({
+                'Lane': res_conv['LaneNumber'],
+                "TotalClustersRaw" : res_conv['TotalClustersRaw'],
+                "TotalClustersPF" : res_conv['TotalClustersPF'],
+                "Yield": res_conv['Yield'],
+                "YieldQ30": numq30bases,
+                "QualityScoreSum": sumQualityScore,
+                "Flowcell": part_stats['Flowcell'],
+            })
+        for res_unknown in part_stats['UnknownBarcodes']:
+            for barcode in res_unknown['Barcodes'].keys():
+                unknown_barcodes.append({
+                    'Lane': res_unknown['Lane'],
+                    'Barcode sequence': barcode,
+                    'Count': res_unknown['Barcodes'][barcode],
+                    'Barcode length': len(barcode)})
+
+    lane_meta = pd.DataFrame(lane_meta).drop_duplicates().set_index('Lane')
+    lane_summary = pd.DataFrame(lane_summary)
+    cluster_meta = pd.concat(cluster_meta)
+
+    undetermined = []
+    for lane, clst_lane in lane_summary.groupby('Lane'):
+        undetermined.append({
+            'Lane': lane,
+            'Project': 'default',
+            'Sample': 'Undetermined',
+            'Barcode sequence': 'unknown',
+            'PF Clusters': lane_meta.loc[lane, 'TotalClustersPF'] - clst_lane['PF Clusters'].sum(),
+            '% of the lane': (lane_meta.loc[lane, 'TotalClustersPF'] - clst_lane['PF Clusters'].sum()) / lane_meta.loc[lane, 'TotalClustersPF'],
+            '% Perfect barcode': 1,
+            '% One mismatch barcode': np.nan,
+            'Yield': lane_meta.loc[lane, 'Yield'] - clst_lane['Yield'].sum(),
+            '% PF Clusters': (lane_meta.loc[lane, 'TotalClustersPF'] - cluster_meta.loc[str(lane), range(1, cluster_meta.index.get_level_values('SampleNumber').max()), :]['NumberOfReadsPF'].sum()) / (lane_meta.loc[lane, 'TotalClustersRaw'] - cluster_meta.loc[str(lane), range(1, cluster_meta.index.get_level_values('SampleNumber').max()), :]['NumberOfReadsRaw'].sum()),
+            '% >= Q30 bases': (lane_meta.loc[lane, 'YieldQ30'] - lane_summary[lane_summary['Lane'] == lane]['Q30 bases'].sum()) / (lane_meta.loc[lane, 'Yield'] - lane_summary[lane_summary['Lane'] == lane]['Yield'].sum()),
+            'Mean Quality Score': (lane_meta.loc[lane, 'QualityScoreSum'] - lane_summary[lane_summary['Lane'] == lane]['QualityScoreSum'].sum()) / (lane_meta.loc[lane, 'Yield'] - lane_summary[lane_summary['Lane'] == lane]['Yield'].sum()),
+        })
+
+    lane_summary = pd.concat([lane_summary, pd.DataFrame(undetermined)], sort=False)
+
+    # traverse unknown barcodes and filter those that are actually used by samples
+    # this is non-trivial, because due to splitting, used barcodes might have different sizes!
+    unknown_barcodes = pd.DataFrame(unknown_barcodes)
+    idx_remove = []
+    for lane in unknown_barcodes['Lane'].astype(int).unique():
+        lane_known_bcs = lane_summary[(lane_summary['Lane'] == lane) & (lane_summary['Barcode sequence'] != 'unknown')][['Barcode sequence', 'Barcode length']]
+        lane_unknown_bcs = unknown_barcodes[unknown_barcodes['Lane'] == lane]
+        remove = set()
+        for len_known, known in lane_known_bcs.groupby('Barcode length'):
+            for len_unknown, unknown in lane_unknown_bcs.groupby('Barcode length'):
+                if len_known == len_unknown:
+                    remove |= set(unknown['Barcode sequence']) & set(known['Barcode sequence'])
+                elif len_known < len_unknown:
+                    for _, bc_unknown in unknown['Barcode sequence'].iteritems():
+                        if bc_unknown[:int(len_known)] in set(known['Barcode sequence']):
+                            remove |= set([bc_unknown])
+                elif len_known > len_unknown:
+                    remove |= set(unknown['Barcode sequence']) & set(known['Barcode sequence'].apply(lambda x: x[:int(len_unknown)]))
+        idx_remove.extend(lane_unknown_bcs[lane_unknown_bcs['Barcode sequence'].isin(remove)].index)
+    top_unknown_barcodes = unknown_barcodes.loc[set(unknown_barcodes.index) - set(idx_remove),:]
+
+    return lane_meta, lane_summary, top_unknown_barcodes
+
+
+def create_html_yield_report(dir_flowcell, fp_yield_report):
+    """Creates a HTML yield report.
+
+    Parameters
+    ----------
+    dir_flowcell : str
+        Filepath to demultiplexing results in split fashion.
+    fp_yield_report : str
+        Filepath to resulting HTML file.
+    """
+    lane_meta, lane_summary, top_unknown_barcodes = collect_yield_data(dir_flowcell)
+
+    out = '<html>\n<head>\n'
+    #out += '<link rel="stylesheet" href="Report.css" type="text/css">\n'
+    out += '<style>\n'
+    out += 'body {font-size: 100%; font-family:monospace;}\n'
+    out += 'table#ReportTable {border-width: 1px 1px 1px 1px; border-collapse: collapse;}\n'
+    out += 'table#ReportTable td {text-align:right; padding: 0.3em;}\n'
+    out += 'thead { display: table-header-group }\n'
+    out += 'tfoot { display: table-row-group }\n'
+    out += 'tr { page-break-inside: avoid }\n'
+    out += '</style>\n'
+    out += '</head>\n<body>'
+    out += "%s / [all projects] / [all samples] / [all barcodes]" % lane_meta['Flowcell'].unique()[0]
+
+
+    out += "<h2>Flowcell Summary</h2>"
+    fc_summary = lane_meta.sum()[['TotalClustersRaw', 'TotalClustersPF', 'Yield']].to_frame().T
+    fc_summary.rename(columns={'TotalClustersRaw': 'Clusters (Raw)',
+                               'TotalClustersPF': 'Clusters(PF)',
+                               'Yield': 'Yield (MBases)'}, inplace=True)
+    for col in ['Clusters (Raw)', 'Clusters(PF)']:
+        fc_summary[col] = fc_summary[col].apply(lambda x: '{:,}'.format(x))
+    fc_summary['Yield (MBases)'] = fc_summary['Yield (MBases)'].apply(lambda x: '{:,}'.format(int(x/1000000)))
+    out += fc_summary.to_html(index=False, table_id='ReportTable', justify='center')
+
+
+    out += "<h2>Lane Summary</h2>"
+    x = lane_summary.sort_values(['Lane', 'Sample_Number'])[['Lane', 'Project', 'Sample', 'Barcode sequence', 'PF Clusters', '% of the lane', '% Perfect barcode', '% One mismatch barcode', 'Yield', '% PF Clusters', '% >= Q30 bases', 'Mean Quality Score']].rename(columns={'Yield': 'Yield (Mbases)'})
+    x['PF Clusters'] = x['PF Clusters'].apply(lambda x: '{:,}'.format(x))
+    for col in ['% of the lane', '% Perfect barcode', '% PF Clusters', '% >= Q30 bases', '% One mismatch barcode']:
+        x[col] = x[col].apply(lambda x: '%.2f' % (x*100))
+    x['Yield (Mbases)'] = x['Yield (Mbases)'].apply(lambda x: '{:,}'.format(int(x/1000000)))
+    x['Mean Quality Score'] = x['Mean Quality Score'].apply(lambda x: '%.2f' % x)
+    x['% One mismatch barcode'] = x['% One mismatch barcode'].replace('nan', 'NaN')
+    out += x.to_html(index=False, table_id='ReportTable', justify='center')
+
+
+    out += "<h2>Top Unknown Barcodes</h2>"
+    topX = 10
+    lanes = []
+    for lane, lane_barcodes in top_unknown_barcodes.groupby('Lane'):
+        x = lane_barcodes.sort_values('Count', ascending=False).iloc[:topX][['Lane', 'Count', 'Barcode sequence']].rename(columns={'Barcode sequence': 'Sequence'})#.reset_index().set_index(['Lane', 'Count'])
+        x.index = range(1,topX+1)
+        x['Count'] = x['Count'].apply(lambda x: '{:,}'.format(x))
+        lanes.append(x)
+    topunknown = pd.concat(lanes, axis=1)
+    out += '<table border="1" class="dataframe" id="ReportTable">\n<thead>\n<tr style="text-align: center;">\n'
+    for col in topunknown.columns:
+        out += '<th>%s</th>\n' % col
+    out += '</tr>\n</thead>\n<tbody>\n'
+    for i, row in topunknown.iterrows():
+        out += '<tr>\n'
+        for col, value in row.iteritems():
+            if col == 'Lane':
+                if i == 1:
+                    out += '<th rowspan=%s>%s</th>\n' % (topX, value)
+            else:
+                out += '<td>%s</td>\n' % value
+        out += '</tr>\n'
+    out += '</tbody>\n</table>\n'
+
+
+    out += "</body>\n</html>"
+
+    with open(fp_yield_report, 'w') as f:
+        f.write(out)
