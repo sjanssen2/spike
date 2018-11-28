@@ -55,3 +55,4 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 8,210C,,,,D02,GAGTTAGC,Maus_Hauer,,210,healthy,
 8,211C,,,,F02,GATAGACA,Maus_Hauer,,211,healthy,
 8,211T,,,,G02,AAGGACAC,Maus_Hauer,,211,tumor,
+8,Lis_T_39,,,,A015,ATGTCA,AG_Remke,,,,
