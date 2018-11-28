@@ -49,6 +49,7 @@ def parse_samplesheet(fp_samplesheet):
         if sample_id not in uidx:
             uidx[sample_id] = len(uidx) + 1
     ss['s-idx'] = ss['Sample_ID'].apply(lambda x: uidx[x])
+    ss['run'] = fp_samplesheet.split('/')[-1].replace('_spike.csv', '')
 
     # TODO: ensure that sample names do not clash when not considering s-idx!
 
@@ -241,7 +242,6 @@ def get_global_samplesheets(dir_samplesheets):
     global_samplesheet = []
     for fp_samplesheet in fps_samplesheets:
         ss = parse_samplesheet(fp_samplesheet)
-        ss['run'] = fp_samplesheet.split('/')[-1].replace('_spike.csv', '')
         global_samplesheet.append(ss)
     if len(global_samplesheet) <= 0:
         raise ValueError("Could not find a single demultiplexing sample sheet in directory '%s'." % dir_samplesheets)
@@ -330,7 +330,7 @@ def split_samplesheets(samples, config, dry=False):
     results = []
     ss_split = samples.copy()
     ss_split['barcode_len'] = ss_split['index'].dropna().apply(len)
-    for i, (barcode_len, ss_barcode) in enumerate(ss_split.sort_values(by='barcode_len').groupby('barcode_len')):
+    for i, (grp, ss_barcode) in enumerate(ss_split.sort_values(by=['barcode_len', 'Lane']).groupby(['barcode_len', 'Lane'])):
         fp_dir = join(config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['split_demultiplex'], ss_barcode['run'].unique()[0])
         fp_samplesheet = join(fp_dir, 'samplesheet_part_%i.csv' % (i+1))
         results.append(fp_dir)
@@ -622,9 +622,9 @@ def get_rejoin_input(prefix, sample, direction, samplesheets, config, _type='fil
             res.append('%s%s%s%s/%s_%s.fastq.gz' % (prefix, config['dirs']['inputs'], config['dirs']['persamplefastq'], row['run'], row['fastq-prefix'], direction))
         else:
             if _type == 'files':
-                res.append('%s%s%s/%s/%s_L%03i_%s_001.fastq.gz' % (prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], row['run'], row['fastq-prefix'], row['Lane'], direction))
+                res.append('%s%s%s/%s/%s_L%03i_%s_001.fastq.gz' % (prefix, config['dirs']['intermediate'], config['stepnames']['join_demultiplex'], row['run'], row['fastq-prefix'], row['Lane'], direction))
             elif _type == 'dirs':
-                res.append('%s%s%s/%s' % (prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], row['run']))
+                res.append('%s%s%s/%s' % (prefix, config['dirs']['intermediate'], config['stepnames']['join_demultiplex'], row['run']))
             else:
                 raise ValueError('get_rejoin_input: Unknown function type')
     res = sorted(list(set(res)))
