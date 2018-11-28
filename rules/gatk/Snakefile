@@ -107,7 +107,7 @@ rule gatk_BaseRecalibrator:
         " -R {input.references[0]}"
         "{params.knowns_settings}"
         " -o {output}"
-        " 2>> {log}"
+        " 2>> {log} 1>&2"
 
         # %.reAl.nodup.srt.bam.recal_data.csv: %.reAl.nodup.srt.bam
         # 	@echo "$(DATE) ######### Alignment: Count covariates. First step of base quality score recalibration for '$<' #########"
