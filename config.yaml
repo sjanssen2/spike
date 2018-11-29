@@ -40,7 +40,10 @@ stepnames:
   backup_transfer: "015_backup_transfer"
   backup_validate: "020_backup_validate"
 
+  split_demultiplex: "024_split_demultiplex"
   demultiplex: "025_demultiplex"
+  join_demultiplex: "026_join_demultiplex"
+  yield_report: "027_yield_report"
   convert_illumina_report: "030_convert_illumina_report"
   rejoin_samples: "035_rejoin_samples"
   trim: "040_trim"

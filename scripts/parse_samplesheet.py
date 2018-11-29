@@ -2,6 +2,7 @@ import yaml
 import pandas as pd
 import numpy as np
 from os.path import join
+from os import makedirs
 import glob
 import sys
 import re
@@ -25,8 +26,8 @@ def parse_samplesheet(fp_samplesheet):
     if row_reads is None:
         raise ValueError("Could not find [Reads] line in file '%s'." % fp_samplesheet)
 
-    header = pd.read_csv(fp_samplesheet, sep=",", nrows=row_reads-2).dropna(axis=1, how="all").dropna(axis=0, how="all")
-    header = header.set_index(header.columns[0])
+    header = pd.read_csv(fp_samplesheet, sep=",", nrows=row_reads-2, index_col=0).dropna(axis=1, how="all").dropna(axis=0, how="all")
+    #header = header.set_index(header.columns[0])
     header.index = list(map(lambda x: 'header_%s' % x, header.index))
     header.dropna(axis=0, how="any", inplace=True)
     header = header.T.reset_index()
@@ -48,6 +49,7 @@ def parse_samplesheet(fp_samplesheet):
         if sample_id not in uidx:
             uidx[sample_id] = len(uidx) + 1
     ss['s-idx'] = ss['Sample_ID'].apply(lambda x: uidx[x])
+    ss['run'] = fp_samplesheet.split('/')[-1].replace('_spike.csv', '')
 
     # TODO: ensure that sample names do not clash when not considering s-idx!
 
@@ -66,7 +68,11 @@ def parse_samplesheet(fp_samplesheet):
     ss['fastq-prefix'] = fp_fastqs
 
     # remove samples that are marked to be ignored
-    ss = ss[pd.isnull(ss['spike_ignore_sample'])]
+    if 'spike_ignore_sample' in ss.columns:
+        ss = ss[pd.isnull(ss['spike_ignore_sample'])]
+
+    if 'spike_notes' not in ss.columns:
+        ss['spike_notes'] = None
 
     # merge with header information
     if not all([c not in ss.columns for c in header.columns]):
@@ -240,13 +246,110 @@ def get_global_samplesheets(dir_samplesheets):
     global_samplesheet = []
     for fp_samplesheet in fps_samplesheets:
         ss = parse_samplesheet(fp_samplesheet)
-        ss['run'] = fp_samplesheet.split('/')[-1].replace('_spike.csv', '')
         global_samplesheet.append(ss)
     if len(global_samplesheet) <= 0:
         raise ValueError("Could not find a single demultiplexing sample sheet in directory '%s'." % dir_samplesheets)
     global_samplesheet = pd.concat(global_samplesheet, sort=False)
 
     return global_samplesheet
+
+
+def write_samplesheet(fp_output, samplesheet):
+    with open(fp_output, 'w') as f:
+        # obtain number of data colums, which dictates number of "," in each line
+        data_cols = ['Lane',
+                     'Sample_ID',
+                     'Sample_Name',
+                     'Sample_Plate',
+                     'Sample_Well',
+                     'I7_Index_ID',
+                     'index']
+        if 'I5_Index_ID' in samplesheet.columns:
+            data_cols += ['I5_Index_ID',
+                          'index2']
+        data_cols += ['Sample_Project',
+                      'Description',
+                      'spike_notes']
+
+        # header
+        f.write('[Header]\n')
+        header_cols = []
+        for col in sorted(samplesheet.columns):
+            if col.startswith('header_'):
+                if samplesheet[col].dropna().unique().shape[0] <= 0:
+                    continue
+                if samplesheet[col].dropna().unique().shape[0] > 1:
+                    raise ValueError("Conflicting header information!")
+                header_cols.append(col)
+        f.write(samplesheet[header_cols].drop_duplicates().rename(columns={col: col[len('header_'):] for col in header_cols}).T.to_csv(header=False))
+
+        # reads & settings
+        if 'header_kind_of_run' in samplesheet.columns:
+            f.write('\n')
+            pattern = re.compile("^(\d+)x(\d+)bp$")
+            match = pattern.fullmatch(samplesheet['header_kind_of_run'].dropna().unique()[0])
+            MAP_ADAPTERS = {0: 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCA',
+                            1: 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCA',
+                            'miseq': 'CTGTCTCTTATACACATCT'}
+            if match is not None:
+                f.write('[Reads]\n')
+                for r in range(int(match.group(1))):
+                    f.write('%s\n' % match.group(2))
+                f.write('\n')
+                f.write('[Settings]\n')
+                f.write('ReverseComplement,0\n')
+                for r in range(int(match.group(1))):
+                    if r > 0:
+                        f.write('AdapterRead%i' % (r+1))
+                    else:
+                        f.write('Adapter')
+                    f.write(',%s\n' % MAP_ADAPTERS['miseq' if '_000000000-' in samplesheet['run'].dropna().unique()[0] else r])
+            f.write('\n')
+
+        # data
+        f.write('[Data]')
+        f.write('\n')
+        f.write(samplesheet[data_cols].sort_values('Lane').fillna('').to_csv(index=False, float_format='%i'))
+
+
+def split_samplesheets(samples, config, dry=False):
+    """Creates (multiple) samplesheets for bcl2fastq according to barcode length.
+
+    Parameters
+    ----------
+    samples : pd.DataFrame
+        Sample metadata from parsing global samplesheets.
+    config : dict
+        Snakemakes config objects
+    dry : Bool
+        Default: False
+        If True, only return filepaths without creating any dirs or files.
+
+    Returns
+    -------
+        List of created samplesheet filepaths.
+    """
+    if len(samples['run'].unique()) != 1:
+        raise ValueError('Not all samples belong to one unique run.')
+
+    results = []
+    ss_split = samples.copy()
+    ss_split['barcode_len'] = ss_split['index'].fillna("").apply(len)
+    split_by = ['barcode_len']
+    if ss_split['index'].dropna().shape[0] > 1:
+        split_by.append('Lane')
+    for i, (grp, ss_barcode) in enumerate(ss_split.sort_values(by=['barcode_len', 'Lane']).groupby(split_by)):
+        fp_dir = join(config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['split_demultiplex'], ss_barcode['run'].unique()[0])
+        fp_samplesheet = join(fp_dir, 'samplesheet_part_%i.csv' % (i+1))
+        results.append(fp_dir)
+        if dry is not True:
+            makedirs(fp_dir, exist_ok=True)
+            write_samplesheet(fp_samplesheet, ss_barcode)
+
+    if dry is True:
+        return len(results)
+    else:
+        return results
 
 
 def get_role(spike_project, spike_entity_id, spike_entity_role, samplesheets):
@@ -397,12 +500,12 @@ def get_bwa_mem_header(sample, samplesheets, config):
 
 
 def get_demux_samples(samplesheets, config):
-    # get projects that require snv vs. reference analysis
-    background_projects = [prj_name for prj_name in config['projects'] if 'demultiplex' in config['projects'][prj_name]['actions']]
+    # get projects defined in config, i.e. do nothing to projects NOT properly defined even if occuring in demux samplesheet!
+    defined_projects = [prj_name for prj_name in config['projects']]
 
     # filter samples to those belonging to tumor vs. normal projects
-    background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
-
+    background_samples = samplesheets[samplesheets['Sample_Project'].isin(defined_projects)]
+    
     return list(background_samples['run'].unique())
 
 
@@ -527,9 +630,9 @@ def get_rejoin_input(prefix, sample, direction, samplesheets, config, _type='fil
             res.append('%s%s%s%s/%s_%s.fastq.gz' % (prefix, config['dirs']['inputs'], config['dirs']['persamplefastq'], row['run'], row['fastq-prefix'], direction))
         else:
             if _type == 'files':
-                res.append('%s%s%s/%s/%s_L%03i_%s_001.fastq.gz' % (prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], row['run'], row['fastq-prefix'], row['Lane'], direction))
+                res.append('%s%s%s/%s/%s_L%03i_%s_001.fastq.gz' % (prefix, config['dirs']['intermediate'], config['stepnames']['join_demultiplex'], row['run'], row['fastq-prefix'], row['Lane'], direction))
             elif _type == 'dirs':
-                res.append('%s%s%s/%s' % (prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], row['run']))
+                res.append('%s%s%s/%s' % (prefix, config['dirs']['intermediate'], config['stepnames']['join_demultiplex'], row['run']))
             else:
                 raise ValueError('get_rejoin_input: Unknown function type')
     res = sorted(list(set(res)))
@@ -552,6 +655,7 @@ def get_xenograft_stepname(sample, samplesheets, config):
         return config['stepnames']['xenograft_bwa_sampe']
     else:
         return config['stepnames']['trim']
+
 
 def get_min_coverage(project, config):
     if project in config['projects']:

@@ -12,36 +12,103 @@ rule check_complete:
             f.write("Raw Illumina data from run are complete.\n")
 
 
+rule split_demultiplex:
+    input:
+        fp_samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
+        status="{prefix}%s%s/{run}.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete']),
+    output:
+        directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex']))
+    log:
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['split_demultiplex'])
+    benchmark:
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['split_demultiplex'])
+    threads:
+        1
+    run:
+        split_samplesheets(parse_samplesheet(input.fp_samplesheet), config, dry=False)
+
+
 rule demultiplex:
     input:
-        status="{prefix}%s%s/{run}.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete']),
+        dir_samplesheets=directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex'])),
         raw=directory("{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina'])),
-        samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
     output:
-        directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+        directory("{prefix}%s%s/{run}/{part}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
     log:
-        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
+        "{prefix}%s%s/{run}_{part}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
     benchmark:
-        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
+        "{prefix}%s%s/{run}_{part}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
     threads:
-        16
+        8
     conda:
         "envs/spike_demux.yaml"
+    params:
+        samplesheet="{prefix}%s%s/{run}/samplesheet_{part}.csv" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex']),
     shell:
-        "uname -a > {log} 2>&1 &&"
-        "bcl2fastq"
+        # A little bit of magic is necessary to deal with colliding barcodes.
+        # During sample sheet splitting, separat sheets are generated for samples that are marked in column "spike_notes" with "colliding barcode".
+        # If lines in the [Data] table are found holding the value "colliding barcode", bcl2fastq is executed with --barcode-mismatches 0
+        'rowdata=`grep "^\[Data\]$" -n {params.samplesheet} | cut -d ":" -f 1`'
+        ' && num_colliding=`tail -n+$rowdata {params.samplesheet} | grep "colliding barcode" -c; true`'
+        " && bcl2fastq"
         " --runfolder-dir {input.raw}/"
         " --output-dir {output}/"
         " --ignore-missing-bcls"
-        " --sample-sheet {input.samplesheet}"
+        " --sample-sheet {params.samplesheet}"
         " --loading-threads {threads}"
         " --processing-threads {threads}"
         " --writing-threads {threads}"
+        ' `if [ "$num_colliding" -ge 1 ]; then echo " --barcode-mismatches 0 "; fi`'
         " 2>> {log}"
         " 1>&2"
+
+
+rule join_demultiplex:
+    input:
+        demux_dirs=lambda wildcards: [directory("%s%s%s/%s/part_%i" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, p+1)) for p in range(split_samplesheets(parse_samplesheet("%s%s%s%s_spike.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run)), config, dry=True))],
+    output:
+        directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['join_demultiplex']))
+    log:
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['join_demultiplex'])
+    benchmark:
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['join_demultiplex'])
+    threads:
+        1
+    shell:
+        "mkdir -p {output} -v 2> {log} 1>&2"
+        " && for inp in `echo \"{input}\"`; do "
+        #"    cp -v $inp/Stats/Stats.json {output}/Stats_`basename $inp`.json 2>> {log} 1>&2;"
+        "    for d in `find $inp -maxdepth 1 -mindepth 1 -type d ! -path '*Stats' ! -path '*Reports'`; do"
+        "        cp -l -r -v $d {output} 2>> {log} 1>&2;"
+        "    done;"
+        " done"
         # rename demux fastq files such that S\d+ are removed from filenames
-        ' && for f in `find {output}/ -name "*.fastq.gz"`; do fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} >&2; done'
-        ' && cp -l -v {output}/Reports/html/*/all/all/all/laneBarcode.html {output}/laneBarcode.html 2>> {log} >&2'
+        ' && for f in `find {output}/ -name "*.fastq.gz"`; do '
+        '    fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} 1>&2; '
+        ' done'
+
+
+rule yield_report:
+    input:
+        demux_dirs=lambda wildcards: [directory("%s%s%s/%s/part_%i" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, p+1)) for p in range(split_samplesheets(parse_samplesheet("%s%s%s%s_spike.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run)), config, dry=True))],
+    output:
+        report="{prefix}%s%s/Reports/{run}.yield_report.html" % (config['dirs']['intermediate'], config['stepnames']['yield_report']),
+        yielddata="{prefix}%s%s/Data/{run}.yield_data.csv" % (config['dirs']['intermediate'], config['stepnames']['yield_report']),
+    log:
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['yield_report'])
+    benchmark:
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['yield_report'])
+    threads:
+        1
+    run:
+        dir_demux = "%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run)
+        # collect necessary data
+        lane_meta, lane_summary, top_unknown_barcodes = collect_yield_data(dir_demux)
+        # create yield report as HTML file
+        create_html_yield_report(output.report, lane_meta, lane_summary, top_unknown_barcodes, config)
+        # create a file containing yields for status_update reporting
+        yield_data = lane_summary[['Lane', 'Project', 'Sample', 'Yield', 'Barcode sequence']]
+        yield_data[yield_data['Sample'] != 'Undetermined'].to_csv(output.yielddata, sep="\t", index=False)
 
 
 rule aggregate_undetermined_filesizes:
@@ -76,7 +143,8 @@ rule check_undetermined_filesizes:
 
 rule convert_illumina_report:
     input:
-        directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+        yield_report="{prefix}%s%s/Reports/{run}.yield_report.html" % (config['dirs']['intermediate'], config['stepnames']['yield_report']),
+        firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
     output:
         "{prefix}%s%s/{run}.yield_report.pdf" % (config['dirs']['intermediate'], config['stepnames']['convert_illumina_report'])
     log:
@@ -86,14 +154,12 @@ rule convert_illumina_report:
     conda:
         "envs/spike_report.yaml"
     params:
-        yield_report=lambda wildcards: "%s%s%s/%s/Reports/html/%s/all/all/all/laneBarcode.html" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, wildcards.run.split('_')[-1][1:]),
-        firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
         recipient=config['emails']['demultiplexreport'].split(',')[0],
         suggested_recipients='\n'.join(config['emails']['demultiplexreport'].split(',')[1:])
     shell:
-        "wkhtmltopdf --orientation Landscape {params.yield_report} {output} 2> {log} &&"
+        "wkhtmltopdf --orientation Landscape {input.yield_report} {output} 2> {log} &&"
         "echo 'suggested recipients:\n{params.suggested_recipients}\n\nHi there,\n\n"
         "this is an automated message from {config[name_program]}.\n\n"
         "Demultiplexing for flowcell {wildcards.run} finished. Please find attached the yield report and the first base report.\n\n"
-        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' {config[mail_attachment_parameter]} {output} {config[mail_attachment_parameter]} {params.firstbase} {params.recipient}"
+        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' {config[mail_attachment_parameter]} {output} {config[mail_attachment_parameter]} {input.firstbase} {params.recipient}"
         " 2>> {log}"

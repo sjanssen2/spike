@@ -66,3 +66,5 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 8,KB0041_c,,,,A01,ATGCCTAA,Keimbahn,,KB0041,patient,
 8,KB0041_m,,,,B01,GAATCTGA,Keimbahn,,KB0041,mother,
 8,KB0041_f,,,,C01,AACGTGAT,Keimbahn,,KB0041,father,
+1,22EBV,,,,Index_1,CGTGAT,Amplicon_Cyril,,,,
+2,22a,,,,Index_1,CGTGAT,Amplicon_Cyril,,,,

@@ -3,10 +3,10 @@ import socket
 import glob
 import pandas as pd
 
-from scripts.parse_samplesheet import parse_samplesheet, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets
+from scripts.parse_samplesheet import parse_samplesheet, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets, split_samplesheets
 from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header, get_demux_samples, get_projects_with_exomecoverage, get_rejoin_input, get_xenograft_hybridreference, get_xenograft_stepname, get_persamplefastq_samples, get_min_coverage
 from scripts.utils import exclude_sample
-from scripts.reports import report_undertermined_filesizes, report_exome_coverage, write_status_update
+from scripts.reports import report_undertermined_filesizes, report_exome_coverage, write_status_update, create_html_yield_report, collect_yield_data
 from scripts.convert_platypus import annotate
 from scripts.snupy import upload_to_snupy, extractsamples
 
@@ -37,23 +37,19 @@ include: "rules/snupy/Snakefile"
 include: "rules/excavator/Snakefile"
 
 
-localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, correct_genotypes_somatic, varscan_fpfilter_somatic, somatic_FPfilter, vcf_annotate, merge_somatic_mus_musculus, merge_somatic_homo_sapiens, writing_headers, merge_vcfs, varscan_filter_INDEL, varscan_processSomatic
+localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, correct_genotypes_somatic, varscan_fpfilter_somatic, somatic_FPfilter, vcf_annotate, merge_somatic_mus_musculus, merge_somatic_homo_sapiens, writing_headers, merge_vcfs, varscan_filter_INDEL, varscan_processSomatic, split_demultiplex, yield_report
 
 rule all:
     input:
-        # create a yield report per run as one of the checkpoints for the wetlab crew
-        # don't create yield report for per sample fastq projects!
-        yield_report=["%s%s%s/%s.yield_report.pdf" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['convert_illumina_report'], run)
-                      for run in set(SAMPLESHEETS[pd.notnull(SAMPLESHEETS['Lane'])]['run'].unique())],
-
         # create backup for each run
         # don't backup per sample fastq runs
         # backup=["%s%s%s.%s.done" % (config['dirs']['prefix'], config['dirs']['checks'], run, config['stepnames']['backup_validate'])
         #         for run in set(SAMPLESHEETS['run'].unique()) - set(get_persamplefastq_samples(SAMPLESHEETS, config))],
-
-        # demultiplex all samples for projects that ONLY need to demultiplex, e.g. AG_Remke
-        demux=['%s%s%s/%s' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], run)
-               for run in get_demux_samples(SAMPLESHEETS, config)],
+        #
+        # demultiplex all samples for projects that ONLY need to demultiplex, e.g. AG_Remke and create yield reports
+        demux=[res for run in get_demux_samples(SAMPLESHEETS, config) for res in [
+               '%s%s%s/%s' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['join_demultiplex'], run),
+               '%s%s%s/%s.yield_report.pdf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['convert_illumina_report'], run)]],
 
         # compute exome coverage for exome samples
         exome_coverage=["%s%s%s/%s/%s.exome_coverage.csv" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['exome_coverage'], project, sample)
