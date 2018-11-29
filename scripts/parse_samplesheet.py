@@ -500,12 +500,12 @@ def get_bwa_mem_header(sample, samplesheets, config):
 
 
 def get_demux_samples(samplesheets, config):
-    # get projects that require snv vs. reference analysis
-    background_projects = [prj_name for prj_name in config['projects'] if 'demultiplex' in config['projects'][prj_name]['actions']]
+    # get projects defined in config, i.e. do nothing to projects NOT properly defined even if occuring in demux samplesheet!
+    defined_projects = [prj_name for prj_name in config['projects']]
 
     # filter samples to those belonging to tumor vs. normal projects
-    background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
-
+    background_samples = samplesheets[samplesheets['Sample_Project'].isin(defined_projects)]
+    
     return list(background_samples['run'].unique())
 
 
