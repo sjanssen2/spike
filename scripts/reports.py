@@ -544,16 +544,12 @@ def collect_yield_data(dir_flowcell):
                 if res_demux['SampleId'] not in sample_numbers:
                     sample_numbers[res_demux['SampleId']] = len(sample_numbers)+1
                 sample_number = sample_numbers[res_demux['SampleId']]
-                lane_summary.append({
+                sample_result = {
                     'Lane': res_conv['LaneNumber'],
                     'Project': meta_samples.loc[str(res_conv['LaneNumber']), res_demux['SampleId']]['Project'],
                     'Sample': res_demux['SampleId'],
-                    'Barcode sequence': res_demux['IndexMetrics'][0]['IndexSequence'],
-                    'Barcode length': len(res_demux['IndexMetrics'][0]['IndexSequence']),
                     'PF Clusters': res_demux['NumberReads'],
                     '% of the lane': res_demux['NumberReads'] / res_conv['TotalClustersPF'],
-                    '% Perfect barcode': sum([res_idx['MismatchCounts']['0'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0,
-                    '% One mismatch barcode': sum([res_idx['MismatchCounts']['1'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0,
                     'Yield': res_demux['Yield'],
                     '% PF Clusters': clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsPF'] / clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsRaw'] if clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsRaw'] > 0 else 0,
                     '% >= Q30 bases': q30bases / res_demux['Yield'] if res_demux['Yield'] > 0 else 0,
@@ -561,11 +557,22 @@ def collect_yield_data(dir_flowcell):
                     'QualityScoreSum': qualityScore,
                     'Mean Quality Score': sum([res_metrics['QualityScoreSum'] for res_metrics in res_demux['ReadMetrics']]) / res_demux['Yield'] if res_demux['Yield'] > 0 else 0,
                     'Sample_Number': sample_number,
-                })
+                    # default values
+                    'Barcode sequence': 'unknown',
+                    '% Perfect barcode': 1,
+                    '% One mismatch barcode': np.nan,
+                }
+                if 'IndexMetrics' in res_demux:
+                    sample_result['Barcode sequence'] = res_demux['IndexMetrics'][0]['IndexSequence'],
+                    sample_result['Barcode length'] = len(res_demux['IndexMetrics'][0]['IndexSequence']),
+                    sample_result['% Perfect barcode'] = sum([res_idx['MismatchCounts']['0'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0,
+                    sample_result['% One mismatch barcode'] = sum([res_idx['MismatchCounts']['1'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0,
+                lane_summary.append(sample_result)
                 numq30bases += q30bases
                 sumQualityScore += qualityScore
-            numq30bases += sum([res_metrics['YieldQ30'] for res_metrics in res_conv['Undetermined']['ReadMetrics']])
-            sumQualityScore += sum([res_metrics['QualityScoreSum'] for res_metrics in res_conv['Undetermined']['ReadMetrics']])
+            if 'Undetermined' in res_conv:
+                numq30bases += sum([res_metrics['YieldQ30'] for res_metrics in res_conv['Undetermined']['ReadMetrics']])
+                sumQualityScore += sum([res_metrics['QualityScoreSum'] for res_metrics in res_conv['Undetermined']['ReadMetrics']])
 
             lane_meta.append({
                 'Lane': res_conv['LaneNumber'],
@@ -578,56 +585,63 @@ def collect_yield_data(dir_flowcell):
             })
         for res_unknown in part_stats['UnknownBarcodes']:
             for barcode in res_unknown['Barcodes'].keys():
-                unknown_barcodes.append({
+                res_barcode = {
                     'Lane': res_unknown['Lane'],
-                    'Barcode sequence': barcode,
                     'Count': res_unknown['Barcodes'][barcode],
-                    'Barcode length': len(barcode)})
+                    'Barcode length': 0,
+                    'Barcode sequence': 'unknown'}
+                if 'Barcode sequence' in res_unknown:
+                    res_unknown['Barcode sequence'] = barcode
+                    res_unknown['Barcode length'] = len(barcode)
+                unknown_barcodes.append(res_barcode)
 
     lane_meta = pd.DataFrame(lane_meta).drop_duplicates().set_index('Lane')
     lane_meta['run'] = dir_flowcell.split('/')[-1]
     lane_summary = pd.DataFrame(lane_summary)
     cluster_meta = pd.concat(cluster_meta)
 
-    undetermined = []
-    for lane, clst_lane in lane_summary.groupby('Lane'):
-        undetermined.append({
-            'Lane': lane,
-            'Project': 'default',
-            'Sample': 'Undetermined',
-            'Barcode sequence': 'unknown',
-            'PF Clusters': lane_meta.loc[lane, 'TotalClustersPF'] - clst_lane['PF Clusters'].sum(),
-            '% of the lane': (lane_meta.loc[lane, 'TotalClustersPF'] - clst_lane['PF Clusters'].sum()) / lane_meta.loc[lane, 'TotalClustersPF'],
-            '% Perfect barcode': 1,
-            '% One mismatch barcode': np.nan,
-            'Yield': lane_meta.loc[lane, 'Yield'] - clst_lane['Yield'].sum(),
-            '% PF Clusters': (lane_meta.loc[lane, 'TotalClustersPF'] - cluster_meta.loc[str(lane), range(1, cluster_meta.index.get_level_values('SampleNumber').max()), :]['NumberOfReadsPF'].sum()) / (lane_meta.loc[lane, 'TotalClustersRaw'] - cluster_meta.loc[str(lane), range(1, cluster_meta.index.get_level_values('SampleNumber').max()), :]['NumberOfReadsRaw'].sum()),
-            '% >= Q30 bases': (lane_meta.loc[lane, 'YieldQ30'] - lane_summary[lane_summary['Lane'] == lane]['Q30 bases'].sum()) / (lane_meta.loc[lane, 'Yield'] - lane_summary[lane_summary['Lane'] == lane]['Yield'].sum()),
-            'Mean Quality Score': (lane_meta.loc[lane, 'QualityScoreSum'] - lane_summary[lane_summary['Lane'] == lane]['QualityScoreSum'].sum()) / (lane_meta.loc[lane, 'Yield'] - lane_summary[lane_summary['Lane'] == lane]['Yield'].sum()),
-        })
-
-    lane_summary = pd.concat([lane_summary, pd.DataFrame(undetermined)], sort=False)
+    if lane_summary['Barcode sequence'].unique() != ['unknown']:
+        undetermined = []
+        for lane, clst_lane in lane_summary.groupby('Lane'):
+            undetermined.append({
+                'Lane': lane,
+                'Project': 'default',
+                'Sample': 'Undetermined',
+                'Barcode sequence': 'unknown',
+                'PF Clusters': lane_meta.loc[lane, 'TotalClustersPF'] - clst_lane['PF Clusters'].sum(),
+                '% of the lane': (lane_meta.loc[lane, 'TotalClustersPF'] - clst_lane['PF Clusters'].sum()) / lane_meta.loc[lane, 'TotalClustersPF'],
+                '% Perfect barcode': 1,
+                '% One mismatch barcode': np.nan,
+                'Yield': lane_meta.loc[lane, 'Yield'] - clst_lane['Yield'].sum(),
+                '% PF Clusters': (lane_meta.loc[lane, 'TotalClustersPF'] - cluster_meta.loc[str(lane), range(1, cluster_meta.index.get_level_values('SampleNumber').max()), :]['NumberOfReadsPF'].sum()) / (lane_meta.loc[lane, 'TotalClustersRaw'] - cluster_meta.loc[str(lane), range(1, cluster_meta.index.get_level_values('SampleNumber').max()), :]['NumberOfReadsRaw'].sum()),
+                '% >= Q30 bases': (lane_meta.loc[lane, 'YieldQ30'] - lane_summary[lane_summary['Lane'] == lane]['Q30 bases'].sum()) / (lane_meta.loc[lane, 'Yield'] - lane_summary[lane_summary['Lane'] == lane]['Yield'].sum()),
+                'Mean Quality Score': (lane_meta.loc[lane, 'QualityScoreSum'] - lane_summary[lane_summary['Lane'] == lane]['QualityScoreSum'].sum()) / (lane_meta.loc[lane, 'Yield'] - lane_summary[lane_summary['Lane'] == lane]['Yield'].sum()),
+            })
+        lane_summary = pd.concat([lane_summary, pd.DataFrame(undetermined)], sort=False)
 
     # traverse unknown barcodes and filter those that are actually used by samples
     # this is non-trivial, because due to splitting, used barcodes might have different sizes!
     unknown_barcodes = pd.DataFrame(unknown_barcodes)
-    idx_remove = []
-    for lane in unknown_barcodes['Lane'].astype(int).unique():
-        lane_known_bcs = lane_summary[(lane_summary['Lane'] == lane) & (lane_summary['Barcode sequence'] != 'unknown')][['Barcode sequence', 'Barcode length']]
-        lane_unknown_bcs = unknown_barcodes[unknown_barcodes['Lane'] == lane]
-        remove = set()
-        for len_known, known in lane_known_bcs.groupby('Barcode length'):
-            for len_unknown, unknown in lane_unknown_bcs.groupby('Barcode length'):
-                if len_known == len_unknown:
-                    remove |= set(unknown['Barcode sequence']) & set(known['Barcode sequence'])
-                elif len_known < len_unknown:
-                    for _, bc_unknown in unknown['Barcode sequence'].iteritems():
-                        if bc_unknown[:int(len_known)] in set(known['Barcode sequence']):
-                            remove |= set([bc_unknown])
-                elif len_known > len_unknown:
-                    remove |= set(unknown['Barcode sequence']) & set(known['Barcode sequence'].apply(lambda x: x[:int(len_unknown)]))
-        idx_remove.extend(lane_unknown_bcs[lane_unknown_bcs['Barcode sequence'].isin(remove)].index)
-    top_unknown_barcodes = unknown_barcodes.loc[set(unknown_barcodes.index) - set(idx_remove),:]
+    if unknown_barcodes['Barcode sequence'].unique() != ['unknown']:
+        idx_remove = []
+        for lane in unknown_barcodes['Lane'].astype(int).unique():
+            lane_known_bcs = lane_summary[(lane_summary['Lane'] == lane) & (lane_summary['Barcode sequence'] != 'unknown')][['Barcode sequence', 'Barcode length']]
+            lane_unknown_bcs = unknown_barcodes[unknown_barcodes['Lane'] == lane]
+            remove = set()
+            for len_known, known in lane_known_bcs.groupby('Barcode length'):
+                for len_unknown, unknown in lane_unknown_bcs.groupby('Barcode length'):
+                    if len_known == len_unknown:
+                        remove |= set(unknown['Barcode sequence']) & set(known['Barcode sequence'])
+                    elif len_known < len_unknown:
+                        for _, bc_unknown in unknown['Barcode sequence'].iteritems():
+                            if bc_unknown[:int(len_known)] in set(known['Barcode sequence']):
+                                remove |= set([bc_unknown])
+                    elif len_known > len_unknown:
+                        remove |= set(unknown['Barcode sequence']) & set(known['Barcode sequence'].apply(lambda x: x[:int(len_unknown)]))
+            idx_remove.extend(lane_unknown_bcs[lane_unknown_bcs['Barcode sequence'].isin(remove)].index)
+        top_unknown_barcodes = unknown_barcodes.loc[set(unknown_barcodes.index) - set(idx_remove),:]
+    else:
+        top_unknown_barcodes = unknown_barcodes
 
     return lane_meta, lane_summary, top_unknown_barcodes
 
