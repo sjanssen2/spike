@@ -220,10 +220,11 @@ def _get_statusdata_coverage(samplesheets, prefix, config, min_targets=80):
         fp_coverage = join(prefix, config['dirs']['intermediate'], config['stepnames']['exome_coverage'], sample_project, '%s.exome_coverage.csv' % sample_id)
         if exists(fp_coverage):
             coverage = pd.read_csv(fp_coverage, sep="\t")
-            coverages.append({
-                'Sample_Project': sample_project,
-                'Sample_ID': sample_id,
-                'coverage': coverage.loc[coverage['percent_cumulative'].apply(lambda x: abs(x-min_targets)).idxmin(), '#coverage']})
+            if coverage.shape[0] > 0:
+                coverages.append({
+                    'Sample_Project': sample_project,
+                    'Sample_ID': sample_id,
+                    'coverage': coverage.loc[coverage['percent_cumulative'].apply(lambda x: abs(x-min_targets)).idxmin(), '#coverage']})
     if len(coverages) <= 0:
         return pd.DataFrame()
     return pd.DataFrame(coverages).set_index(['Sample_Project', 'Sample_ID'])['coverage']
