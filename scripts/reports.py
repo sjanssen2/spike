@@ -563,10 +563,10 @@ def collect_yield_data(dir_flowcell):
                     '% One mismatch barcode': np.nan,
                 }
                 if 'IndexMetrics' in res_demux:
-                    sample_result['Barcode sequence'] = res_demux['IndexMetrics'][0]['IndexSequence'],
-                    sample_result['Barcode length'] = len(res_demux['IndexMetrics'][0]['IndexSequence']),
-                    sample_result['% Perfect barcode'] = sum([res_idx['MismatchCounts']['0'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0,
-                    sample_result['% One mismatch barcode'] = sum([res_idx['MismatchCounts']['1'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0,
+                    sample_result['Barcode sequence'] = res_demux['IndexMetrics'][0]['IndexSequence']
+                    sample_result['Barcode length'] = len(res_demux['IndexMetrics'][0]['IndexSequence'])
+                    sample_result['% Perfect barcode'] = sum([res_idx['MismatchCounts']['0'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0
+                    sample_result['% One mismatch barcode'] = sum([res_idx['MismatchCounts']['1'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0
                 lane_summary.append(sample_result)
                 numq30bases += q30bases
                 sumQualityScore += qualityScore
@@ -600,7 +600,7 @@ def collect_yield_data(dir_flowcell):
     lane_summary = pd.DataFrame(lane_summary)
     cluster_meta = pd.concat(cluster_meta)
 
-    if lane_summary['Barcode sequence'].unique() != ['unknown']:
+    if len(set(lane_summary['Barcode sequence'].unique()) - set(['unknown'])) > 0:
         undetermined = []
         for lane, clst_lane in lane_summary.groupby('Lane'):
             undetermined.append({
@@ -622,7 +622,7 @@ def collect_yield_data(dir_flowcell):
     # traverse unknown barcodes and filter those that are actually used by samples
     # this is non-trivial, because due to splitting, used barcodes might have different sizes!
     unknown_barcodes = pd.DataFrame(unknown_barcodes)
-    if unknown_barcodes['Barcode sequence'].unique() != ['unknown']:
+    if len(set(unknown_barcodes['Barcode sequence'].unique()) - set(['unknown'])) > 0:
         idx_remove = []
         for lane in unknown_barcodes['Lane'].astype(int).unique():
             lane_known_bcs = lane_summary[(lane_summary['Lane'] == lane) & (lane_summary['Barcode sequence'] != 'unknown')][['Barcode sequence', 'Barcode length']]
