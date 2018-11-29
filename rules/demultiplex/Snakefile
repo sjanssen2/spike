@@ -61,8 +61,6 @@ rule demultiplex:
         ' `if [ "$num_colliding" -ge 1 ]; then echo " --barcode-mismatches 0 "; fi`'
         " 2>> {log}"
         " 1>&2"
-        # remove Undetermined***.fastq.gz files, as they are large and not useful after here, especially when demultiplexing in parts
-        " && rm -v `find {output} -type f -name 'Undetermined_*.fastq.gz' | xargs` 2>> {log} 1>&2"
 
 
 rule join_demultiplex:
@@ -94,7 +92,8 @@ rule yield_report:
     input:
         demux_dirs=lambda wildcards: [directory("%s%s%s/%s/part_%i" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, p+1)) for p in range(split_samplesheets(parse_samplesheet("%s%s%s%s_spike.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run)), config, dry=True))],
     output:
-        "{prefix}%s%s/{run}.yield_report.html" % (config['dirs']['intermediate'], config['stepnames']['yield_report'])
+        report="{prefix}%s%s/Reports/{run}.yield_report.html" % (config['dirs']['intermediate'], config['stepnames']['yield_report']),
+        yielddata="{prefix}%s%s/Data/{run}.yield_data.csv" % (config['dirs']['intermediate'], config['stepnames']['yield_report']),
     log:
         "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['yield_report'])
     benchmark:
@@ -102,9 +101,14 @@ rule yield_report:
     threads:
         1
     run:
-        create_html_yield_report(
-            "%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run),
-            output[0])
+        dir_demux = "%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run)
+        # collect necessary data
+        lane_meta, lane_summary, top_unknown_barcodes = collect_yield_data(dir_demux)
+        # create yield report as HTML file
+        create_html_yield_report(output.report, lane_meta, lane_summary, top_unknown_barcodes, config)
+        # create a file containing yields for status_update reporting
+        yield_data = lane_summary[['Lane', 'Project', 'Sample', 'Yield', 'Barcode sequence']]
+        yield_data[yield_data['Sample'] != 'Undetermined'].to_csv(output.yielddata, sep="\t", index=False)
 
 
 rule aggregate_undetermined_filesizes:
@@ -139,7 +143,7 @@ rule check_undetermined_filesizes:
 
 rule convert_illumina_report:
     input:
-        yield_report="{prefix}%s%s/{run}.yield_report.html" % (config['dirs']['intermediate'], config['stepnames']['yield_report']),
+        yield_report="{prefix}%s%s/Reports/{run}.yield_report.html" % (config['dirs']['intermediate'], config['stepnames']['yield_report']),
         firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
     output:
         "{prefix}%s%s/{run}.yield_report.pdf" % (config['dirs']['intermediate'], config['stepnames']['convert_illumina_report'])
