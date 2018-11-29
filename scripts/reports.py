@@ -549,12 +549,17 @@ def collect_yield_data(dir_flowcell):
 
         fp_json = join(dir_part, 'Stats/Stats.json')
         part_stats = json.load(open(fp_json, 'r'))
+        # sample numbers in FastqSummary files match S-idx numbers, which are only increased if sample is not seen before, independent on lane
+        sample_numbers = dict()
         for res_conv in part_stats['ConversionResults']:
             numq30bases = 0
             sumQualityScore = 0
-            for sample_number, res_demux in enumerate(res_conv['DemuxResults']):
+            for res_demux in res_conv['DemuxResults']:
                 q30bases = sum([res_metrics['YieldQ30'] for res_metrics in res_demux['ReadMetrics']])
                 qualityScore = sum([res_metrics['QualityScoreSum'] for res_metrics in res_demux['ReadMetrics']])
+                if res_demux['SampleId'] not in sample_numbers:
+                    sample_numbers[res_demux['SampleId']] = len(sample_numbers)+1
+                sample_number = sample_numbers[res_demux['SampleId']]
                 lane_summary.append({
                     'Lane': res_conv['LaneNumber'],
                     'Project': meta_samples.loc[str(res_conv['LaneNumber']), res_demux['SampleId']]['Project'],
@@ -566,12 +571,12 @@ def collect_yield_data(dir_flowcell):
                     '% Perfect barcode': sum([res_idx['MismatchCounts']['0'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0,
                     '% One mismatch barcode': sum([res_idx['MismatchCounts']['1'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0,
                     'Yield': res_demux['Yield'],
-                    '% PF Clusters': clusters.loc[str(res_conv['LaneNumber']), int(sample_number)+1]['NumberOfReadsPF'] / clusters.loc[str(res_conv['LaneNumber']), int(sample_number)+1]['NumberOfReadsRaw'] if clusters.loc[str(res_conv['LaneNumber']), int(sample_number)+1]['NumberOfReadsRaw'] > 0 else 0,
+                    '% PF Clusters': clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsPF'] / clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsRaw'] if clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsRaw'] > 0 else 0,
                     '% >= Q30 bases': q30bases / res_demux['Yield'] if res_demux['Yield'] > 0 else 0,
                     'Q30 bases': q30bases,
                     'QualityScoreSum': qualityScore,
                     'Mean Quality Score': sum([res_metrics['QualityScoreSum'] for res_metrics in res_demux['ReadMetrics']]) / res_demux['Yield'] if res_demux['Yield'] > 0 else 0,
-                    'Sample_Number': int(sample_number),
+                    'Sample_Number': sample_number,
                 })
                 numq30bases += q30bases
                 sumQualityScore += qualityScore
