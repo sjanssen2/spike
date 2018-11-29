@@ -688,9 +688,9 @@ def create_html_yield_report(dir_flowcell, fp_yield_report):
     x = lane_summary.sort_values(['Lane', 'Sample_Number'])[['Lane', 'Project', 'Sample', 'Barcode sequence', 'PF Clusters', '% of the lane', '% Perfect barcode', '% One mismatch barcode', 'Yield', '% PF Clusters', '% >= Q30 bases', 'Mean Quality Score']].rename(columns={'Yield': 'Yield (Mbases)'})
     x['PF Clusters'] = x['PF Clusters'].apply(lambda x: '{:,}'.format(x))
     for col in ['% of the lane', '% Perfect barcode', '% PF Clusters', '% >= Q30 bases', '% One mismatch barcode']:
-        x[col] = x[col].apply(lambda x: '%.2f' % (x*100))
+        x[col] = x[col].apply(lambda x: '' if x == 0 else '%.2f' % (x*100))
     x['Yield (Mbases)'] = x['Yield (Mbases)'].apply(lambda x: '{:,}'.format(int(x/1000000)))
-    x['Mean Quality Score'] = x['Mean Quality Score'].apply(lambda x: '%.2f' % x)
+    x['Mean Quality Score'] = x['Mean Quality Score'].apply(lambda x: '' if x == 0 else '%.2f' % x)
     x['% One mismatch barcode'] = x['% One mismatch barcode'].replace('nan', 'NaN')
     out += x.to_html(index=False, table_id='ReportTable', justify='center')
 
@@ -713,7 +713,7 @@ def create_html_yield_report(dir_flowcell, fp_yield_report):
         for col, value in row.iteritems():
             if col == 'Lane':
                 if i == 1:
-                    out += '<th rowspan=%s>%s</th>\n' % (topX, value)
+                    out += '<th rowspan=%s>%s</th>\n' % (min(topX, topunknown.shape[0]), value)
             else:
                 out += '<td>%s</td>\n' % value
         out += '</tr>\n'
