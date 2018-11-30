@@ -491,7 +491,11 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
     workbook.close()
 
 
-def collect_yield_data(dir_flowcell):
+def _divide_non_zero(numerator, denumerator):
+    if denumerator <= 0:
+        return 0
+    return numerator /  denumerator
+def collect_yield_data(dir_flowcell, verbose=None):
     """Composes yield report for (potentially) split demulitplexing.
 
     Notes
@@ -517,7 +521,12 @@ def collect_yield_data(dir_flowcell):
     lane_meta = []
     cluster_meta = []
     unknown_barcodes = []
-    for dir_part in glob(join(dir_flowcell, 'part_*')):
+    if verbose:
+        verbose.write('collect_yield_data(%s):\n' % dir_flowcell)
+    parts = glob(join(dir_flowcell, 'part_*'))
+    for num_part, dir_part in enumerate(parts):
+        if verbose:
+            verbose.write('  part %i of %i\n' % (num_part+1, len(parts)))
         clusters = []
         for fp_fastqsummary in glob(join(dir_part, 'Stats/FastqSummaryF*L*.txt')):
             cluster = pd.read_csv(fp_fastqsummary, sep="\t")
@@ -550,13 +559,13 @@ def collect_yield_data(dir_flowcell):
                     'Project': meta_samples.loc[str(res_conv['LaneNumber']), res_demux['SampleId']]['Project'],
                     'Sample': res_demux['SampleId'],
                     'PF Clusters': res_demux['NumberReads'],
-                    '% of the lane': res_demux['NumberReads'] / res_conv['TotalClustersPF'],
+                    '% of the lane': _divide_non_zero(res_demux['NumberReads'], res_conv['TotalClustersPF']),
                     'Yield': res_demux['Yield'],
-                    '% PF Clusters': clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsPF'] / clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsRaw'] if clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsRaw'] > 0 else 0,
-                    '% >= Q30 bases': q30bases / res_demux['Yield'] if res_demux['Yield'] > 0 else 0,
+                    '% PF Clusters': _divide_non_zero(clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsPF'], clusters.loc[str(res_conv['LaneNumber']), sample_number]['NumberOfReadsRaw']),
+                    '% >= Q30 bases': _divide_non_zero(q30bases, res_demux['Yield']),
                     'Q30 bases': q30bases,
                     'QualityScoreSum': qualityScore,
-                    'Mean Quality Score': sum([res_metrics['QualityScoreSum'] for res_metrics in res_demux['ReadMetrics']]) / res_demux['Yield'] if res_demux['Yield'] > 0 else 0,
+                    'Mean Quality Score': _divide_non_zero(sum([res_metrics['QualityScoreSum'] for res_metrics in res_demux['ReadMetrics']]), res_demux['Yield']),
                     'Sample_Number': sample_number,
                     # default values
                     'Barcode sequence': 'unknown',
@@ -566,8 +575,8 @@ def collect_yield_data(dir_flowcell):
                 if 'IndexMetrics' in res_demux:
                     sample_result['Barcode sequence'] = res_demux['IndexMetrics'][0]['IndexSequence']
                     sample_result['Barcode length'] = len(res_demux['IndexMetrics'][0]['IndexSequence'])
-                    sample_result['% Perfect barcode'] = sum([res_idx['MismatchCounts']['0'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0
-                    sample_result['% One mismatch barcode'] = sum([res_idx['MismatchCounts']['1'] for res_idx in res_demux['IndexMetrics']]) / res_demux['NumberReads'] if res_demux['NumberReads'] > 0 else 0
+                    sample_result['% Perfect barcode'] = _divide_non_zero(sum([res_idx['MismatchCounts']['0'] for res_idx in res_demux['IndexMetrics']]), res_demux['NumberReads'])
+                    sample_result['% One mismatch barcode'] = _divide_non_zero(sum([res_idx['MismatchCounts']['1'] for res_idx in res_demux['IndexMetrics']]), res_demux['NumberReads'])
                 lane_summary.append(sample_result)
                 numq30bases += q30bases
                 sumQualityScore += qualityScore
@@ -610,13 +619,13 @@ def collect_yield_data(dir_flowcell):
                 'Sample': 'Undetermined',
                 'Barcode sequence': 'unknown',
                 'PF Clusters': lane_meta.loc[lane, 'TotalClustersPF'] - clst_lane['PF Clusters'].sum(),
-                '% of the lane': (lane_meta.loc[lane, 'TotalClustersPF'] - clst_lane['PF Clusters'].sum()) / lane_meta.loc[lane, 'TotalClustersPF'],
+                '% of the lane': _divide_non_zero(lane_meta.loc[lane, 'TotalClustersPF'] - clst_lane['PF Clusters'].sum(), lane_meta.loc[lane, 'TotalClustersPF']),
                 '% Perfect barcode': 1,
                 '% One mismatch barcode': np.nan,
                 'Yield': lane_meta.loc[lane, 'Yield'] - clst_lane['Yield'].sum(),
-                '% PF Clusters': (lane_meta.loc[lane, 'TotalClustersPF'] - cluster_meta.loc[str(lane), range(1, cluster_meta.index.get_level_values('SampleNumber').max()), :]['NumberOfReadsPF'].sum()) / (lane_meta.loc[lane, 'TotalClustersRaw'] - cluster_meta.loc[str(lane), range(1, cluster_meta.index.get_level_values('SampleNumber').max()), :]['NumberOfReadsRaw'].sum()),
-                '% >= Q30 bases': (lane_meta.loc[lane, 'YieldQ30'] - lane_summary[lane_summary['Lane'] == lane]['Q30 bases'].sum()) / (lane_meta.loc[lane, 'Yield'] - lane_summary[lane_summary['Lane'] == lane]['Yield'].sum()),
-                'Mean Quality Score': (lane_meta.loc[lane, 'QualityScoreSum'] - lane_summary[lane_summary['Lane'] == lane]['QualityScoreSum'].sum()) / (lane_meta.loc[lane, 'Yield'] - lane_summary[lane_summary['Lane'] == lane]['Yield'].sum()),
+                '% PF Clusters': _divide_non_zero(lane_meta.loc[lane, 'TotalClustersPF'] - cluster_meta.loc[str(lane), range(1, cluster_meta.index.get_level_values('SampleNumber').max()), :]['NumberOfReadsPF'].sum(), (lane_meta.loc[lane, 'TotalClustersRaw'] - cluster_meta.loc[str(lane), range(1, cluster_meta.index.get_level_values('SampleNumber').max()), :]['NumberOfReadsRaw'].sum())),
+                '% >= Q30 bases': _divide_non_zero(lane_meta.loc[lane, 'YieldQ30'] - lane_summary[lane_summary['Lane'] == lane]['Q30 bases'].sum(), lane_meta.loc[lane, 'Yield'] - lane_summary[lane_summary['Lane'] == lane]['Yield'].sum()),
+                'Mean Quality Score': _divide_non_zero(lane_meta.loc[lane, 'QualityScoreSum'] - lane_summary[lane_summary['Lane'] == lane]['QualityScoreSum'].sum(), lane_meta.loc[lane, 'Yield'] - lane_summary[lane_summary['Lane'] == lane]['Yield'].sum()),
             })
         lane_summary = pd.concat([lane_summary, pd.DataFrame(undetermined)], sort=False)
 
