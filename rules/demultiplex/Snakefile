@@ -141,10 +141,31 @@ rule check_undetermined_filesizes:
         report_undertermined_filesizes(input[0], output[0], os.path.join(wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['check_undetermined_filesizes'], wildcards.run, 'error_undetermined-filesizes.pdf'))
 
 
+def _add_firstbasereport(wildcards, config, field='fp_firstbasereport'):
+    # MiSeq runs do not contain a first base report file.
+    # Thus, based on the run ID, we need to decide if we want to add the first
+    # base report to the email.
+    result = dict()
+
+    # by default, we assume to have a HiSeq run, which has the first base report.
+    result['fp_firstbasereport'] = "%s%s%s%s/First_Base_Report.htm" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['rawillumina'], wildcards.run)
+    result['param_attachment'] = '%s %s' % (config['mail_attachment_parameter'], result['fp_firstbasereport'])
+    result['email_text'] = ' and the first base report'
+
+    # if the run name contains a specific pattern, we infer to have a MiSeq run at hand,
+    # which does not have a first base report.
+    if '_000000000-' in wildcards.run:
+        # we need to hack snakemake here and provide a real file,
+        # in this case the yield report file which is than added "twice" as input.
+        result['fp_firstbasereport'] = [] #"%s%s%s/Reports/%s.yield_report.html" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['yield_report'], wildcards.run)
+        result['param_attachment'] = ""
+        result['email_text'] = ""
+
+    return result[field]
 rule convert_illumina_report:
     input:
         yield_report="{prefix}%s%s/Reports/{run}.yield_report.html" % (config['dirs']['intermediate'], config['stepnames']['yield_report']),
-        firstbase="{prefix}%s%s{run}/First_Base_Report.htm" % (config['dirs']['inputs'], config['dirs']['rawillumina']),
+        firstbase=lambda wildcards: _add_firstbasereport(wildcards, config),
     output:
         "{prefix}%s%s/{run}.yield_report.pdf" % (config['dirs']['intermediate'], config['stepnames']['convert_illumina_report'])
     log:
@@ -155,11 +176,13 @@ rule convert_illumina_report:
         "envs/spike_report.yaml"
     params:
         recipient=config['emails']['demultiplexreport'].split(',')[0],
-        suggested_recipients='\n'.join(config['emails']['demultiplexreport'].split(',')[1:])
+        suggested_recipients='\n'.join(config['emails']['demultiplexreport'].split(',')[1:]),
+        text_attachments=lambda wildcards: _add_firstbasereport(wildcards, config, 'email_text'),
+        attachment_firstbasereport=lambda wildcards: _add_firstbasereport(wildcards, config, 'param_attachment'),
     shell:
         "wkhtmltopdf --orientation Landscape {input.yield_report} {output} 2> {log} &&"
         "echo 'suggested recipients:\n{params.suggested_recipients}\n\nHi there,\n\n"
         "this is an automated message from {config[name_program]}.\n\n"
-        "Demultiplexing for flowcell {wildcards.run} finished. Please find attached the yield report and the first base report.\n\n"
-        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' {config[mail_attachment_parameter]} {output} {config[mail_attachment_parameter]} {input.firstbase} {params.recipient}"
+        "Demultiplexing for flowcell {wildcards.run} finished. Please find attached the yield report{params.text_attachments}.\n\n"
+        "Have a nice day!' | mail -s '[{config[name_program]}] demultiplex report {wildcards.run}' {config[mail_attachment_parameter]} {output} {params.attachment_firstbasereport} {params.recipient}"
         " 2>> {log}"
