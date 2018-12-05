@@ -29,3 +29,4 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 5,MB26__MB24__MB23__MB17,,,,,,Pedbrain,"This is a multiplexed library, but I could not find any barcoding information",,,
 6,MB64__MB71__MB09__MB22,,,,,,Pedbrain,"This is a multiplexed library, but I could not find any barcoding information",,,
 7,MB59__MB65__MB68__MB70,,,,,,Pedbrain,"This is a multiplexed library, but I could not find any barcoding information",,,
+8,unknown_samples_of_suji,,,,,,Samples_Suji,"From Sujis notebook: samples looked strange in the first base report, please repeat the run",,,yes
