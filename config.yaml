@@ -20,8 +20,8 @@ emails:
 name_program: "spike"
 
 dirs:
-  prefix: "/data/Spike_data/"
-  tmpdir: "/data/tmp/"
+  prefix: "/gpfs/project/projects/spike/"
+  tmpdir: ""
 
   intermediate: "Intermediate/"
   inputs: "Inputs/"
@@ -120,6 +120,14 @@ projects:
     snupy:
       contact: "Ute Fischer"
       project_id: 19
+  Canada_Reid:
+    actions:
+      - background
+      - tumornormal
+    species: mus musculus
+    snupy:
+      contact: "Marina Oldenburg"
+      project_id: 123
   Fischer_Geron:
     actions:
       - background
