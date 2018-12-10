@@ -4,7 +4,7 @@ rule backup_compress:
         "{prefix}%s%s/{run}.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete']),
         dir="{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina'])
     output:
-        temp("{prefix}%s%s/{run}.7z" % (config['dirs']['intermediate'], config['stepnames']['backup_compress']))
+        "{prefix}%s%s/{run}.7z" % (config['dirs']['intermediate'], config['stepnames']['backup_compress'])
     log:
         "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['backup_compress'])
     benchmark:
