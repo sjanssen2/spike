@@ -43,7 +43,7 @@ rule all:
     input:
         # create backup for each run
         # don't backup per sample fastq runs
-        # backup=["%s%s%s.%s.done" % (config['dirs']['prefix'], config['dirs']['intermediate'], run, config['stepnames']['backup_validate'])
+        # backup=["%s%s%s/%s.done" % (config['dirs']['prefix'], config['dirs']['intermediate'], run, config['stepnames']['backup_validate'])
         #         for run in set(SAMPLESHEETS['run'].unique()) - set(get_persamplefastq_samples(SAMPLESHEETS, config))],
         #
         # demultiplex all samples for projects that ONLY need to demultiplex, e.g. AG_Remke and create yield reports
