@@ -214,6 +214,29 @@ def _get_statusdata_coverage(samplesheets, prefix, config, min_targets=80):
     return pd.DataFrame(coverages).set_index(['Sample_Project', 'Sample_ID'])['coverage']
 
 
+def _isKnownDuo(sample_project, spike_entity_id, config):
+    """Checks if trio is a known duo, i.e. missing samples won't be available in the future.
+
+    Parameters
+    ----------
+    sample_project : str
+    spike_entity_id : str
+    config : dict()
+        Snakemake configuration.
+
+    Returns
+    -------
+    Boolean: True, if spike_entity_id is in config list of known duos for given project.
+    False, otherwise.
+    """
+    if 'projects' in config:
+        if sample_project in config['projects']:
+            if 'known_duos' in config['projects'][sample_project]:
+                if spike_entity_id in config['projects'][sample_project]['known_duos']:
+                    return True
+    return False
+
+
 def _get_statusdata_snupyextracted(samplesheets, prefix, config):
     results = []
     for sample_project, meta in samplesheets.groupby('Sample_Project'):
@@ -242,7 +265,7 @@ def _get_statusdata_snupyextracted(samplesheets, prefix, config):
                 name = '%s_%s/%s%s' % (runs, sample_project, entity, file_ending)
 
                 if action in config['projects'][sample_project]['actions']:
-                    if ((action == 'trio') and (meta_sample['spike_entity_role'].iloc[0] in ['patient', 'sibling'])) or\
+                    if ((action == 'trio') and (meta_sample['spike_entity_role'].iloc[0] in ['patient', 'sibling']) and (not _isKnownDuo(sample_project, meta_sample['spike_entity_id'].iloc[0], config))) or\
                        ((action == 'background')) or\
                        ((action == 'tumornormal') and (meta_sample['spike_entity_role'].iloc[0].startswith('tumor'))):
                         results.append({
@@ -276,7 +299,7 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                 nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
 
             if (sample_project in config['projects']) and (action in config['projects'][sample_project]['actions']):
-                if ((action == 'trio') and (meta['spike_entity_role'].iloc[0] in ['patient', 'sibling'])) or\
+                if ((action == 'trio') and (meta['spike_entity_role'].iloc[0] in ['patient', 'sibling']) and (not _isKnownDuo(sample_project, meta['spike_entity_id'].iloc[0], config))) or\
                    ((action == 'background')) or\
                    ((action == 'tumornormal') and (meta['spike_entity_role'].iloc[0].startswith('tumor'))):
                     results.append({
@@ -379,10 +402,6 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
         'font_color': '#ff0000'})
     row = offset_rows+1
     for sample_project, grp_project in samplesheets.groupby('Sample_Project'):
-        cellrange = '%s%i:%s%i' % (chr(65+offset_cols), row+1, chr(65+offset_cols), row+len(grp_project.groupby(['spike_entity_id', 'Sample_ID'])))
-        worksheet.merge_range(cellrange, sample_project.replace('_', '\n'), format_project)
-        worksheet.set_column(offset_cols, offset_cols, 4)
-
         # add in lines to indicate missing samples, e.g. for trios that are incomplete
         missing_samples = []
         if (sample_project in config['projects']) and ('actions' in config['projects'][sample_project]):
@@ -397,15 +416,25 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
                                 'missing': True,
                             })
 
+        # combine samples from samplesheets AND those that are expected but missing
+        samples_and_missing = pd.concat([grp_project, pd.DataFrame(missing_samples)], sort=False).fillna(value={'spike_entity_id': ''})
+
+        cellrange = '%s%i:%s%i' % (chr(65+offset_cols), row+1, chr(65+offset_cols), row+len(samples_and_missing.groupby(['spike_entity_id', 'Sample_ID'])))
+        worksheet.merge_range(cellrange, sample_project.replace('_', '\n'), format_project)
+        worksheet.set_column(offset_cols, offset_cols, 4)
+
         # groupby excludes NaNs, thus I have to hack: replace NaN by "" here and
         # reset to np.nan within the loop
-        for spike_entity_group, grp_spike_entity_group in pd.concat([grp_project, pd.DataFrame(missing_samples)], sort=False).fillna(value={'spike_entity_id': ''}).groupby('spike_entity_id'):
+        for spike_entity_group, grp_spike_entity_group in samples_and_missing.groupby('spike_entity_id'):
             cellrange = '%s%i:%s%i' % (chr(65+offset_cols+1), row+1, chr(65+offset_cols+1), row+len(grp_spike_entity_group.groupby('Sample_ID')))
             if spike_entity_group != "":
+                label = spike_entity_group
+                if _isKnownDuo(sample_project, spike_entity_group, config):
+                    label += "\n(known duo)"
                 if len(set(cellrange.split(':'))) > 1:
-                    worksheet.merge_range(cellrange, spike_entity_group, format_spike_entity_id)
+                    worksheet.merge_range(cellrange, label, format_spike_entity_id)
                 else:
-                    worksheet.write(cellrange.split(':')[0], spike_entity_group, format_spike_entity_id)
+                    worksheet.write(cellrange.split(':')[0], label, format_spike_entity_id)
             else:
                 spike_entity_group = np.nan
             worksheet.set_column(offset_cols+1, offset_cols+1, 10)
@@ -430,7 +459,8 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
                 frmt = format_spike_sampleID
                 if is_missing:
                     sample_id_value = '?'
-                    frmt = format_spike_entity_role_missing
+                    if not _isKnownDuo(sample_project, spike_entity_group, config):
+                        frmt = format_spike_entity_role_missing
                 if len(set(cellrange.split(':'))) > 1:
                     worksheet.merge_range(cellrange, sample_id_value, frmt)
                 else:
@@ -442,7 +472,10 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
 
                 if is_missing:
                     cellrange = '%s%i:%s%i' % (chr(65+offset_cols+4), row+1, chr(65+offset_cols+3+2+len(ACTION_PROGRAMS)+1), row+1)
-                    worksheet.merge_range(cellrange, "missing sample", format_spike_entity_role_missing)
+                    fmt = format_spike_entity_role_missing
+                    if _isKnownDuo(sample_project, spike_entity_group, config):
+                        fmt = format_spike_sampleID
+                    worksheet.merge_range(cellrange, "missing sample", fmt)
                 else:
                     # demultiplexing yield
                     frmt = format_bad
