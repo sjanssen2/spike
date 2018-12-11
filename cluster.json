@@ -84,7 +84,7 @@
     "varscan_trio":
     {
       "ppn": "1",
-      "time" : "04:59:59",
+      "time" : "07:59:59",
       "mem" : "3GB"
     },
 
@@ -141,7 +141,7 @@
     {
       "time" : "00:09:59",
       "ppn" : "1",
-      "mem" : "100MB",
+      "mem" : "500MB",
     },
 
     "gatk_VariantFiltration_SNP":
