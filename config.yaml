@@ -154,6 +154,24 @@ projects:
       contact: "Kuhlen"
       project_id: 82
     min_coverage: 60
+    known_duos:
+      - KB0005
+      - KB0009
+      - KB0025
+      - KB0043
+      - KB0062
+      - KB0067
+      - KB0069
+      - KB0076
+      - KB0077
+      - KB0092
+      - KB0106
+      - KB0136
+      - KB0145
+      - KB0146
+      - KB0147
+      - KB0174
+      - KB0190
   ALL_family_LB:
     actions:
       - persamplefastq
