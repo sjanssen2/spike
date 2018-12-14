@@ -314,8 +314,10 @@ rule gatk_VariantRecalibrator_SNP:
     params:
         knowns_settings=lambda wildcards: [' --resource:%s %s%s%s' % (known['VariantRecalibrator_SNP'], wildcards.prefix, config['dirs']['references'], known['file']) for known in get_reference_knowns(wildcards.sample, SAMPLESHEETS, config, 'VariantRecalibrator_SNP')],
     shell:
-        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi && '
-        "java"
+        'if [ $(gatk-register > /dev/null; echo "$?") -eq 1 ]; then rm -rf /tmp/gatk; gatk-register {input.gatkpackage} 2>> {log}; fi'
+        " && maxGaussians=6"
+        " && while true; do"
+        " java"
         " -Xmx6g -XX:ParallelGCThreads={threads}"
         " -jar $CONDA_PREFIX/opt/gatk-3.5/GenomeAnalysisTK.jar"
         " -T VariantRecalibrator"
@@ -328,8 +330,13 @@ rule gatk_VariantRecalibrator_SNP:
         " --recal_file {output.recal}"
         " --tranches_file {output.tranches}"
         " --rscript_file {output.plots}"
-        " --maxGaussians 6"
-        " 2>> {log}"
+        " --maxGaussians $maxGaussians"
+        " 2>> {log};"
+        " let maxGaussians--;"
+        " if [ $maxGaussians -lt 1]; then break; fi;"
+        " if ! cat {log} | grep 'VariantDataManager' | tail -n 1 | grep 'Training with worst 0 scoring variants'; then break; fi;"
+        " echo 'SPIKE: repeat computation with less clusters to expect' >> {log};"
+        " done;"
 
         # %.gatk.raw.snps.recal: %.gatk.raw.snps.vcf
         # 	@echo "$(DATE) ######### Create variant recalibration files for '$<'. This is step 1 of 2 for SNP variant recalibration #########"
