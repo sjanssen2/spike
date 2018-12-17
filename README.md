@@ -10,3 +10,4 @@ NGS pipeline for SNV detection in tumor context
     - if within UKD network, you might have to force conda to **not** use certificates `conda config --set ssl_verify false `
   4. install seaborn: `conda install seaborn`
   ~~5. install beautifulsoup4: `conda install beautifulsoup4 -c anaconda`~~
+  5. new depencencies: `biom-format` and `h5py` for conversion to biom to finally compute sample distances
