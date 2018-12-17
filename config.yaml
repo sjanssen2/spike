@@ -63,6 +63,8 @@ stepnames:
   gatk_ApplyRecalibration: "110_gatk_ApplyRecalibration"
   gatk_VariantFiltration: "115_gatk_VariantFiltration"
   gatk_CombineVariants: "120_gatk_CombineVariants"
+  biom_gatkbackground: "121_biom_gatkbackground"
+  biom_merged: "122_biom_merged"
   platypus: "125_platypus"
   platypus_filtered: "130_platypus_filtered"
 
