@@ -261,4 +261,19 @@
       "time" : "00:19:59",
       "mem" : "1GB",
     },
+
+    "biom_gatkbackground" :
+    {
+      "mem" : "8GB",
+      "ppn" : "1",
+      "time" : "00:09:59",
+    },
+
+    "biom_merge" :
+    {
+      "mem" : "32GB",
+      "ppn" : "1",
+      "time" : "00:29:59",
+    },
+
 }
