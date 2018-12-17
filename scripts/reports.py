@@ -488,7 +488,7 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
                     worksheet.set_column(offset_cols+4, offset_cols+4, 4)
 
                     # coverage
-                    if pd.notnull(role):
+                    if pd.notnull(data_coverage.loc[sample_project, sample_id]):
                         frmt = format_bad
                         value_coverage = "missing"
                         if (sample_project, sample_id) in data_coverage.index:
