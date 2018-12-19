@@ -167,7 +167,7 @@ ACTION_PROGRAMS = [
     {'action': 'tumornormal',
      'program': 'Varscan',
      'fileending_snupy_extract': '.somatic.varscan',
-     'fileending_spike_calls': '.indel_snp.vcf',
+     'fileending_spike_calls': '.snp.somatic_germline.vcf',
      'stepname_spike_calls': 'merge_somatic',
     },
     {'action': 'tumornormal',
@@ -264,7 +264,8 @@ def _get_statusdata_snupyextracted(samplesheets, prefix, config):
                         runs = '+'.join(sorted(samplesheets[samplesheets['spike_entity_id'] == meta_sample['spike_entity_id'].iloc[0]]['run'].unique()))
                 name = '%s_%s/%s%s' % (runs, sample_project, entity, file_ending)
 
-                if action in config['projects'][sample_project]['actions']:
+                #if action in config['projects'][sample_project]['actions']:
+                if (sample_project in config['projects']) and (pd.notnull(meta_sample['spike_entity_role'].iloc[0])):
                     if ((action == 'trio') and (meta_sample['spike_entity_role'].iloc[0] in ['patient', 'sibling']) and (not _isKnownDuo(sample_project, meta_sample['spike_entity_id'].iloc[0], config))) or\
                        ((action == 'background')) or\
                        ((action == 'tumornormal') and (meta_sample['spike_entity_role'].iloc[0].startswith('tumor'))):
@@ -298,7 +299,8 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
             if exists(fp_vcf):
                 nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
 
-            if (sample_project in config['projects']) and (action in config['projects'][sample_project]['actions']):
+            # if (sample_project in config['projects']) and (action in config['projects'][sample_project]['actions']):
+            if (sample_project in config['projects']) and (pd.notnull(meta['spike_entity_role'].iloc[0])):
                 if ((action == 'trio') and (meta['spike_entity_role'].iloc[0] in ['patient', 'sibling']) and (not _isKnownDuo(sample_project, meta['spike_entity_id'].iloc[0], config))) or\
                    ((action == 'background')) or\
                    ((action == 'tumornormal') and (meta['spike_entity_role'].iloc[0].startswith('tumor'))):
