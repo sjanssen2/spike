@@ -147,6 +147,11 @@ projects:
   AG_Remke:
     actions:
       - demultiplex
+  AG_Remke_GAC_LT:
+    actions:
+      - demultiplex
+      - tumornormal
+    species: homo sapiens
   Keimbahn:
     actions:
       - background
