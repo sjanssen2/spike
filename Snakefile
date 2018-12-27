@@ -6,7 +6,7 @@ import pandas as pd
 from scripts.parse_samplesheet import parse_samplesheet, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets, split_samplesheets
 from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header, get_demux_samples, get_projects_with_exomecoverage, get_rejoin_input, get_xenograft_hybridreference, get_xenograft_stepname, get_persamplefastq_samples, get_min_coverage
 from scripts.utils import exclude_sample, sample_to_biom, merge_samples
-from scripts.reports import report_undertermined_filesizes, report_exome_coverage, write_status_update, create_html_yield_report, collect_yield_data
+from scripts.reports import report_undertermined_filesizes, report_exome_coverage, get_status_data, write_status_update, create_html_yield_report, collect_yield_data
 from scripts.convert_platypus import annotate
 from scripts.snupy import upload_to_snupy, extractsamples
 
@@ -68,7 +68,8 @@ rule status:
     output:
         "status_update.xlsx"
     run:
-        write_status_update(output[0], SAMPLESHEETS, config, prefix=config['dirs']['prefix'])
+        status_data = get_status_data(SAMPLESHEETS, config)
+        write_status_update(status_data, output[0], SAMPLESHEETS, config)
 
 # onerror:
 #     print("An error occurred")
