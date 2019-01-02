@@ -507,7 +507,7 @@ def get_demux_samples(samplesheets, config):
 
     # filter samples to those belonging to tumor vs. normal projects
     background_samples = samplesheets[samplesheets['Sample_Project'].isin(defined_projects)]
-    
+
     return list(background_samples['run'].unique())
 
 
@@ -552,7 +552,7 @@ def get_tumorNormalPairs(samplesheets, config, species=None):
     pairs = []
     for pair, g in tumornormal_samples.groupby(['Sample_Project', 'spike_entity_id']):
         # only choose comlete pairs
-        if set(g['spike_entity_role'].unique()) == {'healthy','tumor'}:
+        if len(set(g['spike_entity_role'].unique()) & {'healthy','tumor'}) == 2:
             if species is not None:
                 if get_species(g['fastq-prefix'].iloc[0], samplesheets, config) != species:
                     continue
