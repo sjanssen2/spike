@@ -1,0 +1,30 @@
+rule biom_gatkbackground:
+    # Realign the the reads
+    input:
+        "{prefix}%s%s/{sample}.{program}{isrelax}.snp_indel.vcf" % (config['dirs']['intermediate'], config['stepnames']['gatk_CombineVariants'])
+    output:
+        "{prefix}%s%s/{sample}.{program,gatk}{isrelax,\.relax|}.snp_indel.biom" % (config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'])
+    log:
+        "{prefix}%s%s/{sample}.{program}{isrelax}.log" % (config['dirs']['logs'], config['stepnames']['biom_gatkbackground'])
+    benchmark:
+        "{prefix}%s%s/{sample}.{program}{isrelax}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['biom_gatkbackground'])
+    threads:
+        1
+    run:
+        sample_to_biom(input[0], output[0], wildcards.sample)
+
+
+rule biom_merge:
+    input:
+        lambda wildcards: ["%s%s%s/%s/%s.gatk.snp_indel.biom" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], wildcards.project, sample)
+                           for sample in SAMPLESHEETS[SAMPLESHEETS['Sample_Project'] == wildcards.project]['Sample_ID'].unique()]
+    output:
+        "{prefix}%s%s/{project}.biom" % (config['dirs']['intermediate'], config['stepnames']['biom_merged'])
+    log:
+        "{prefix}%s%s/{project}.log" % (config['dirs']['logs'], config['stepnames']['biom_merged'])
+    benchmark:
+        "{prefix}%s%s/{project}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['biom_merged'])
+    threads:
+        1
+    run:
+        merge_samples(input, output[0], wildcards.project)

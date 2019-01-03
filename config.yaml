@@ -147,6 +147,15 @@ projects:
   AG_Remke:
     actions:
       - demultiplex
+  AG_Remke_GAC_LT:
+    actions:
+      - demultiplex
+      - background
+      - tumornormal
+    species: homo sapiens
+    snupy:
+      contact: "Nan Qin"
+      project_id: 131
   Keimbahn:
     actions:
       - background

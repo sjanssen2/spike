@@ -20,6 +20,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 plt.switch_backend('Agg')
 
 
+RESULT_NOT_PRESENT = -5
+
+
 def report_undertermined_filesizes(fp_filesizes, fp_output, fp_error,
                                    zscorethreshold=1):
     # read all data
@@ -316,10 +319,56 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
     return pd.DataFrame(results).set_index(['Sample_Project', 'Sample_ID', 'action', 'program'])['number_calls']
 
 
-def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, offset_cols=0, min_yield=5.0, verbose=sys.stderr):
+def get_status_data(samplesheets, config, prefix=None, verbose=sys.stderr):
     """
     Parameters
     ----------
+    samplesheets : pd.DataFrame
+        The global samplesheets.
+    config : dict()
+        Snakemake configuration object.
+    prefix : str
+        Default: None, i.e. config['dirs']['prefix'] is used.
+        Filepath to spike main directory.
+    verbose : StringIO
+        Default: sys.stderr
+        If not None: print verbose information.
+
+    Returns
+    -------
+    4-tuple: (data_yields, data_coverage, data_snupy, data_calls)
+    """
+    global RESULT_NOT_PRESENT
+
+    if prefix is None:
+        prefix = config['dirs']['prefix']
+    if verbose is not None:
+        print("Creating report", file=verbose)
+    # obtain data
+    if verbose is not None:
+        print("1/5) gathering demuliplexing yields: ...", file=verbose, end="")
+    data_yields = _get_statusdata_demultiplex(samplesheets, prefix, config)
+    if verbose is not None:
+        print(" done.\n2/5) gathering coverage: ...", file=verbose, end="")
+    data_coverage = _get_statusdata_coverage(samplesheets, prefix, config)
+    if verbose is not None:
+        print(" done.\n3/5) gathering snupy extraction status: ...", file=verbose, end="")
+    data_snupy = _get_statusdata_snupyextracted(samplesheets, prefix, config)
+    if verbose is not None:
+        print(" done.\n4/5) gathering number of PASSing calls: ...", file=verbose, end="")
+    data_calls = _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT)
+    if verbose is not None:
+        print("done.\n5/5) generating Excel output: ...", file=verbose, end="")
+
+    return (data_yields, data_coverage, data_snupy, data_calls)
+
+
+def write_status_update(data, filename, samplesheets, config, offset_rows=0, offset_cols=0, min_yield=5.0, verbose=sys.stderr):
+    """
+    Parameters
+    ----------
+    data : (pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame)
+        yields, coverage, snupy, calls. Result of function get_status_data.
     filename : str
         Filepath to output Excel file.
     samplesheets : pd.DataFrame
@@ -336,20 +385,12 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
         Default: 5.0
         Threshold when to color yield falling below this value in red.
         Note: I don't know what a good default looks like :-/
+    verbose : StringIO
+        Default: sys.stderr
+        If not None: print verbose information.
     """
-    RESULT_NOT_PRESENT = -5
-
-    print("Creating report", file=verbose)
-    # obtain data
-    print("1/5) gathering demuliplexing yields: ...", file=verbose, end="")
-    data_yields = _get_statusdata_demultiplex(samplesheets, prefix, config)
-    print(" done.\n2/5) gathering coverage: ...", file=verbose, end="")
-    data_coverage = _get_statusdata_coverage(samplesheets, prefix, config)
-    print(" done.\n3/5) gathering snupy extraction status: ...", file=verbose, end="")
-    data_snupy = _get_statusdata_snupyextracted(samplesheets, prefix, config)
-    print(" done.\n4/5) gathering number of PASSing calls: ...", file=verbose, end="")
-    data_calls = _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT)
-    print("done.\n5/5) generating Excel output: ...", file=verbose, end="")
+    global RESULT_NOT_PRESENT
+    data_yields, data_coverage, data_snupy, data_calls = data
 
     # start creating the Excel result
     workbook = xlsxwriter.Workbook(filename)
@@ -490,7 +531,7 @@ def write_status_update(filename, samplesheets, config, prefix, offset_rows=0, o
                     worksheet.set_column(offset_cols+4, offset_cols+4, 4)
 
                     # coverage
-                    if pd.notnull(data_coverage.loc[sample_project, sample_id]):
+                    if ((sample_project, sample_id) in data_coverage.index) and (pd.notnull(data_coverage.loc[sample_project, sample_id])):
                         frmt = format_bad
                         value_coverage = "missing"
                         if (sample_project, sample_id) in data_coverage.index:
