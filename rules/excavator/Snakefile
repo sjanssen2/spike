@@ -43,7 +43,7 @@ rule excavator_install:
         #assembly=lambda wildcards: wildcards.assembly if wildcards.assembly != 'hGRC37' else 'hg19'
     shell:
         "cwd=`pwd` 2> {log}"
-        " && if [ ! -d {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version} ]; then"
+        " && if [ ! -e {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/TargetPerla.pl ]; then"
         " mkdir -p -v {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]} 2>> {log} 1>&2"
         " && tar xzvf {input.sources} -C {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]} 2>> {log} 1>&2"
         # we need to patch the Perl program to fix detection of working directory
