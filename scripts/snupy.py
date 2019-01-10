@@ -43,6 +43,8 @@ def get_toolname_from_stepname(config, filename):
         return 'VarScan2'
     elif config['stepnames']['writing_headers'] in filename:
         return 'VarScan2'
+    elif config['stepnames']['excavator_somatic'] in filename:
+        return 'Excavator2'
     else:
         raise ValueError("Unexpected tool.")
 
@@ -77,6 +79,8 @@ def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type
             snvtype = 'denovo'
     elif get_toolname_from_stepname(config, filename) == 'Mutect':
         snvtype = 'somatic'
+    elif get_toolname_from_stepname(config, filename) == 'Excavator2':
+        snvtype = 'cnv'
     else:
         raise ValueError("Unknown SNV type")
     name += ".%s" % snvtype
@@ -147,7 +151,7 @@ def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _
 
     # assert HTTP communication successful
     assert(r.headers.get('status') == '200 OK')
-    shutil.rmtree(tmpdir, ignore_errors=True)
+    #shutil.rmtree(tmpdir, ignore_errors=True)
 
     # assert VCF upload to Snupy was successful
     if len(r.json()['error']) != 0:
