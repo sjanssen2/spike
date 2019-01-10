@@ -31,6 +31,9 @@ rule snupy_upload_tumornormal:
         # ... via varscan2
         tumornormal_varscan=lambda wildcards: '%s%s%s/%s/%s.%s.vcf' % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['merge_somatic'], wildcards.project, wildcards.entity, 'indel_snp' if config['projects'][wildcards.project]['species'] == 'mus musculus' else 'snp.somatic_germline'),
         # ... since freeC does not generate a VCF and I think snupy cannot display freeC results, they don't get uploaded here
+
+        # ... excavator
+        tumornormal_excavator=directory("{prefix}%s%s/{project}/{entity}" % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic'])),
     output:
         "{prefix}%s%s/{project}/{entity}.tumornormal.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
     log:
