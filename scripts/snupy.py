@@ -151,7 +151,7 @@ def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _
 
     # assert HTTP communication successful
     assert(r.headers.get('status') == '200 OK')
-    #shutil.rmtree(tmpdir, ignore_errors=True)
+    shutil.rmtree(tmpdir, ignore_errors=True)
 
     # assert VCF upload to Snupy was successful
     if len(r.json()['error']) != 0:
