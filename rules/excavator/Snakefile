@@ -53,6 +53,8 @@ rule excavator_install:
         ' && sed -i "s/\$workingfolder=substr \$myscript, 0, (\$L1 - \$L2 - 1);/\$workingfolder=dirname\(\$0\);/" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataPrepare.pl 2>>{log}'
         ' && sed -i "s/^use File::Path;/use File::Path; use File::Basename;/" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataAnalysis.pl 2>>{log}'
         ' && sed -i "s/\$workingfolder=substr \$myscript, 0, (\$L1 - \$L2 - 1);/\$workingfolder=dirname\(\$0\);/" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataAnalysis.pl 2>>{log}'
+        ' && sed -i "s#^  system qq(\$Program_Folder_Path/lib/bash/./FiltBam.sh \$Bam_File_Path \$MAPQ \$Sample_Out_Folder_Path \$Program_Folder_Path#  system qq(lib/bash/FiltBam.sh \$Bam_File_Path \$MAPQ \$Sample_Out_Folder_Path ./#" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/perl/ReadPerla.pl 2>>{log}'
+        ' && sed -i "s#^  system qq(R --slave --args \$Program_Folder_Path,\$Sample_Out_Folder_Path,\$Sample_Label,\$target,\$assembly < \$Program_Folder_Path/#  system qq(R --slave --args ./,\$Sample_Out_Folder_Path,\$Sample_Label,\$target,\$assembly < #" {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/perl/ReadPerla.pl 2>>{log}'
 
         # we also need to patch lib/R/FilterTarget.R to allow mouse assembly as input
         ' && head -n 22 {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/R/FilterTarget.R | sed "s/hg19/hGRC37/" > help 2>>{log}'
@@ -75,8 +77,8 @@ rule excavator_install:
         ' && cp -v {input.mouse_centromeres} {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/centromere/ 2>>{log} 1>&2'
         ' && mv -v {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/centromere/CentromerePosition_hg19.txt {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/data/centromere/CentromerePosition_hGRC37.txt 2>>{log} 1>&2'
         " && cd {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/lib/F77 2>> {log}"
-        " && R CMD SHLIB F4R.f 2>> {log} 1>&2"
-        " && R CMD SHLIB FastJointSLMLibraryI.f 2>> {log} 1>&2"
+        " && R CMD SHLIB F4R.f -L/usr/lib64/ 2>> {log} 1>&2"
+        " && R CMD SHLIB FastJointSLMLibraryI.f -L/usr/lib64/ 2>> {log} 1>&2"
         " && cd $cwd"
         " ; fi"
 
@@ -118,7 +120,8 @@ rule excavator_dataprepare:
         ' && configfile=$(mktemp) 2>> {log} 1>&2'
         ' && echo "`readlink -f {input.sample}` {output.sample} `basename {output.sample}`" > $configfile 2>> {log}'
         #' && echo "`readlink -f {input.tumor}` {output.tumor} tumor" >> {output.config} 2>> {log}'
-        " && perl {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataPrepare.pl"
+        " && cd {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/ 2>> {log}"
+        " && perl EXCAVATORDataPrepare.pl"
         " $configfile"
         " --processors {threads}"
         " --target $exometrack"
@@ -150,7 +153,8 @@ rule excavator_somatic:
         ' && configfile=$(mktemp) 2>> {log} 1>&2'
         ' && echo "C1 {input.healthy} `basename {input.healthy}`" > $configfile 2>> {log}'
         ' && echo "T1 {input.tumor} `basename {input.tumor}`" >> $configfile 2>> {log}'
-        " && perl {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataAnalysis.pl"
+        ' && cd {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/ 2>> {log}'
+        " && perl EXCAVATORDataAnalysis.pl"
         " $configfile"
         " --processors {threads}"
         " --target $exometrack"
