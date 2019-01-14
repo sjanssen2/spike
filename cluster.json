@@ -13,18 +13,19 @@
     {
       "mem" : "16GB",
       "ppn" : "4",
-      "time" : "00:59:59",
+      "time" : "01:59:59",
     },
 
     "rejoin_sample":
     { "mem" : "1GB",
       "ppn" : "2",
+      "time" : "01:59:59",
     },
 
     "trim":
     { "mem" : "4GB",
       "ppn" : "16",
-      "time" : "01:59:59",
+      "time" : "04:59:59",
     },
 
     "xenograft_bwa_aln":
@@ -43,12 +44,12 @@
     {
       "ppn" : "3",
       "mem" : "20GB",
-      "time" : "08:59:59",
+      "time" : "16:59:59",
     },
 
     "remove_pcr_duplicates":
     {
-      "time" : "01:59:59",
+      "time" : "02:59:59",
       "ppn" : "1",
       "mem" : "6GB",
     },
@@ -57,19 +58,19 @@
     {
       "mem" : "5GB",
       "ppn" : "1",
-      "time" : "01:59:59",
+      "time" : "03:59:59",
     },
 
     "gatk_BaseRecalibrator":
     {
       "mem" : "8GB",
-      "time" : "01:59:59",
+      "time" : "02:59:59",
       "ppn" : "3",
     },
 
     "gatk_PrintReads":
     {
-      "time" : "04:59:59",
+      "time" : "08:59:59",
       "mem" : "16GB",
       "ppn" : "16",
     },
@@ -167,7 +168,7 @@
 
     "bam_readcount_INDEL":
     {
-      "time": "00:09:59",
+      "time": "00:29:59",
       "ppn" : "1",
       "mem" : "1GB",
     },
@@ -217,7 +218,7 @@
     "exome_coverage":
     {
       "ppn": "1",
-      "time" : "00:59:59",
+      "time" : "02:59:59",
       "mem" : "8GB",
     },
 
@@ -225,12 +226,12 @@
     {
       "mem" : "5GB",
       "ppn" : "1",
-      "time" : "01:59:59",
+      "time" : "03:59:59",
     },
 
     "rejoin_samples":
     {
-      "time" : "01:59:59",
+      "time" : "04:59:59",
       "ppn" : "1",
     },
 

@@ -43,6 +43,8 @@ def get_toolname_from_stepname(config, filename):
         return 'VarScan2'
     elif config['stepnames']['writing_headers'] in filename:
         return 'VarScan2'
+    elif config['stepnames']['excavator_somatic'] in filename:
+        return 'Excavator2'
     else:
         raise ValueError("Unexpected tool.")
 
@@ -77,6 +79,8 @@ def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type
             snvtype = 'denovo'
     elif get_toolname_from_stepname(config, filename) == 'Mutect':
         snvtype = 'somatic'
+    elif get_toolname_from_stepname(config, filename) == 'Excavator2':
+        snvtype = 'cnv'
     else:
         raise ValueError("Unknown SNV type")
     name += ".%s" % snvtype
@@ -196,6 +200,8 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
             if row['tags[TOOL]'] == str(MAP_TOOLS['VarScan2']):
                 extracted.loc[idx, 'snupy_Samples'] = 'TUMOR'
             elif row['tags[TOOL]'] == str(MAP_TOOLS['Mutect']):
+                extracted.loc[idx, 'snupy_Samples'] = get_role(row['spike_project'], row['spike_entity_id'], 'tumor', samplesheets).split('/')[-1]
+            elif row['tags[TOOL]'] == str(MAP_TOOLS['Excavator2']):
                 extracted.loc[idx, 'snupy_Samples'] = get_role(row['spike_project'], row['spike_entity_id'], 'tumor', samplesheets).split('/')[-1]
         elif _type == 'trio':
             extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"denovo"}'

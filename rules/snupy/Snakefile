@@ -31,6 +31,9 @@ rule snupy_upload_tumornormal:
         # ... via varscan2
         tumornormal_varscan=lambda wildcards: '%s%s%s/%s/%s.%s.vcf' % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['merge_somatic'], wildcards.project, wildcards.entity, 'indel_snp' if config['projects'][wildcards.project]['species'] == 'mus musculus' else 'snp.somatic_germline'),
         # ... since freeC does not generate a VCF and I think snupy cannot display freeC results, they don't get uploaded here
+
+        # ... excavator
+        tumornormal_excavator=directory("{prefix}%s%s/{project}/{entity}" % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic'])),
     output:
         "{prefix}%s%s/{project}/{entity}.tumornormal.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
     log:
@@ -40,7 +43,15 @@ rule snupy_upload_tumornormal:
     threads:
         1
     run:
-        upload_to_snupy(wildcards.project, wildcards.entity, input, config, SAMPLESHEETS, output, log, _type='tumornormal')
+        # excavator rules produces a directory. Thus, we need to manually define the correct filepath to the VCF file
+        # for other programs, the VCF file is directly specified as the input.
+        vcf_files = []
+        for file in input:
+            if config['stepnames']['excavator_somatic'] in file:
+                vcf_files.append("%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_somatic'], wildcards.project, wildcards.entity, wildcards.entity, wildcards.entity))
+                continue
+            vcf_files.append(file)
+        upload_to_snupy(wildcards.project, wildcards.entity, vcf_files, config, SAMPLESHEETS, output, log, _type='tumornormal')
 
 
 rule snupy_upload_trio:
