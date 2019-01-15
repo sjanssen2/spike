@@ -103,6 +103,15 @@ def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type
     return name
 
 
+def get_snupy_parser(config, stepname):
+    if stepname == config['stepnames']['excavator_somatic']:
+        return 'VcfFileExcavator'
+    if stepname in [config['stepnames']['merge_somatic'],
+                    config['stepnames']['writing_headers']]:
+        return 'VcfFileVarscan'
+    return 'VcfFile'
+
+
 def get_upload_content(project, entity, input, config, samplesheets, tmpdir, _type):
     data = pd.DataFrame(index=input)
     zippedfiles = []
@@ -117,7 +126,7 @@ def get_upload_content(project, entity, input, config, samplesheets, tmpdir, _ty
     data['contact'] = config['credentials']['snupy']['username']
     data['institution_id'] = MAP_INSTITUTES['UKD']
     data['tags[TOOL]'] = list(map(lambda x: MAP_TOOLS[get_toolname_from_stepname(config, x)], data.index))
-    data['type'] = list(map(lambda x: 'VcfFileVarscan' if get_toolname_from_stepname(config, x) == 'VarScan2' else 'VcfFile', data.index))
+    data['type'] = list(map(lambda x: get_snupy_parser(config, x), data.index))
     data['organism_id'] = MAP_ORGANISMS[config['projects'][project]['species']]
     data['md5checksum'] = list(map(get_md5sum, data.index))
     data['name'] = list(map(lambda x: get_snupy_sample_name(project, entity, x, config, samplesheets, _type), data.index))
