@@ -57,6 +57,7 @@ stepnames:
   gatk_BaseRecalibrator: "080_gatk_BaseRecalibrator"
   gatk_PrintReads: "085_gatk_PrintReads"
   exome_coverage: "090_exome_coverage"
+  bamstat: "091_bamstat"
   gatk_HaplotypeCaller: "095_gatk_HaplotypeCaller"
   gatk_SelectVariants: "100_gatk_SelectVariants"
   gatk_VariantRecalibrator: "105_gatk_VariantRecalibrator"
@@ -192,6 +193,19 @@ projects:
     exometrack:
       file: "Agilent_SureSelect_Human_AllExon_V6_r2.hGRC37.Covered.bed"
       protocol_name: "SureSelectHumanAllExonV6r2"
+  Translokation_t7_12_Hauer:
+    actions:
+      - background
+      - tumornormal
+    species: homo sapiens
+  Kit_Test:
+    actions:
+      - background
+      - tumornormal
+    species: homo sapiens
+    exometrack:
+      file: "Agilent_SureSelect_Human_AllExon_V7.hGRC37.Covered.bed"
+      protocol_name: "SureSelectHumanAllExonV7"
 
 references:
   genomes:

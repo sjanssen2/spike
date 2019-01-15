@@ -35,6 +35,7 @@ include: "rules/freec/Snakefile"
 include: "rules/mutect/Snakefile"
 include: "rules/snupy/Snakefile"
 include: "rules/excavator/Snakefile"
+include: "rules/analyses/Snakefile"
 
 
 localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, correct_genotypes_somatic, varscan_fpfilter_somatic, somatic_FPfilter, vcf_annotate, merge_somatic_mus_musculus, merge_somatic_homo_sapiens, writing_headers, merge_vcfs, varscan_filter_INDEL, varscan_processSomatic, split_demultiplex, yield_report
@@ -51,9 +52,13 @@ rule all:
                '%s%s%s/%s' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['join_demultiplex'], run),
                '%s%s%s/%s.yield_report.pdf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['convert_illumina_report'], run)]],
 
+        # STATISTICS ON BAM FILES of "PrintReads"
         # compute exome coverage for exome samples
         exome_coverage=["%s%s%s/%s/%s.exome_coverage.csv" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['exome_coverage'], project, sample)
                         for _, (project, sample) in SAMPLESHEETS[SAMPLESHEETS['Sample_Project'].isin(get_projects_with_exomecoverage(config))][['Sample_Project', 'Sample_ID']].iterrows()],
+        # compute bamstat exome samples
+        bamstats=["%s%s%s/%s/%s.bamstat.tsv" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['bamstat'], project, sample)
+                  for _, (project, sample) in SAMPLESHEETS[SAMPLESHEETS['Sample_Project'].isin(get_projects_with_exomecoverage(config))][['Sample_Project', 'Sample_ID']].iterrows()],
 
         # upload and extract called variants to Snupy
         background=['%s%s%s/%s.background.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], entity)
@@ -61,8 +66,9 @@ rule all:
         tumornormal=['%s%s%s/%s/%s.tumornormal.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], pair['Sample_Project'], pair['spike_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
         trio_calling=['%s%s%s/%s/%s.trio.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], trio['Sample_Project'], trio['spike_entity_id']) for trio in get_trios(SAMPLESHEETS, config)],
 
-        # tumornormal calling for complete tumor/normal pairs of all runs
-        # tumornormal_freec=['%s%s%s/%s/%s/tumor.pileup.freec_BAF.txt'  % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['freec'],        pair['Sample_Project'], pair['spike_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+        # STATISTICS ON BACKGROUND GATK
+        biom_background=['%s%s%s/%s.gatk.snp_indel.biom' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], entity)
+                         for entity in set(map(lambda x: '%s/%s' % (x['Sample_Project'], x['spike_entity_id']), get_samples(SAMPLESHEETS, config)))],
 
 rule status:
     output:

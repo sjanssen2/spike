@@ -1,0 +1,4 @@
+channels:
+  - cyclus
+dependencies:
+  - java-jdk =8.45.14
