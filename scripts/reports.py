@@ -301,11 +301,14 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                 if meta['spike_entity_role'].unique()[0] == 'patient':
                     name = meta['spike_entity_id'].iloc[0]
             if (action == 'tumornormal'):
-                if meta['spike_entity_role'].unique()[0].startswith('tumor'):
+                roles = meta['spike_entity_role'].dropna().unique()
+                if len(roles) <= 0:
+                    continue
+                if roles[0].startswith('tumor'):
                     name = meta['spike_entity_id'].iloc[0]
                     if program == 'Excavator2':
                         name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (sample_id, sample_id, sample_id)
-                    elif 'tumor_' in meta['spike_entity_role'].unique()[0]:
+                    elif 'tumor_' in roles[0]:
                         name = sample_id
             fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][stepname], sample_project, name, file_ending)
 
@@ -564,6 +567,8 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
                                 frmt = format_bad
                         if value_numcalls == RESULT_NOT_PRESENT:
                             value_numcalls = 'vcf missing'
+                            frmt = format_bad
+                        elif value_numcalls != "" and frmt is None:
                             frmt = format_bad
                         if frmt is not None:
                             worksheet.write(row, offset_cols+6+i, value_numcalls, frmt)
