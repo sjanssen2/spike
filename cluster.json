@@ -110,7 +110,7 @@
     "samtools_mpileup_somatic":
     {
       "ppn": "1",
-      "time" : "01:59:59",
+      "time" : "03:59:59",
     },
 
     "varscan_somatic":
@@ -147,7 +147,7 @@
 
     "gatk_VariantFiltration_SNP":
     {
-      "time": "00:09:59",
+      "time": "00:19:59",
       "ppn" : "1",
       "mem" : "3GB",
     },
@@ -211,7 +211,7 @@
     "gatk_VariantRecalibrator_SNP":
     {
       "ppn" : "1",
-      "time" : "01:49:59",
+      "time" : "02:49:59",
       "mem" : "5GB",
     },
 
@@ -226,7 +226,7 @@
     {
       "mem" : "5GB",
       "ppn" : "1",
-      "time" : "03:59:59",
+      "time" : "05:59:59",
     },
 
     "rejoin_samples":
