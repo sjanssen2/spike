@@ -49,6 +49,15 @@ def get_toolname_from_stepname(config, filename):
         raise ValueError("Unexpected tool.")
 
 
+def check_snupy_status(request_result):
+    status = request_result.headers.get('status')
+    if (status is None) and \
+       ('<title>401 Unauthorized</title>' in request_result.text):
+        raise ValueError(("Snupy password is not correct. Please check what "
+                          "you have provided in the config.yaml file."))
+    assert(status == '200 OK')
+
+
 def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type):
     name = ''
 
@@ -150,7 +159,7 @@ def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _
         f.write(str(r.text))
 
     # assert HTTP communication successful
-    assert(r.headers.get('status') == '200 OK')
+    check_snupy_status(r)
     shutil.rmtree(tmpdir, ignore_errors=True)
 
     # assert VCF upload to Snupy was successful
@@ -244,7 +253,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
         f.write('==== text ====\n')
         f.write(str(r.text))
 
-    assert(r.headers.get('status') == '200 OK')
+    check_snupy_status(r)
     shutil.rmtree(fp, ignore_errors=True)
 
     # parse snupy's response
