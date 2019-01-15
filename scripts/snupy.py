@@ -103,11 +103,10 @@ def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type
     return name
 
 
-def get_snupy_parser(config, stepname):
-    if stepname == config['stepnames']['excavator_somatic']:
+def get_snupy_parser(config, filename):
+    if config['stepnames']['excavator_somatic'] in filename:
         return 'VcfFileExcavator'
-    if stepname in [config['stepnames']['merge_somatic'],
-                    config['stepnames']['writing_headers']]:
+    if (config['stepnames']['merge_somatic'] in filename) or (config['stepnames']['writing_headers'] in filename):
         return 'VcfFileVarscan'
     return 'VcfFile'
 
