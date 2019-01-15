@@ -9,6 +9,7 @@ from scipy import stats
 import xlsxwriter
 import matplotlib.pyplot as plt
 from scripts.parse_samplesheet import get_min_coverage
+from scripts.snupy import check_snupy_status
 import json
 import datetime
 import getpass
@@ -179,6 +180,12 @@ ACTION_PROGRAMS = [
      'fileending_spike_calls': '.all_calls.vcf',
      'stepname_spike_calls': 'mutect',
     },
+    {'action': 'tumornormal',
+     'program': 'Excavator2',
+     'fileending_snupy_extract': '.cnv.excavator2',
+     'fileending_spike_calls': '.vcf',
+     'stepname_spike_calls': 'excavator_somatic',
+    },
     {'action': 'trio',
      'program': 'Varscan\ndenovo',
      'fileending_snupy_extract': '.denovo.varscan',
@@ -249,7 +256,7 @@ def _get_statusdata_snupyextracted(samplesheets, prefix, config):
         r = requests.get('%s/experiments/%s.json' % (config['credentials']['snupy']['host'], config['projects'][sample_project]['snupy']['project_id']),
             auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
             verify=False)
-        assert(r.headers.get('status') == '200 OK')
+        check_snupy_status(r)
         samples = [sample['name'] for sample in r.json()['samples']]
 
         for sample_id, meta_sample in meta.groupby('Sample_ID'):
@@ -294,8 +301,12 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                 if meta['spike_entity_role'].unique()[0] == 'patient':
                     name = meta['spike_entity_id'].iloc[0]
             if (action == 'tumornormal'):
-                if meta['spike_entity_role'].unique()[0] == 'tumor':
+                if meta['spike_entity_role'].unique()[0].startswith('tumor'):
                     name = meta['spike_entity_id'].iloc[0]
+                    if program == 'Excavator2':
+                        name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (sample_id, sample_id, sample_id)
+                    elif 'tumor_' in meta['spike_entity_role'].unique()[0]:
+                        name = sample_id
             fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][stepname], sample_project, name, file_ending)
 
             nr_calls = RESULT_NOT_PRESENT
