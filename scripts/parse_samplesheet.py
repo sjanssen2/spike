@@ -652,7 +652,7 @@ def get_xenograft_stepname(sample, samplesheets, config):
     project = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].dropna().unique()
     if len(project) != 1:
         sys.stderr.write('%s\n' % (project))
-        raise ValueError("_get_stepname: Sample '%s' has ambiguous or missing project!" % sample)
+        raise ValueError("get_xenograft_stepname: Sample '%s' has ambiguous or missing project!" % sample)
     if 'xenograft' in config['projects'][project[0]] and config['projects'][project[0]]['xenograft'] != "":
         return config['stepnames']['xenograft_bwa_sampe']
     else:

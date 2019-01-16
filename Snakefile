@@ -54,21 +54,23 @@ rule all:
 
         # STATISTICS ON BAM FILES of "PrintReads"
         # compute exome coverage for exome samples
-        exome_coverage=["%s%s%s/%s/%s.exome_coverage.csv" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['exome_coverage'], project, sample)
-                        for _, (project, sample) in SAMPLESHEETS[SAMPLESHEETS['Sample_Project'].isin(get_projects_with_exomecoverage(config))][['Sample_Project', 'Sample_ID']].iterrows()],
+        exome_coverage=["%s%s%s/%s.exome_coverage.csv" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['exome_coverage'], sample)
+                        for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
         # compute bamstat exome samples
-        bamstats=["%s%s%s/%s/%s.bamstat.tsv" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['bamstat'], project, sample)
-                  for _, (project, sample) in SAMPLESHEETS[SAMPLESHEETS['Sample_Project'].isin(get_projects_with_exomecoverage(config))][['Sample_Project', 'Sample_ID']].iterrows()],
+        bamstats=["%s%s%s/%s.bamstat.tsv" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['bamstat'], sample)
+                  for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
 
         # upload and extract called variants to Snupy
         background=['%s%s%s/%s.background.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], entity)
                     for entity in set(map(lambda x: '%s/%s' % (x['Sample_Project'], x['spike_entity_id']), get_samples(SAMPLESHEETS, config)))],
-        tumornormal=['%s%s%s/%s/%s.tumornormal.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], pair['Sample_Project'], pair['spike_entity_id']) for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
-        trio_calling=['%s%s%s/%s/%s.trio.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], trio['Sample_Project'], trio['spike_entity_id']) for trio in get_trios(SAMPLESHEETS, config)],
+        tumornormal=['%s%s%s/%s/%s.tumornormal.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], pair['Sample_Project'], pair['spike_entity_id'])
+                     for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
+        trio_calling=['%s%s%s/%s/%s.trio.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], trio['Sample_Project'], trio['spike_entity_id'])
+                      for trio in get_trios(SAMPLESHEETS, config)],
 
         # STATISTICS ON BACKGROUND GATK
-        biom_background=['%s%s%s/%s.gatk.snp_indel.biom' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], entity)
-                         for entity in set(map(lambda x: '%s/%s' % (x['Sample_Project'], x['spike_entity_id']), get_samples(SAMPLESHEETS, config)))],
+        biom_background=['%s%s%s/%s.gatk.snp_indel.biom' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], sample)
+                         for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
 
 rule status:
     output:
