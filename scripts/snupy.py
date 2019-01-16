@@ -221,6 +221,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
             elif row['tags[TOOL]'] == str(MAP_TOOLS['Excavator2']):
                 extracted.loc[idx, 'snupy_Samples'] = get_role(row['spike_project'], row['spike_entity_id'], 'tumor', samplesheets).split('/')[-1]
                 extracted.loc[idx, 'min_read_depth'] = 0
+                extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"cnv"}'
         elif _type == 'trio':
             extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"denovo"}'
             if row['tags[TOOL]'] == str(MAP_TOOLS['VarScan2']):
