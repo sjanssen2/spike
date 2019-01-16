@@ -50,5 +50,5 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 6,D425_DMSO,,,,A005,ACAGTG,AG_Remke,,,,
 7,KB0105_f,,,,E01,GCCAAGAC,Keimbahn,,KB0105,father,
 7,KB0108_f,,,,F01,GACTAGTA,Keimbahn,,KB0108,father,
-8,KB0016_f,,,,F01,GACTAGTA,Keimbahn,,KB0016,father,
-8,KB0016_m,,,,E01,GCCAAGAC,Keimbahn,,KB0016,mother,
+8,KB0016_m,,,,F01,GACTAGTA,Keimbahn,,KB0016,mother,
+8,KB0016_f,,,,E01,GCCAAGAC,Keimbahn,,KB0016,father,
