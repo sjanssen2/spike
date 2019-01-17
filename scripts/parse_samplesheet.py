@@ -239,7 +239,7 @@ def validate_samplesheet(ss: pd.DataFrame, config, line_offset: int=22, err=sys.
     return warnings
 
 
-def get_global_samplesheets(dir_samplesheets):
+def get_global_samplesheets(dir_samplesheets, config):
     # parse all available sample sheets
     fps_samplesheets = glob.glob('%s*_spike.csv' % dir_samplesheets)
 
@@ -251,7 +251,7 @@ def get_global_samplesheets(dir_samplesheets):
         raise ValueError("Could not find a single demultiplexing sample sheet in directory '%s'." % dir_samplesheets)
     global_samplesheet = pd.concat(global_samplesheet, sort=False)
 
-    return global_samplesheet
+    return add_aliassamples(global_samplesheet, config)
 
 
 def write_samplesheet(fp_output, samplesheet):
@@ -439,15 +439,24 @@ def get_role(spike_project, spike_entity_id, spike_entity_role, samplesheets):
 
 def get_species(sample, samplesheets, config):
     # sample can be a single sample ...
-    projects = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].unique()
+    projects = samplesheets[
+        (samplesheets['fastq-prefix'] == sample) &
+        (samplesheets['is_alias'] != True)]['Sample_Project'].unique()
 
     # ... or an entity
     if len(projects) == 0:
-        projects = samplesheets[(samplesheets['Sample_Project'] == sample.split('/')[0]) & (samplesheets['spike_entity_id'] == sample.split('/')[-1])]['Sample_Project'].unique()
+        projects = samplesheets[
+            (samplesheets['Sample_Project'] == sample.split('/')[0]) &
+            (samplesheets['spike_entity_id'] == sample.split('/')[-1]) &
+            (samplesheets['is_alias'] != True)]['Sample_Project'].unique()
 
     if len(projects) > 1:
         raise ValueError("Ambiguous projects: '%s' for sample '%s'" % (projects, sample))
 
+    if projects[0] not in config['projects']:
+        raise ValueError('Project "%s" is not specified in config.yaml!' % projects[0])
+    if 'species' not in config['projects'][projects[0]]:
+        raise ValueError('"species" is not specified for project "%s" in config.yaml!' % projects[0])
     return config['projects'][projects[0]]['species']
 
 
@@ -462,13 +471,14 @@ def get_reference_knowns(sample, samplesheets, config, _key):
 def get_reference_exometrack(sample, samplesheets, config, returnfield='file'):
     # there might be a project specific exome track, like for samples we got sequenced by macrogen:
     projects = samplesheets[
-        (samplesheets['fastq-prefix'] == sample) | # check samplenames
-        (samplesheets['Sample_Project'].astype(str) + '/' + samplesheets['spike_entity_id'].astype(str) == sample) # or project-name / spike_entity
-        ]['Sample_Project'].unique()
+        ((samplesheets['fastq-prefix'] == sample) | # check samplenames
+        (samplesheets['Sample_Project'].astype(str) + '/' + samplesheets['spike_entity_id'].astype(str) == sample)) & # or project-name / spike_entity
+        (samplesheets['is_alias'] != True)]['Sample_Project'].unique()
     if len(projects) != 1:
         raise ValueError('Ambigious or missing project for sample "%s"!' % sample)
-    if 'exometrack' in config['projects'][projects[0]]:
-        return config['projects'][projects[0]]['exometrack'][returnfield]
+    if projects[0] in config['projects']:
+        if 'exometrack' in config['projects'][projects[0]]:
+            return config['projects'][projects[0]]['exometrack'][returnfield]
 
     # by default, we return the species specific exome track
     return config['references']['exometrack'][get_species(sample, samplesheets, config)][returnfield]
@@ -506,7 +516,7 @@ def get_demux_samples(samplesheets, config):
     defined_projects = [prj_name for prj_name in config['projects']]
 
     # filter samples to those belonging to tumor vs. normal projects
-    background_samples = samplesheets[samplesheets['Sample_Project'].isin(defined_projects)]
+    background_samples = samplesheets[(samplesheets['Sample_Project'].isin(defined_projects)) & (samplesheets['is_alias'] != True)]
 
     return list(background_samples['run'].unique())
 
@@ -572,6 +582,23 @@ def get_tumorNormalPairs(samplesheets, config, species=None):
     return pairs
 
 
+def add_aliassamples(samplesheets, config):
+    aliases = []
+    if 'sample_aliases' in config:
+        for alias in config['sample_aliases']:
+            if not (('roles' in alias) and ('real_id' in alias)):
+                raise ValueError('Sample alias is not properly defined (missing keys "roles" or "real_id"), check config.yaml file!')
+            for role in alias['roles']:
+                if not (('Sample_Project' in alias['real_id']) and ('Sample_ID' in alias['real_id'])):
+                    raise ValueError('Sample alias is not properly defined (missing keys "Sample_Project" or "Sample_ID"), check config.yaml file!')
+                role['fastq-prefix'] = '%s/%s' % (alias['real_id']['Sample_Project'], alias['real_id']['Sample_ID'])
+                role['is_alias'] = True
+                aliases.append(role)
+    if len(aliases) > 0:
+        return pd.concat([samplesheets, pd.DataFrame(aliases)], sort=False)
+    return samplesheets
+
+
 def get_trios(samplesheets, config):
     # get projects that require trio analysis
     trio_projects = [prj_name for prj_name in config['projects'] if 'trio' in config['projects'][prj_name]['actions']]
@@ -627,7 +654,7 @@ def get_rejoin_input(prefix, sample, direction, samplesheets, config, _type='fil
     if _type == "files" the return list contains multiple fastq.gz file paths.
     """
     res = []
-    for _, row in samplesheets[samplesheets['fastq-prefix'] == sample].iterrows():
+    for _, row in samplesheets[(samplesheets['fastq-prefix'] == sample) & (samplesheets['is_alias'] != True)].iterrows():
         if pd.isnull(row['Lane']):
             res.append('%s%s%s%s/%s_%s.fastq.gz' % (prefix, config['dirs']['inputs'], config['dirs']['persamplefastq'], row['run'], row['fastq-prefix'], direction))
         else:
@@ -649,7 +676,9 @@ def get_xenograft_hybridreference(sample, samplesheets, config):
 
 
 def get_xenograft_stepname(sample, samplesheets, config):
-    project = samplesheets[samplesheets['fastq-prefix'] == sample]['Sample_Project'].dropna().unique()
+    project = samplesheets[
+        (samplesheets['fastq-prefix'] == sample) &
+        (samplesheets['is_alias'] != True)]['Sample_Project'].dropna().unique()
     if len(project) != 1:
         sys.stderr.write('%s\n' % (project))
         raise ValueError("get_xenograft_stepname: Sample '%s' has ambiguous or missing project!" % sample)

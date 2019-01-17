@@ -409,8 +409,8 @@ rule writing_headers:
 rule samtools_mpileup_somatic:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.entity, SAMPLESHEETS, config)),
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], wildcards.role, SAMPLESHEETS), SAMPLESHEETS, config)),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], wildcards.role, SAMPLESHEETS), SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         bam=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], wildcards.role, SAMPLESHEETS)),
     output:
         "{prefix}%s%s/{entity}.{role,healthy|tumor}.pileup" % (config['dirs']['intermediate'], config['stepnames']['samtools_mpileup'])
@@ -453,7 +453,7 @@ rule varscan_somatic:
     threads:
         1
     params:
-        speciesParams=lambda wildcards: get_reference_varscan_somatic(wildcards.entity, SAMPLESHEETS, config),
+        speciesParams=lambda wildcards: get_reference_varscan_somatic(get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS), SAMPLESHEETS, config),
         outdir=lambda wildcards: "%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['varscan_somatic'], wildcards.entity)
     shell:
         #set the locale to C which avoids problems with . and , used as decimal separator
@@ -541,7 +541,7 @@ rule varscan_fpfilter_somatic:
 
 rule bam_readcount_somatic_SNP:
     input:
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.entity, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS), SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         var="{prefix}%s%s/{entity}.{snvtype}{mutationclass}.vcf.fpfilter.var" % (config['dirs']['intermediate'], config['stepnames']['varscan_fpfilter']),
         bam=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS)),
     output:
