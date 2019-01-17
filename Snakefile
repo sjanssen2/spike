@@ -18,7 +18,7 @@ if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith
     shell.prefix("module load R;")
 
 configfile: "config.yaml"
-SAMPLESHEETS = get_global_samplesheets(os.path.join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets']))
+SAMPLESHEETS = get_global_samplesheets(os.path.join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets']), config)
 
 print("%i samples in %i projects." % (SAMPLESHEETS['Sample_ID'].unique().shape[0], SAMPLESHEETS['Sample_Project'].unique().shape[0]), file=sys.stderr)
 
