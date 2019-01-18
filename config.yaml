@@ -206,6 +206,53 @@ projects:
     exometrack:
       file: "Agilent_SureSelect_Human_AllExon_V7.hGRC37.Covered.bed"
       protocol_name: "SureSelectHumanAllExonV7"
+  ALL_Study1_Hauer:
+    actions:
+      - demux
+    species: homo sapiens
+
+sample_aliases:
+  - real_id:
+      Sample_ID: 'HL_rem'
+      Sample_Project: 'ALL_Study1_Hauer'
+    roles:
+      - Sample_ID: 'KB0011_c'
+        Sample_Project: 'Keimbahn'
+        spike_entity_id: 'KB0011'
+        spike_entity_role: 'patient'
+  - real_id:
+      Sample_ID: 'HL_ini'
+      Sample_Project: 'ALL_Study1_Hauer'
+    roles:
+      - Sample_ID: 'KB0011_c_t'
+        Sample_Project: 'Keimbahn'
+        spike_entity_id: 'KB0011'
+        spike_entity_role: 'tumor_patient'
+  - real_id:
+      Sample_ID: 'ALPS_60'
+      Sample_Project: 'Alps'
+    roles:
+      - Sample_ID: 'KB0195_s1'
+        Sample_Project: 'Keimbahn'
+        spike_entity_id: 'KB0195'
+        spike_entity_role: 'sibling'
+  - real_id:
+      Sample_ID: 'ALPS_60a'
+      Sample_Project: 'Alps'
+    roles:
+      - Sample_ID: 'KB0195_f'
+        Sample_Project: 'Keimbahn'
+        spike_entity_id: 'KB0195'
+        spike_entity_role: 'father'
+  - real_id:
+      Sample_ID: 'ALPS_60b'
+      Sample_Project: 'Alps'
+    roles:
+      - Sample_ID: 'KB0195_m'
+        Sample_Project: 'Keimbahn'
+        spike_entity_id: 'KB0195'
+        spike_entity_role: 'mother'
+
 
 references:
   genomes:

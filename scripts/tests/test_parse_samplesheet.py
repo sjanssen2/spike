@@ -12,7 +12,7 @@ class ParseSamplesheetTests(TestCase):
     config = None
 
     def setUp(self):
-        self.samplesheets = get_global_samplesheets('tests/data/')
+        self.samplesheets = get_global_samplesheets('tests/data/', config)
         with open('../config.yaml', 'r') as f:
             self.config = yaml.load(f)
 
