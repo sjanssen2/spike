@@ -444,8 +444,8 @@ def get_species(sample, samplesheets, config):
     if len(projects) == 0:
         projects = samplesheets[
             (samplesheets['Sample_Project'] == sample.split('/')[0]) &
-            (samplesheets['spike_entity_id'] == sample.split('/')[-1]) &
-            (samplesheets['is_alias'] != True)]['Sample_Project'].unique()
+            ((samplesheets['spike_entity_id'] == sample.split('/')[-1]) |
+             (samplesheets['Sample_ID'] == sample.split('/')[-1]))]['Sample_Project'].unique()
 
     if len(projects) > 1:
         raise ValueError("Ambiguous projects: '%s' for sample '%s'" % (projects, sample))

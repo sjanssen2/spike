@@ -1,8 +1,8 @@
 rule varscan_trio:
     # Preprocessing to do a realignment of the reads with GATK
     input:
-        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(wildcards.trio, SAMPLESHEETS, config)),
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.trio, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS), SAMPLESHEETS, config)),
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS), SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS)),
         father=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'father', SAMPLESHEETS)),
         mother=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'mother', SAMPLESHEETS)),
@@ -140,7 +140,7 @@ rule varscan_filter_INDEL:
 
 rule bam_readcount_SNP:
     input:
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.trio, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS), SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         vcf="{prefix}%s%s/{trio}.snp.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS)),
     output:
@@ -182,7 +182,7 @@ rule bam_readcount_SNP:
 
 rule bam_readcount_INDEL:
     input:
-        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.trio, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
+        references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS), SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']],
         vcf="{prefix}%s%s/{trio}.indel.filtered.vcf" % (config['dirs']['intermediate'], config['stepnames']['varscan_filter']),
         patient=lambda wildcards: "%s%s%s/%s.reCal.reAl.nodup.srt.bam" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['gatk_PrintReads'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS)),
     output:
