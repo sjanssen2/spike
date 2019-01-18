@@ -518,6 +518,9 @@ def get_demux_samples(samplesheets, config):
     # filter samples to those belonging to tumor vs. normal projects
     background_samples = samplesheets[(samplesheets['Sample_Project'].isin(defined_projects)) & (samplesheets['is_alias'] != True)]
 
+    # remove samples that stem from per sample fastq sources, like Macrogen sequencing
+    background_samples = background_samples[pd.notnull(background_samples['Lane'])]
+
     return list(background_samples['run'].unique())
 
 
