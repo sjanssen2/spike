@@ -116,51 +116,30 @@ xenograft:
 
 projects:
   Alps:
-    actions:
-      - background
-      - trio
     species: homo sapiens
     snupy:
       contact: "Ute Fischer"
       project_id: 19
   Canada_Reid:
-    actions:
-      - background
-      - tumornormal
     species: mus musculus
     snupy:
       contact: "Marina Oldenburg"
       project_id: 123
   Fischer_Geron:
-    actions:
-      - background
-      - tumornormal
     species: homo sapiens
     xenograft: "GRCh_GRCm_filtering_hybrid.fa"
   Maus_Hauer:
-    actions:
-      - background
-      - tumornormal
     species: mus musculus
     snupy:
       contact: "Julia Hauer"
       project_id: 109
   AG_Remke:
-    actions:
-      - demultiplex
   AG_Remke_GAC_LT:
-    actions:
-      - demultiplex
-      - background
-      - tumornormal
     species: homo sapiens
     snupy:
       contact: "Nan Qin"
       project_id: 131
   Keimbahn:
-    actions:
-      - background
-      - trio
     species: homo sapiens
     snupy:
       contact: "Kuhlen"
@@ -185,30 +164,18 @@ projects:
       - KB0174
       - KB0190
   ALL_family_LB:
-    actions:
-      - persamplefastq
-      - background
-      - trio
     species: homo sapiens
     exometrack:
       file: "Agilent_SureSelect_Human_AllExon_V6_r2.hGRC37.Covered.bed"
       protocol_name: "SureSelectHumanAllExonV6r2"
   Translokation_t7_12_Hauer:
-    actions:
-      - background
-      - tumornormal
     species: homo sapiens
   Kit_Test:
-    actions:
-      - background
-      - tumornormal
     species: homo sapiens
     exometrack:
       file: "Agilent_SureSelect_Human_AllExon_V7.hGRC37.Covered.bed"
       protocol_name: "SureSelectHumanAllExonV7"
   ALL_Study1_Hauer:
-    actions:
-      - demux
     species: homo sapiens
 
 sample_aliases:
