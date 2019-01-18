@@ -64,7 +64,7 @@
     "gatk_BaseRecalibrator":
     {
       "mem" : "8GB",
-      "time" : "02:59:59",
+      "time" : "08:59:59",
       "ppn" : "3",
     },
 
