@@ -20,7 +20,7 @@ emails:
 name_program: "spike"
 
 dirs:
-  prefix: "../Spike_data/"
+  prefix: "/gpfs/project/projects/spike/"
   tmpdir: ""
 
   intermediate: "Intermediate/"
