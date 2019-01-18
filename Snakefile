@@ -19,7 +19,13 @@ if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith
 
 configfile: "config.yaml"
 SAMPLESHEETS = get_global_samplesheets(os.path.join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets']), config)
-SAMPLESHEETS = SAMPLESHEETS[(SAMPLESHEETS['spike_entity_id'] == 'KB0011') | (SAMPLESHEETS['Sample_Project'] == 'ALL_Study1_Hauer')]
+
+if False:
+    # subset for Keimbahn project:
+    # last two conditions are to include samples of other projects, which also are used for specific roles in the Keimbahn project, see config.yaml for details.
+    SAMPLESHEETS = SAMPLESHEETS[(SAMPLESHEETS['Sample_Project'] == 'Keimbahn') |
+                                (SAMPLESHEETS['Sample_ID'].isin(['HL_ini', 'HL_rem']) & (SAMPLESHEETS['Sample_Project'] == 'ALL_Study1_Hauer')) |
+                                (SAMPLESHEETS['Sample_ID'].isin(['ALPS_60', 'ALPS_60a', 'ALPS_60b']) & (SAMPLESHEETS['Sample_Project'] == 'Alps'))]
 
 print("%i samples in %i projects." % (SAMPLESHEETS['Sample_ID'].unique().shape[0], SAMPLESHEETS['Sample_Project'].unique().shape[0]), file=sys.stderr)
 
