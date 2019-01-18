@@ -274,7 +274,6 @@ def _get_statusdata_snupyextracted(samplesheets, prefix, config):
                         runs = '+'.join(sorted(samplesheets[samplesheets['spike_entity_id'] == meta_sample['spike_entity_id'].iloc[0]]['run'].unique()))
                 name = '%s_%s/%s%s' % (runs, sample_project, entity, file_ending)
 
-                #if action in config['projects'][sample_project]['actions']:
                 if (sample_project in config['projects']) and (pd.notnull(meta_sample['spike_entity_role'].iloc[0])):
                     if ((action == 'trio') and (meta_sample['spike_entity_role'].iloc[0] in ['patient', 'sibling']) and (not _isKnownDuo(sample_project, meta_sample['spike_entity_id'].iloc[0], config))) or\
                        ((action == 'background')) or\
@@ -316,7 +315,6 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
             if exists(fp_vcf):
                 nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
 
-            # if (sample_project in config['projects']) and (action in config['projects'][sample_project]['actions']):
             if (sample_project in config['projects']) and (pd.notnull(meta['spike_entity_role'].iloc[0])):
                 if ((action == 'trio') and (meta['spike_entity_role'].iloc[0] in ['patient', 'sibling']) and (not _isKnownDuo(sample_project, meta['spike_entity_id'].iloc[0], config))) or\
                    ((action == 'background')) or\
@@ -461,17 +459,16 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
     for sample_project, grp_project in samplesheets.groupby('Sample_Project'):
         # add in lines to indicate missing samples, e.g. for trios that are incomplete
         missing_samples = []
-        if (sample_project in config['projects']) and ('actions' in config['projects'][sample_project]):
-            if 'trio' in config['projects'][sample_project]['actions']:
-                for spike_entity_id, grp_spike_entity_group in grp_project.groupby('spike_entity_id'):
-                    for role in ['patient', 'mother', 'father']:
-                        if grp_spike_entity_group[grp_spike_entity_group['spike_entity_role'] == role].shape[0] <= 0:
-                            missing_samples.append({
-                                'spike_entity_id': spike_entity_id,
-                                'Sample_ID': role,
-                                'spike_entity_role': role,
-                                'missing': True,
-                            })
+        for spike_entity_id, grp_spike_entity_group in grp_project.groupby('spike_entity_id'):
+            if len(set(grp_spike_entity_group['spike_entity_role'].unique()) & set(['patient', 'father', 'mother', 'sibling'])) > 0:
+                for role in ['patient', 'mother', 'father']:
+                    if grp_spike_entity_group[grp_spike_entity_group['spike_entity_role'] == role].shape[0] <= 0:
+                        missing_samples.append({
+                            'spike_entity_id': spike_entity_id,
+                            'Sample_ID': role,
+                            'spike_entity_role': role,
+                            'missing': True,
+                        })
 
         # combine samples from samplesheets AND those that are expected but missing
         samples_and_missing = pd.concat([grp_project, pd.DataFrame(missing_samples)], sort=False).fillna(value={'spike_entity_id': ''})

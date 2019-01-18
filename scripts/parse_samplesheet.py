@@ -157,10 +157,7 @@ def validate_samplesheet(ss: pd.DataFrame, config, line_offset: int=22, err=sys.
     for idx, row in ss.iterrows():
         if pd.notnull(row['spike_entity_role']):
             if row['Sample_Project'] in config['projects']:
-                for action in exp_roles.keys():
-                    if action in config['projects'][row['Sample_Project']]['actions']:
-                        if row['spike_entity_role'] not in exp_roles[action]:
-                            warnings.append('spike_entity_role "%s" in line %i for Sample_Project "%s" is unknown for %s-computation!' % (row['spike_entity_role'], line_offset+idx, row['Sample_Project'], action))
+                warnings.append('spike_entity_role "%s" in line %i for Sample_Project "%s" is unknown!' % (row['spike_entity_role'], line_offset+idx, row['Sample_Project']))
 
     # test that entity name is infix of sample name
     for idx, row in ss.iterrows():
@@ -512,42 +509,21 @@ def get_bwa_mem_header(sample, samplesheets, config):
 
 
 def get_demux_samples(samplesheets, config):
-    # get projects defined in config, i.e. do nothing to projects NOT properly defined even if occuring in demux samplesheet!
-    defined_projects = [prj_name for prj_name in config['projects']]
-
-    # filter samples to those belonging to tumor vs. normal projects
-    background_samples = samplesheets[(samplesheets['Sample_Project'].isin(defined_projects)) & (samplesheets['is_alias'] != True)]
+    # ignore samples aliases
+    samples = samplesheets[samplesheets['is_alias'] != True]
 
     # remove samples that stem from per sample fastq sources, like Macrogen sequencing
-    background_samples = background_samples[pd.notnull(background_samples['Lane'])]
+    samples = samples[pd.notnull(samples['Lane'])]
 
-    return list(background_samples['run'].unique())
-
-
-def get_persamplefastq_samples(samplesheets, config, get='runs'):
-    # get projects that require snv vs. reference analysis
-    background_projects = [prj_name for prj_name in config['projects'] if 'persamplefastq' in config['projects'][prj_name]['actions']]
-
-    # filter samples to those belonging to per sample fastq projects
-    background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
-
-    if get=='samples':
-        return list(background_samples['fastq-prefix'].unique())
-    elif get=='projects':
-        return background_projects
-
-    return list(background_samples['run'].unique())
+    return list(samples['run'].unique())
 
 
 def get_samples(samplesheets, config):
-    # get projects that require snv vs. reference analysis
-    background_projects = [prj_name for prj_name in config['projects'] if 'background' in config['projects'][prj_name]['actions']]
-
-    # filter samples to those belonging to tumor vs. normal projects
-    background_samples = samplesheets[samplesheets['Sample_Project'].isin(background_projects)]
+    # only consider samples that have some spike_entity_role defined
+    samples_with_role = samplesheets[pd.notnull(samplesheets['spike_entity_role'])]
 
     samples = []
-    for sample, g in background_samples.groupby(['Sample_Project', 'fastq-prefix']):
+    for sample, g in samples_with_role.groupby(['Sample_Project', 'fastq-prefix']):
         samples.append({'Sample_Project': sample[0],
                         'sample': sample[1],
                         'spike_entity_id': g['spike_entity_id'].iloc[0]})
@@ -556,14 +532,11 @@ def get_samples(samplesheets, config):
 
 
 def get_tumorNormalPairs(samplesheets, config, species=None):
-    # get projects that require tumor vs. normal analysis
-    tumornormal_projects = [prj_name for prj_name in config['projects'] if 'tumornormal' in config['projects'][prj_name]['actions']]
-
-    # filter samples to those belonging to tumor vs. normal projects
-    tumornormal_samples = samplesheets[samplesheets['Sample_Project'].isin(tumornormal_projects)]
+    # only consider samples that have some spike_entity_role defined
+    samples_with_role = samplesheets[pd.notnull(samplesheets['spike_entity_role'])]
 
     pairs = []
-    for pair, g in tumornormal_samples.groupby(['Sample_Project', 'spike_entity_id']):
+    for pair, g in samples_with_role.groupby(['Sample_Project', 'spike_entity_id']):
         # only choose comlete pairs
         if len(set(g['spike_entity_role'].unique()) & {'healthy','tumor'}) == 2:
             if species is not None:
@@ -574,7 +547,6 @@ def get_tumorNormalPairs(samplesheets, config, species=None):
 
     # add tumor/normal computations for trio-like projects, i.e. Keimbahn, where special samples stem from tumor tissue and
     # need to be compared to the normal germline (i.e. healthy) samples, e.g. KB0049
-    samples_with_role = samplesheets[pd.notnull(samplesheets['spike_entity_role'])]
     for (project, tumor), g in samples_with_role[samples_with_role['spike_entity_role'].apply(lambda x: x.startswith('tumor_'))].groupby(['Sample_Project', 'Sample_ID']):
         if species is not None:
             if get_species(g['fastq-prefix'].iloc[0], samplesheets, config) != species:
@@ -587,7 +559,7 @@ def get_tumorNormalPairs(samplesheets, config, species=None):
 
 def add_aliassamples(samplesheets, config):
     aliases = []
-    if 'sample_aliases' in config:
+    if (config is not None) and ('sample_aliases' in config):
         for alias in config['sample_aliases']:
             if not (('roles' in alias) and ('real_id' in alias)):
                 raise ValueError('Sample alias is not properly defined (missing keys "roles" or "real_id"), check config.yaml file!')
@@ -599,18 +571,14 @@ def add_aliassamples(samplesheets, config):
                 aliases.append(role)
     if len(aliases) > 0:
         return pd.concat([samplesheets, pd.DataFrame(aliases)], sort=False)
+    else:
+        samplesheets['is_alias'] = np.nan
     return samplesheets
 
 
 def get_trios(samplesheets, config):
-    # get projects that require trio analysis
-    trio_projects = [prj_name for prj_name in config['projects'] if 'trio' in config['projects'][prj_name]['actions']]
-
-    # filter samples to those belonging to trio projects
-    trio_samples = samplesheets[samplesheets['Sample_Project'].isin(trio_projects)]
-
     trios = []
-    for trio, g in trio_samples.groupby(['Sample_Project', 'spike_entity_id']):
+    for trio, g in samplesheets[pd.notnull(samplesheets['spike_entity_role'])].groupby(['Sample_Project', 'spike_entity_id']):
         # only choose comlete trios, i.e. entities that have at least patient, mother and father
         # there might also be siblings, but we ignore those samples for now.
         if len(set(g['spike_entity_role'].unique()) & {'patient', 'mother', 'father'}) == 3:
@@ -622,14 +590,6 @@ def get_trios(samplesheets, config):
                 trios.append({'Sample_Project': trio[0],
                               'spike_entity_id': sibling})
     return trios
-
-
-def get_projects_with_exomecoverage(config):
-    res = []
-    for name in config['projects']:
-        if ('actions' in config['projects'][name]) and (len(set(config['projects'][name]['actions']) & set(['background', 'trio', 'tumornormal'])) > 0):
-            res.append(name)
-    return res
 
 
 def get_rejoin_input(prefix, sample, direction, samplesheets, config, _type='files'):
