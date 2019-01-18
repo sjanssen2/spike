@@ -12,14 +12,14 @@ class ParseSamplesheetTests(TestCase):
     config = None
 
     def setUp(self):
-        self.samplesheets = get_global_samplesheets('tests/data/', config)
+        self.samplesheets = get_global_samplesheets('tests/data/', self.config)
         with open('../config.yaml', 'r') as f:
             self.config = yaml.load(f)
 
     def test_get_role(self):
-        config = {'dirs': {'prefix': './',
-                           'inputs': 'tests/',
-                           'samplesheets': 'data'}}
+        self.config = {'dirs': {'prefix': './',
+                                'inputs': 'tests/',
+                                'samplesheets': 'data'}}
         spike_project = 'Alpss'
         with self.assertRaisesRegex(ValueError,
                                     ('Could not find a spike project with name "%s". Available projects are:\n\t%s\n' % (spike_project, '\n\t'.join(sorted(['AG_Remke', 'Alps', 'Fischer_Geron', 'Maus_Hauer', 'ALL_family_LB']))))):
@@ -191,7 +191,7 @@ class ParseSamplesheetTests(TestCase):
                  'spike_entity_role': 'healthy'}]
         obs = StringIO()
         validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
-        self.assertIn('spike_entity_role "healthy" in line 22 for Sample_Project "Alps" is unknown for trio-computation!', obs.getvalue())
+        self.assertIn('spike_entity_role "healthy" in line 22 for Sample_Project "Alps" is unknown!', obs.getvalue())
         self.assertIn('Sample_ID "paul_c" does not follow expected naming schema "^ALPS" in line 22.', obs.getvalue())
 
         data = [{'Lane': None,
@@ -216,7 +216,7 @@ class ParseSamplesheetTests(TestCase):
                  'spike_entity_role': 'brother'}]
         obs = StringIO()
         validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
-        self.assertIn('spike_entity_role "brother" in line 22 for Sample_Project "Maus_Hauer" is unknown for tumornormal-computation!', obs.getvalue())
+        self.assertIn('spike_entity_role "brother" in line 22 for Sample_Project "Maus_Hauer" is unknown!', obs.getvalue())
 
         data = [{'Lane': None,
                  'Sample_ID': "samplea",
@@ -228,7 +228,7 @@ class ParseSamplesheetTests(TestCase):
                  'spike_entity_role': 'brother'}]
         obs = StringIO()
         validate_samplesheet(pd.DataFrame(data), self.config, err=obs)
-        self.assertIn('spike_entity_role "brother" in line 22 for Sample_Project "Keimbahn" is unknown for trio-computation!', obs.getvalue())
+        self.assertIn('spike_entity_role "brother" in line 22 for Sample_Project "Keimbahn" is unknown!', obs.getvalue())
 
         data = [{'Lane': None,
                  'Sample_ID': None,
