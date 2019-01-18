@@ -209,7 +209,6 @@ projects:
   ALL_Study1_Hauer:
     actions:
       - demux
-      - background
     species: homo sapiens
 
 sample_aliases:
