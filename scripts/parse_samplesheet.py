@@ -29,7 +29,7 @@ def parse_samplesheet(fp_samplesheet):
     header = pd.read_csv(fp_samplesheet, sep=",", nrows=row_reads-2, index_col=0).dropna(axis=1, how="all").dropna(axis=0, how="all")
     #header = header.set_index(header.columns[0])
     header.index = list(map(lambda x: 'header_%s' % x, header.index))
-    header.dropna(axis=0, how="any", inplace=True)
+    header = header.dropna(axis=0, how="any")
     header = header.T.reset_index()
     del header['index']
 
