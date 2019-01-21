@@ -313,7 +313,10 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
 
             nr_calls = RESULT_NOT_PRESENT
             if exists(fp_vcf):
-                nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
+                if (action == 'tumornormal') and (program == 'Varscan'):
+                    nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[7], squeeze=True).apply(lambda x: ';SS=2;' in x).sum()
+                else:
+                    nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
 
             if (sample_project in config['projects']) and (pd.notnull(meta['spike_entity_role'].iloc[0])):
                 if ((action == 'trio') and (meta['spike_entity_role'].iloc[0] in ['patient', 'sibling']) and (not _isKnownDuo(sample_project, meta['spike_entity_id'].iloc[0], config))) or\
