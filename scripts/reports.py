@@ -8,7 +8,7 @@ import numpy as np
 from scipy import stats
 import xlsxwriter
 import matplotlib.pyplot as plt
-from scripts.parse_samplesheet import get_min_coverage
+from scripts.parse_samplesheet import get_min_coverage, get_role, add_aliassamples
 from scripts.snupy import check_snupy_status
 import json
 import datetime
@@ -204,14 +204,25 @@ def _get_statusdata_demultiplex(samplesheets, prefix, config):
                 pd.read_csv(fp_yielddata, sep="\t").rename(columns={'Project': 'Sample_Project', 'Sample': 'Sample_ID', 'Yield': 'yield'})) #.set_index(['Project', 'Lane', 'Sample', 'Barcode sequence'])
     if len(demux_yields) <= 0:
         return pd.DataFrame()
-    demux_yields = pd.concat(demux_yields, axis=0)
+    demux_yields = add_aliassamples(pd.concat(demux_yields, axis=0), config)
+
+    # map yields of original sampels to aliases
+    for idx, row in demux_yields[demux_yields['is_alias'] == True].iterrows():
+        orig = demux_yields[(demux_yields['Sample_Project'] == row['fastq-prefix'].split('/')[0]) & (demux_yields['Sample_ID'] == row['fastq-prefix'].split('/')[1])]['yield']
+        if orig.shape[0] > 0:
+            demux_yields.loc[idx, 'yield'] = orig.sum()
+    demux_yields = demux_yields.dropna(subset=['yield'])
+
     return pd.DataFrame(demux_yields).groupby(['Sample_Project', 'Sample_ID'])['yield'].sum()
 
 
 def _get_statusdata_coverage(samplesheets, prefix, config, min_targets=80):
     coverages = []
     for (sample_project, sample_id), meta in samplesheets.groupby(['Sample_Project', 'Sample_ID']):
-        fp_coverage = join(prefix, config['dirs']['intermediate'], config['stepnames']['exome_coverage'], sample_project, '%s.exome_coverage.csv' % sample_id)
+        role_sample_project, role_sample_id = sample_project, sample_id
+        if (meta['is_alias'] == True).any():
+            role_sample_project, role_sample_id = get_role(sample_project, meta['spike_entity_id'].unique()[0], meta['spike_entity_role'].unique()[0], samplesheets).split('/')
+        fp_coverage = join(prefix, config['dirs']['intermediate'], config['stepnames']['exome_coverage'], role_sample_project, '%s.exome_coverage.csv' % role_sample_id)
         if exists(fp_coverage):
             coverage = pd.read_csv(fp_coverage, sep="\t")
             if coverage.shape[0] > 0:
@@ -295,10 +306,16 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
     results = []
     for (sample_project, sample_id), meta in samplesheets.groupby(['Sample_Project', 'Sample_ID']):
         for file_ending, stepname, action, program in [(ap['fileending_spike_calls'], ap['stepname_spike_calls'], ap['action'], ap['program']) for ap in ACTION_PROGRAMS]:
-            name = sample_id
+            role_sample_project, role_sample_id = sample_project, sample_id
+            if ((meta['is_alias'] == True).any()) & (action in ['background', 'trio']):
+                role_sample_project, role_sample_id = get_role(sample_project, meta['spike_entity_id'].unique()[0], meta['spike_entity_role'].unique()[0], samplesheets).split('/')
+            name = role_sample_id
             if (action == 'trio'):
                 if meta['spike_entity_role'].unique()[0] == 'patient':
                     name = meta['spike_entity_id'].iloc[0]
+                    role_sample_project = sample_project
+                elif meta['spike_entity_role'].unique()[0] == 'sibling':
+                    name = samplesheets[(samplesheets['Sample_Project'] == role_sample_project) & (samplesheets['Sample_ID'] == role_sample_id)]['spike_entity_id'].iloc[0]
             if (action == 'tumornormal'):
                 roles = meta['spike_entity_role'].dropna().unique()
                 if len(roles) <= 0:
@@ -306,10 +323,10 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                 if roles[0].startswith('tumor'):
                     name = meta['spike_entity_id'].iloc[0]
                     if program == 'Excavator2':
-                        name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (sample_id, sample_id, sample_id)
+                        name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (role_sample_id, role_sample_id, role_sample_id)
                     elif 'tumor_' in roles[0]:
-                        name = sample_id
-            fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][stepname], sample_project, name, file_ending)
+                        name = role_sample_id
+            fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][stepname], role_sample_project, name, file_ending)
 
             nr_calls = RESULT_NOT_PRESENT
             if exists(fp_vcf):
@@ -318,8 +335,8 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                 else:
                     nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
 
-            if (sample_project in config['projects']) and (pd.notnull(meta['spike_entity_role'].iloc[0])):
-                if ((action == 'trio') and (meta['spike_entity_role'].iloc[0] in ['patient', 'sibling']) and (not _isKnownDuo(sample_project, meta['spike_entity_id'].iloc[0], config))) or\
+            if (role_sample_project in config['projects']) and (pd.notnull(meta['spike_entity_role'].iloc[0])):
+                if ((action == 'trio') and (meta['spike_entity_role'].iloc[0] in ['patient', 'sibling']) and (not _isKnownDuo(role_sample_project, meta['spike_entity_id'].iloc[0], config))) or\
                    ((action == 'background')) or\
                    ((action == 'tumornormal') and (meta['spike_entity_role'].iloc[0].startswith('tumor'))):
                     results.append({
@@ -419,11 +436,26 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         'valign': 'vcenter',
         'align': 'center',
         'font_size': 9})
-    cellrange = '%s%i:%s%i' % (chr(65+offset_cols), offset_rows+1, chr(65+offset_cols+3), offset_rows+1)
+    cellrange = '%s%i:%s%i' % (chr(65+offset_cols), offset_rows+1, chr(65+offset_cols+3), offset_rows+2)
     info_username = getpass.getuser()
     info_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     info_machine = socket.gethostname()
     worksheet.merge_range(cellrange, ('status report created\nat %s\nby %s\non %s' % (info_now, info_username, info_machine)),format_info)
+
+    # header action
+    format_action = workbook.add_format({
+        'valign': 'vcenter',
+        'align': 'center',
+        'bold': True})
+    aps = pd.Series([ap['action'] for ap in ACTION_PROGRAMS]).to_frame()
+    for caption, g in aps.groupby(0):
+        left = offset_cols+6+g.index[0]
+        right = offset_cols+6+g.index[-1]
+        cellrange = '%s%i:%s%i' % (chr(65+left), offset_rows+1, chr(65+right), offset_rows+1)
+        if left == right:
+             worksheet.write(offset_rows, left, caption, format_action)
+        else:
+             worksheet.merge_range(cellrange, caption, format_action)
 
     # header
     format_header = workbook.add_format({
@@ -431,16 +463,16 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         'bold': True,
         'valign': 'vcenter',
         'align': 'center'})
-    worksheet.set_row(offset_rows, 80)
+    worksheet.set_row(offset_rows+1, 80)
     for i, caption in enumerate(['yield (MB)', 'coverage'] + [ap['program'] for ap in ACTION_PROGRAMS]):
-        worksheet.write(offset_rows, offset_cols+4+i, caption, format_header)
+        worksheet.write(offset_rows+1, offset_cols+4+i, caption, format_header)
     format_spike_seqdate = workbook.add_format({
         'align': 'center',
         'valign': 'vcenter',
         'font_size': 8})
-    worksheet.write(offset_rows, offset_cols+6+len(ACTION_PROGRAMS), 'sequenced at', format_spike_seqdate)
+    worksheet.write(offset_rows+1, offset_cols+6+len(ACTION_PROGRAMS), 'sequenced at', format_spike_seqdate)
 
-    worksheet.freeze_panes(offset_rows+1, offset_cols+4)
+    worksheet.freeze_panes(offset_rows+2, offset_cols+4)
 
     # body
     format_project = workbook.add_format({
@@ -458,7 +490,7 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         'valign': 'vcenter',
         'align': 'center',
         'font_color': '#ff0000'})
-    row = offset_rows+1
+    row = offset_rows+2
     for sample_project, grp_project in samplesheets.groupby('Sample_Project'):
         # add in lines to indicate missing samples, e.g. for trios that are incomplete
         missing_samples = []
@@ -541,6 +573,9 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
                         value_yield = float('%.1f' % (int(data_yields.loc[sample_project, sample_id]) / (1000**3)))
                         if value_yield >= 5.0:
                             frmt = format_good
+                    if grp_sample_id['Lane'].dropna().shape[0] <= 0:
+                        value_yield = 'per sample fastq'
+                        frmt = format_good
                     worksheet.write(row, offset_cols+4, value_yield, frmt)
                     worksheet.set_column(offset_cols+4, offset_cols+4, 4)
 
