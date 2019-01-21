@@ -16,8 +16,9 @@ rule biom_gatkbackground:
 
 rule biom_merge:
     input:
-        lambda wildcards: ["%s%s%s/%s/%s.gatk.snp_indel.biom" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], wildcards.project, sample)
-                           for sample in SAMPLESHEETS[SAMPLESHEETS['Sample_Project'] == wildcards.project]['Sample_ID'].unique()]
+        lambda wildcards: ["%s%s%s/%s.gatk.snp_indel.biom" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], sample['sample'])
+                           for sample in get_samples(SAMPLESHEETS, config)
+                           if sample['Sample_Project'] == wildcards.project]
     output:
         "{prefix}%s%s/{project}.biom" % (config['dirs']['intermediate'], config['stepnames']['biom_merged'])
     log:
