@@ -567,6 +567,9 @@ def add_aliassamples(samplesheets, config):
                 if not (('Sample_Project' in alias['real_id']) and ('Sample_ID' in alias['real_id'])):
                     raise ValueError('Sample alias is not properly defined (missing keys "Sample_Project" or "Sample_ID"), check config.yaml file!')
                 role['fastq-prefix'] = '%s/%s' % (alias['real_id']['Sample_Project'], alias['real_id']['Sample_ID'])
+                if 'run' in samplesheets.columns:
+                    role['run'] = '+'.join(samplesheets[(samplesheets['Sample_Project'] == alias['real_id']['Sample_Project']) &
+                                                        (samplesheets['Sample_ID'] == alias['real_id']['Sample_ID'])]['run'].unique())
                 role['is_alias'] = True
                 aliases.append(role)
     if len(aliases) > 0:
