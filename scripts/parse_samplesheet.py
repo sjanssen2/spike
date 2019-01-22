@@ -571,6 +571,8 @@ def add_aliassamples(samplesheets, config):
                     role['run'] = '+'.join(samplesheets[(samplesheets['Sample_Project'] == alias['real_id']['Sample_Project']) &
                                                         (samplesheets['Sample_ID'] == alias['real_id']['Sample_ID'])]['run'].unique())
                 role['is_alias'] = True
+                role['Lane'] = samplesheets[(samplesheets['Sample_Project'] == alias['real_id']['Sample_Project']) &
+                                            (samplesheets['Sample_ID'] == alias['real_id']['Sample_ID'])]['Lane'].iloc[0]
                 aliases.append(role)
     if len(aliases) > 0:
         return pd.concat([samplesheets, pd.DataFrame(aliases)], sort=False)
