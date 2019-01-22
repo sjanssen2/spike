@@ -157,42 +157,33 @@ rule excavator_somatic:
         " 2>> {log} 1>&2"
 
 
-def _helper(entity, samplesheets, role):
-    """Obtain all samples for a given project and a given role, i.e. all "Maus_Hauer" samples that are "healthy"."""
-    project_samples = samplesheets[(samplesheets['Sample_Project'] == entity.split('/')[0]) &
-                                   (samplesheets['spike_entity_role'] == role)]
-    return project_samples['Sample_ID'].unique()
-rule excavator_pooled:
+rule excavator_trio:
     input:
-        assembly=lambda wildcards: "%s%s%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS), SAMPLESHEETS, config)['file']),
-        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(get_role(wildcards.entity.split('/')[0], wildcards.entity.split('/')[-1], 'tumor', SAMPLESHEETS), SAMPLESHEETS, config)),
-        controls=lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'], wildcards.entity.split('/')[0], sample) for sample in _helper(wildcards.entity, SAMPLESHEETS, 'healthy')],
-        tumors=lambda wildcards: ["%s%s%s/%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'], wildcards.entity.split('/')[0], sample) for sample in _helper(wildcards.entity, SAMPLESHEETS, 'tumor')],
+        assembly=lambda wildcards: "%s%s%s.fa" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS), SAMPLESHEETS, config)['file']),
+        exometrack=lambda wildcards: "%s%s%s" % (config['dirs']['prefix'], config['dirs']['references'], get_reference_exometrack(get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS), SAMPLESHEETS, config)),
+        patient=directory(lambda wildcards: "%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'patient', SAMPLESHEETS))),
+        father=directory(lambda wildcards: "%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'father', SAMPLESHEETS))),
+        mother=directory(lambda wildcards: "%s%s%s/%s" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_dataprepare'], get_role(wildcards.trio.split('/')[0], wildcards.trio.split('/')[-1], 'mother', SAMPLESHEETS))),
     output:
-        directory("{prefix}%s%s/{entity}" % (config['dirs']['intermediate'], config['stepnames']['excavator_pooled']))
+        directory("{prefix}%s%s/{trio}" % (config['dirs']['intermediate'], config['stepnames']['excavator_trio']))
     log:
-        "{prefix}%s%s/{entity}.log" % (config['dirs']['logs'], config['stepnames']['excavator_pooled'])
+        "{prefix}%s%s/{trio}.log" % (config['dirs']['logs'], config['stepnames']['excavator_trio'])
     benchmark:
-        "{prefix}%s%s/{entity}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_pooled'])
+        "{prefix}%s%s/{trio}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['excavator_trio'])
     conda:
         "envs/spike_excavator.yaml"
     threads:
         1
+    params:
+        name_trio=lambda wildcards: wildcards.trio.split('/')[-1]
     shell:
         ' module unload R 2> {log}'
-        ' && assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2> {log}'
-        ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2> {log}'
+        ' && assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2>> {log}'
+        ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2>> {log}'
         ' && configfile=$(mktemp) 2>> {log} 1>&2'
-        ' && declare -i counter=1'
-        ' && for f in `echo {input.controls}`; do'
-        '    echo "C${{counter}} $f `basename $f`" >> $configfile 2>> {log};'
-        '    let counter++;'
-        ' done'
-        ' && declare -i counter=1'
-        ' && for f in `echo {input.tumors}`; do'
-        '    echo "T${{counter}} $f `basename $f`" >> $configfile 2>> {log};'
-        '    let counter++;'
-        ' done'
+        ' && echo "C1 {input.father} `basename {input.father}`" >> $configfile 2>> {log}'
+        ' && echo "C2 {input.mother} `basename {input.mother}`" >> $configfile 2>> {log}'
+        ' && echo "T1 {input.patient} `basename {input.patient}`" >> $configfile 2>> {log}'
         " && perl {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataAnalysis.pl"
         " $configfile"
         " --processors {threads}"
@@ -201,3 +192,10 @@ rule excavator_pooled:
         " --output {output}"
         " --mode pooling"
         " 2>> {log} 1>&2"
+        # renaming of output file / dirs to adopt trio name, not patient name
+        " && mv -v {output}/Plots/`basename {input.patient}` {output}/Plots/{params.name_trio} 2>> {log} 1>&2"
+        " && mv -v {output}/Results/`basename {input.patient}` {output}/Results/{params.name_trio} 2>> {log} 1>&2"
+        " && mv -v {output}/Results/{params.name_trio}/EXCAVATORRegionCall_`basename {input.patient}`.vcf {output}/Results/{params.name_trio}/EXCAVATORRegionCall_{params.name_trio}.vcf 2>> {log} 1>&2"
+        " && mv -v {output}/Results/{params.name_trio}/EXCAVATORWindowCall_`basename {input.patient}`.vcf {output}/Results/{params.name_trio}/EXCAVATORWindowCall_{params.name_trio}.vcf 2>> {log} 1>&2"
+        " && mv -v {output}/Results/{params.name_trio}/FastCallResults_`basename {input.patient}`.txt {output}/Results/{params.name_trio}/FastCallResults_{params.name_trio}.txt 2>> {log} 1>&2"
+        " && mv -v {output}/Results/{params.name_trio}/HSLMResults_`basename {input.patient}`.txt {output}/Results/{params.name_trio}/HSLMResults_{params.name_trio}.txt 2>> {log} 1>&2"
