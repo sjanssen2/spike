@@ -45,6 +45,8 @@ def get_toolname_from_stepname(config, filename):
         return 'VarScan2'
     elif config['stepnames']['excavator_somatic'] in filename:
         return 'Excavator2'
+    elif config['stepnames']['excavator_trio'] in filename:
+        return 'Excavator2'
     else:
         raise ValueError("Unexpected tool.")
 
@@ -89,7 +91,12 @@ def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type
     elif get_toolname_from_stepname(config, filename) == 'Mutect':
         snvtype = 'somatic'
     elif get_toolname_from_stepname(config, filename) == 'Excavator2':
-        snvtype = 'cnv'
+        if config['stepnames']['excavator_trio'] in filename:
+            snvtype = 'trio.cnv'
+        elif config['stepnames']['excavator_somatic'] in filename:
+            snvtype = 'somatic.cnv'
+        else:
+            raise ValueError("Unknown SNV type for Excavator2")
     else:
         raise ValueError("Unknown SNV type")
     name += ".%s" % snvtype
@@ -105,6 +112,8 @@ def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type
 
 def get_snupy_parser(config, filename):
     if config['stepnames']['excavator_somatic'] in filename:
+        return 'VcfFileExcavator'
+    if config['stepnames']['excavator_trio'] in filename:
         return 'VcfFileExcavator'
     if (config['stepnames']['merge_somatic'] in filename) or (config['stepnames']['writing_headers'] in filename):
         return 'VcfFileVarscan'
@@ -226,6 +235,10 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
             extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"denovo"}'
             if row['tags[TOOL]'] == str(MAP_TOOLS['VarScan2']):
                 extracted.loc[idx, 'snupy_Samples'] = 'Child'
+            elif row['tags[TOOL]'] == str(MAP_TOOLS['Excavator2']):
+                extracted.loc[idx, 'snupy_Samples'] = get_role(row['spike_project'], row['spike_entity_id'], 'patient', samplesheets).split('/')[-1]
+                extracted.loc[idx, 'min_read_depth'] = 0
+                extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"cnv"}'
         extracted.loc[idx, 'nickname'] = row['snupy_name'].split('/')[-1]
         extracted.loc[idx, 'project'] = str(config['projects'][row['spike_project']]['snupy']['project_id'])
         if row['spike_project'] not in cache_users:

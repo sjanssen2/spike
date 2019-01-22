@@ -284,5 +284,22 @@
       "time" : "01:59:59",
     },
 
+    "excavator_dataprepare":
+    { "mem" : "1GB",
+      "ppn" : "1",
+      "time" : "00:59:59",
+    },
+
+    "excavator_somatic":
+    { "mem" : "1GB",
+      "ppn" : "1",
+      "time" : "00:29:59",
+    },
+
+    "excavator_trio":
+    { "mem" : "2GB",
+      "ppn" : "1",
+      "time" : "00:29:59",
+    },
 
 }

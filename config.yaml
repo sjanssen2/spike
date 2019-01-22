@@ -93,7 +93,7 @@ stepnames:
   excavator_install: "210_excavator_install"
   excavator_dataprepare: "215_excavator_dataprepare"
   excavator_somatic: "220_excavator_somatic"
-  excavator_pooled: "225_excavator_pooled"
+  excavator_trio: "225_excavator_trio"
 
   # upload to snupy
   snupy_upload: "500_snupy_upload"

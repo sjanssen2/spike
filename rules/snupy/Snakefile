@@ -57,7 +57,9 @@ rule snupy_upload_tumornormal:
 rule snupy_upload_trio:
     input:
         # trio calling via varscan2
-        trio="{prefix}%s%s/{project}/{entity}.var2denovo.vcf" % (config['dirs']['intermediate'], config['stepnames']['writing_headers'])
+        trio="{prefix}%s%s/{project}/{entity}.var2denovo.vcf" % (config['dirs']['intermediate'], config['stepnames']['writing_headers']),
+        # ... excavator
+        trio_excavator=directory("{prefix}%s%s/{project}/{entity}" % (config['dirs']['intermediate'], config['stepnames']['excavator_trio'])),
     output:
         "{prefix}%s%s/{project}/{entity}.trio.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
     log:
@@ -67,7 +69,15 @@ rule snupy_upload_trio:
     threads:
         1
     run:
-        upload_to_snupy(wildcards.project, wildcards.entity, input, config, SAMPLESHEETS, output, log, _type='trio')
+        # excavator rules produces a directory. Thus, we need to manually define the correct filepath to the VCF file
+        # for other programs, the VCF file is directly specified as the input.
+        vcf_files = []
+        for file in input:
+            if config['stepnames']['excavator_trio'] in file:
+                vcf_files.append("%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_trio'], wildcards.project, wildcards.entity, wildcards.entity, wildcards.entity))
+                continue
+            vcf_files.append(file)
+        upload_to_snupy(wildcards.project, wildcards.entity, vcf_files, config, SAMPLESHEETS, output, log, _type='trio')
 
 
 rule snupy_extractsamples:

@@ -182,7 +182,7 @@ ACTION_PROGRAMS = [
     },
     {'action': 'tumornormal',
      'program': 'Excavator2',
-     'fileending_snupy_extract': '.cnv.excavator2',
+     'fileending_snupy_extract': '.somatic.cnv.excavator2',
      'fileending_spike_calls': '.vcf',
      'stepname_spike_calls': 'excavator_somatic',
     },
@@ -191,6 +191,12 @@ ACTION_PROGRAMS = [
      'fileending_snupy_extract': '.denovo.varscan',
      'fileending_spike_calls': '.var2denovo.vcf',
      'stepname_spike_calls': 'writing_headers',
+    },
+    {'action': 'trio',
+     'program': 'Excavator2',
+     'fileending_snupy_extract': '.trio.cnv.excavator2',
+     'fileending_spike_calls': '.vcf',
+     'stepname_spike_calls': 'excavator_trio',
     },
 ]
 
@@ -316,6 +322,8 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                     role_sample_project = sample_project
                 elif meta['spike_entity_role'].unique()[0] == 'sibling':
                     name = samplesheets[(samplesheets['Sample_Project'] == role_sample_project) & (samplesheets['Sample_ID'] == role_sample_id)]['spike_entity_id'].iloc[0]
+                if program == 'Excavator2':
+                    name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (role_sample_id, role_sample_id, role_sample_id)
             if (action == 'tumornormal'):
                 roles = meta['spike_entity_role'].dropna().unique()
                 if len(roles) <= 0:
