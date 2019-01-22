@@ -1,0 +1,6 @@
+name: fromFilio
+agilent_coverage_file: S04380219_Covered.bed
+genes:
+  - REST
+  - GPC3
+  - TRIM37
