@@ -557,6 +557,43 @@ def get_tumorNormalPairs(samplesheets, config, species=None):
     return pairs
 
 
+def get_genepanels(samplesheets, config, prefix):
+    """Returns list of gene panel result files.
+
+    Parameters
+    ----------
+    samplesheets : pd.DataFrame
+        Global samplesheets.
+    config : dict
+        Snakemakes config object.
+    prefix : str
+        Filepath to prefix directory.
+
+    Returns
+    -------
+    [str] : List of filepaths for gene panel results that shall be computed.
+    """
+    # collect which panels should be computed for which projects
+    project_panels = dict()
+    if 'projects' not in config:
+        raise ValueError('config.yaml does not contain any projects!')
+    for project in samplesheets['Sample_Project'].unique():
+        if project in config['projects']:
+            if 'genepanels' in config['projects'][project]:
+                project_panels[project] = config['projects'][project]['genepanels']
+
+    # for every sample, check which panels have to be computed
+    to_be_created = []
+    for project in project_panels.keys():
+        for panel in project_panels[project]:
+            to_be_created.extend(
+                ['%s%s%s/%s.yaml/%s/%s.tsv' % (prefix, config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'], panel, project, sample)
+                 for sample
+                 in samplesheets[(samplesheets['Sample_Project'] == project) & (samplesheets['is_alias'] != True)]['Sample_ID'].unique()])
+
+    return to_be_created
+
+
 def add_aliassamples(samplesheets, config):
     aliases = []
     if (config is not None) and ('sample_aliases' in config):
