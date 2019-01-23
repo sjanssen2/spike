@@ -167,6 +167,7 @@ projects:
       - KB0190
     genepanels:
       - stefan1
+      - fil
   ALL_family_LB:
     species: homo sapiens
     exometrack:
@@ -335,6 +336,7 @@ references:
     homo sapiens:
       file: "Agilent_SureSelect_V5plusUTR.bed"
       protocol_name: "SureSelectXTV5plusUTRautomated"
+      agilent_coverage_file: "S04380219_Covered.bed"
     mus musculus:
       file: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
       protocol_name: "SureSelectXTmouse"
