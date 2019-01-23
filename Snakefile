@@ -4,7 +4,7 @@ import glob
 import pandas as pd
 
 from scripts.parse_samplesheet import parse_samplesheet, get_role, get_reference_genome, get_reference_knowns, get_reference_exometrack, get_species, get_reference_varscan_somatic, get_global_samplesheets, split_samplesheets
-from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header, get_demux_samples, get_rejoin_input, get_xenograft_hybridreference, get_xenograft_stepname, get_min_coverage
+from scripts.parse_samplesheet import get_trios, get_tumorNormalPairs, get_samples, get_bwa_mem_header, get_demux_samples, get_rejoin_input, get_xenograft_hybridreference, get_xenograft_stepname, get_min_coverage, get_genepanels
 from scripts.utils import exclude_sample, sample_to_biom, merge_samples
 from scripts.reports import report_undertermined_filesizes, report_exome_coverage, get_status_data, write_status_update, create_html_yield_report, collect_yield_data, get_gene_panel_coverage
 from scripts.convert_platypus import annotate
@@ -66,6 +66,8 @@ rule all:
         # compute bamstat exome samples
         bamstats=["%s%s%s/%s.bamstat.tsv" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['bamstat'], sample)
                   for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
+        # compute gene panel coverage
+        genepanels=get_genepanels(SAMPLESHEETS, config, config['dirs']['prefix']),
 
         # upload and extract called variants to Snupy
         background=['%s%s%s/%s.background.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], entity)
