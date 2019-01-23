@@ -17,6 +17,7 @@ import socket
 import requests
 from requests.auth import HTTPBasicAuth
 import urllib3
+import yaml
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 plt.switch_backend('Agg')
 
@@ -324,7 +325,7 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                     name = samplesheets[(samplesheets['Sample_Project'] == role_sample_project) & (samplesheets['Sample_ID'] == role_sample_id)]['spike_entity_id'].iloc[0]
                 if program == 'Excavator2':
                     trio = meta['spike_entity_id'].unique()[0]
-                    name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (trio, trio, trio)
+                    name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (role_sample_id, role_sample_id, role_sample_id)
             if (action == 'tumornormal'):
                 roles = meta['spike_entity_role'].dropna().unique()
                 if len(roles) <= 0:
@@ -336,7 +337,8 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                     elif 'tumor_' in roles[0]:
                         name = role_sample_id
             fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][stepname], role_sample_project, name, file_ending)
-
+            if (action == 'trio') and (program == 'Excavator2'):
+                print(fp_vcf)
             nr_calls = RESULT_NOT_PRESENT
             if exists(fp_vcf):
                 if (action == 'tumornormal') and (program == 'Varscan'):
@@ -880,3 +882,55 @@ def create_html_yield_report(fp_yield_report, lane_meta, lane_summary, top_unkno
 
     with open(fp_yield_report, 'w') as f:
         f.write(out)
+
+
+def get_gene_panel_coverage(fp_genepanel, fp_bamstat, fp_output, dir_references, config):
+    """Looks up gene coverage for given panel in given sample, based on bamstat.
+
+    Parameters
+    ----------
+    fp_genepanel : str
+        Filepath to yaml gene panel configuration file.
+    fp_bamstat : str
+        Filepath to bamstat output.
+    fp_output : str
+        Filepath for output filename.
+    dir_references : str
+        Filepath to directory containing Agilent bed files.
+    config : dict
+        Snakemakes configuration object.
+    """
+    # load gene panel definition
+    if not exists(fp_genepanel):
+        raise ValueError("Gene panel file '%s' does not exist." % fp_genepanel)
+    panel = yaml.load(open(fp_genepanel, 'r'))
+
+    # read capture kit probe positions, including gene names
+    if not (('dirs' in config) and ('references' in config['dirs'])):
+        raise ValueError('Reference directory is not properly defined in config.yaml')
+    if 'agilent_coverage_file' not in panel:
+        raise ValueError('Key "agilent_coverage_file" is not defined in gene panel file.')
+    probes = pd.read_csv('%s%s' % (dir_references, panel['agilent_coverage_file']), sep="\t", header=None, skiprows=2)
+    probes[3] = probes[3].apply(lambda x: x.split(',')[0].split('|')[-1])
+    probes.columns = ['chromosome', 'start', 'end', 'gene']
+
+    # subset probes to those covering genes of the panel
+    probes_of_interest = probes[probes['gene'].isin(panel['genes'])]
+
+    # load coverage information
+    coverage = pd.read_csv(fp_bamstat, sep="\s+", dtype=str).rename(columns={'#chrom': 'chromosome'})
+    coverage['chromosome'] = coverage['chromosome'].apply(lambda x: 'chr%s' % x)
+    for field in ['start', 'end', 'mincov', 'maxcov']:
+        coverage[field] = coverage[field].astype(int)
+    coverage['avgcov_0'] = coverage['avgcov_0'].astype(float)
+
+    # subset coverage for genes of interest
+    coverage_per_probe = probes_of_interest.merge(coverage, left_on=['chromosome', 'start', 'end'], right_on=['chromosome', 'start', 'end'], how="left")
+
+    # determine min, max, avg coverage across all probes of the chip per gene
+    result = pd.concat([
+        coverage_per_probe.groupby('gene')['mincov'].min(),
+        coverage_per_probe.groupby('gene')['avgcov_0'].mean(),
+        coverage_per_probe.groupby('gene')['maxcov'].max()], axis=1)
+
+    result.to_csv(fp_output, sep="\t", index=False)
