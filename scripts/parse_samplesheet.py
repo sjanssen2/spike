@@ -557,6 +557,53 @@ def get_tumorNormalPairs(samplesheets, config, species=None):
     return pairs
 
 
+def get_genepanels(samplesheets, config, prefix):
+    """Returns list of gene panel result files.
+
+    Parameters
+    ----------
+    samplesheets : pd.DataFrame
+        Global samplesheets.
+    config : dict
+        Snakemakes config object.
+    prefix : str
+        Filepath to prefix directory.
+
+    Returns
+    -------
+    [str] : List of filepaths for gene panel results that shall be computed.
+    """
+    # collect which panels should be computed for which projects
+    project_panels = dict()
+    if 'projects' not in config:
+        raise ValueError('config.yaml does not contain any projects!')
+    for project in samplesheets['Sample_Project'].unique():
+        if project in config['projects']:
+            if 'genepanels' in config['projects'][project]:
+                project_panels[project] = config['projects'][project]['genepanels']
+
+    # for every sample, check which panels have to be computed
+    to_be_created = []
+    for project in project_panels.keys():
+        for panel in project_panels[project]:
+            to_be_created.extend(
+                ['%s%s%s/%s.yaml/%s/%s.tsv' % (prefix, config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'], panel, project, sample)
+                 for sample
+                 in samplesheets[(samplesheets['Sample_Project'] == project) & (samplesheets['is_alias'] != True)]['Sample_ID'].unique()])
+
+    # in addition to the above, also add samples used as aliases
+    if 'sample_aliases' in config:
+        for sample in config['sample_aliases']:
+            if ('roles' in sample) and ('real_id' in sample):
+                for role in sample['roles']:
+                    if 'Sample_Project' in role:
+                        for panel in project_panels[role['Sample_Project']]:
+                            if ('Sample_Project' in sample['real_id']) and ('Sample_ID' in sample['real_id']):
+                                to_be_created.append('%s%s%s/%s.yaml/%s/%s.tsv' % (prefix, config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'], panel, sample['real_id']['Sample_Project'], sample['real_id']['Sample_ID']))
+
+    return to_be_created
+
+
 def add_aliassamples(samplesheets, config):
     aliases = []
     if (config is not None) and ('sample_aliases' in config):
@@ -571,8 +618,10 @@ def add_aliassamples(samplesheets, config):
                     role['run'] = '+'.join(samplesheets[(samplesheets['Sample_Project'] == alias['real_id']['Sample_Project']) &
                                                         (samplesheets['Sample_ID'] == alias['real_id']['Sample_ID'])]['run'].unique())
                 role['is_alias'] = True
-                role['Lane'] = samplesheets[(samplesheets['Sample_Project'] == alias['real_id']['Sample_Project']) &
-                                            (samplesheets['Sample_ID'] == alias['real_id']['Sample_ID'])]['Lane'].iloc[0]
+                lanes = samplesheets[(samplesheets['Sample_Project'] == alias['real_id']['Sample_Project']) &
+                                     (samplesheets['Sample_ID'] == alias['real_id']['Sample_ID'])]['Lane']
+                if lanes.shape[0] > 0:
+                    role['Lane'] = lanes.iloc[0]
                 aliases.append(role)
     if len(aliases) > 0:
         return pd.concat([samplesheets, pd.DataFrame(aliases)], sort=False)

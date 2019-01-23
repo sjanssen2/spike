@@ -75,3 +75,20 @@ rule bamstat:
         " && java -jar {input.bin_bamstat} -B {input.exometrack} {input.bam} 2>> {log} > $h"
         " && column -t $h > {output} 2>> {log}"
         " && rm -f $h 2>>{log}"
+
+
+rule genepanel_coverage:
+    input:
+        agilent=lambda wildcards: '%s%s%s' % (wildcards.prefix, config['dirs']['references'], get_reference_exometrack(wildcards.sample, SAMPLESHEETS, config, returnfield="agilent_coverage_file")),
+        panelconfig="{prefix}%s%s{panel}.yaml" % (config['dirs']['inputs'], config['dirs']['genepanels']),
+        bamstat="{prefix}%s%s/{sample}.bamstat.tsv" % (config['dirs']['intermediate'], config['stepnames']['bamstat'])
+    output:
+        "{prefix}%s%s/{panel}.yaml/{sample}.tsv" % (config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'])
+    log:
+        "{prefix}%s%s/{panel}.yaml/{sample}.log" % (config['dirs']['logs'], config['stepnames']['genepanel_coverage'])
+    benchmark:
+        "{prefix}%s%s/{panel}.yaml/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['genepanel_coverage'])
+    threads:
+        1
+    run:
+        get_gene_panel_coverage(input.panelconfig, input.bamstat, input.agilent, output[0])
