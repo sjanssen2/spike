@@ -591,6 +591,16 @@ def get_genepanels(samplesheets, config, prefix):
                  for sample
                  in samplesheets[(samplesheets['Sample_Project'] == project) & (samplesheets['is_alias'] != True)]['Sample_ID'].unique()])
 
+    # in addition to the above, also add samples used as aliases
+    if 'sample_aliases' in config:
+        for sample in config['sample_aliases']:
+            if ('roles' in sample) and ('real_id' in sample):
+                for role in sample['roles']:
+                    if 'Sample_Project' in role:
+                        for panel in project_panels[role['Sample_Project']]:
+                            if ('Sample_Project' in sample['real_id']) and ('Sample_ID' in sample['real_id']):
+                                to_be_created.append('%s%s%s/%s.yaml/%s/%s.tsv' % (prefix, config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'], panel, sample['real_id']['Sample_Project'], sample['real_id']['Sample_ID']))
+
     return to_be_created
 
 
