@@ -79,6 +79,7 @@ rule bamstat:
 
 rule genepanel_coverage:
     input:
+        agilent=lambda wildcards: '%s%s%s' % (wildcards.prefix, config['dirs']['references'], get_reference_exometrack(wildcards.sample, SAMPLESHEETS, config, returnfield="agilent_coverage_file")),
         panelconfig="{prefix}%s%s{panel}.yaml" % (config['dirs']['inputs'], config['dirs']['genepanels']),
         bamstat="{prefix}%s%s/{sample}.bamstat.tsv" % (config['dirs']['intermediate'], config['stepnames']['bamstat'])
     output:
@@ -90,4 +91,4 @@ rule genepanel_coverage:
     threads:
         1
     run:
-        get_gene_panel_coverage(input.panelconfig, input.bamstat, output[0], "%s%s" % (wildcards.prefix, config['dirs']['references']), config)
+        get_gene_panel_coverage(input.panelconfig, input.bamstat, input.agilent, output[0])
