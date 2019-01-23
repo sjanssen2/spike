@@ -30,6 +30,7 @@ dirs:
   samplesheets: "SampleSheets/"
   rawillumina: "Raw_Illumina/"
   persamplefastq: "PerSampleFastq/"
+  genepanels: "Genepanels/"
   benchmarks: "Benchmarks/"
   logs: "Logs/"
 
@@ -58,6 +59,7 @@ stepnames:
   gatk_PrintReads: "085_gatk_PrintReads"
   exome_coverage: "090_exome_coverage"
   bamstat: "091_bamstat"
+  genepanel_coverage: "092_genepanel_coverage"
   gatk_HaplotypeCaller: "095_gatk_HaplotypeCaller"
   gatk_SelectVariants: "100_gatk_SelectVariants"
   gatk_VariantRecalibrator: "105_gatk_VariantRecalibrator"
@@ -163,6 +165,8 @@ projects:
       - KB0147
       - KB0174
       - KB0190
+    genepanels:
+      - stefan1
   ALL_family_LB:
     species: homo sapiens
     exometrack:
