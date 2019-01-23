@@ -337,8 +337,7 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                     elif 'tumor_' in roles[0]:
                         name = role_sample_id
             fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][stepname], role_sample_project, name, file_ending)
-            if (action == 'trio') and (program == 'Excavator2'):
-                print(fp_vcf)
+
             nr_calls = RESULT_NOT_PRESENT
             if exists(fp_vcf):
                 if (action == 'tumornormal') and (program == 'Varscan'):
@@ -362,6 +361,23 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
     return pd.DataFrame(results).set_index(['Sample_Project', 'Sample_ID', 'action', 'program'])['number_calls']
 
 
+def _get_genepanel_data(samplesheets, prefix, config):
+    coverages = []
+    for file in glob('%s%s%s/*/*/*.tsv' % (prefix, config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'])):
+        coverage = pd.read_csv(file, sep="\t")
+
+        parts = file.split('/')
+        # determine genepanel name, project and sample_id from filename
+        coverage['Sample_Project'] = parts[-2]
+        coverage['Sample_ID'] = parts[-1][:-4]
+        coverage['genepanel'] = parts[-3][:-5]
+        coverage = coverage.set_index(['Sample_Project', 'Sample_ID', 'genepanel', 'gene'])
+
+        coverages.append(coverage)
+
+    return pd.concat(coverages).sort_values(by=['Sample_Project', 'Sample_ID', 'genepanel', 'gene'])
+
+
 def get_status_data(samplesheets, config, prefix=None, verbose=sys.stderr):
     """
     Parameters
@@ -382,6 +398,7 @@ def get_status_data(samplesheets, config, prefix=None, verbose=sys.stderr):
     4-tuple: (data_yields, data_coverage, data_snupy, data_calls)
     """
     global RESULT_NOT_PRESENT
+    NUMSTEPS = 6
 
     if prefix is None:
         prefix = config['dirs']['prefix']
@@ -389,21 +406,24 @@ def get_status_data(samplesheets, config, prefix=None, verbose=sys.stderr):
         print("Creating report", file=verbose)
     # obtain data
     if verbose is not None:
-        print("1/5) gathering demuliplexing yields: ...", file=verbose, end="")
+        print("1/%i) gathering demuliplexing yields: ..." % NUMSTEPS, file=verbose, end="")
     data_yields = _get_statusdata_demultiplex(samplesheets, prefix, config)
     if verbose is not None:
-        print(" done.\n2/5) gathering coverage: ...", file=verbose, end="")
+        print(" done.\n2/%i) gathering coverage: ..." % NUMSTEPS, file=verbose, end="")
     data_coverage = _get_statusdata_coverage(samplesheets, prefix, config)
     if verbose is not None:
-        print(" done.\n3/5) gathering snupy extraction status: ...", file=verbose, end="")
+        print(" done.\n3/%i) gathering snupy extraction status: ..." % NUMSTEPS, file=verbose, end="")
     data_snupy = _get_statusdata_snupyextracted(samplesheets, prefix, config)
     if verbose is not None:
-        print(" done.\n4/5) gathering number of PASSing calls: ...", file=verbose, end="")
+        print(" done.\n4/%i) gathering number of PASSing calls: ..." % NUMSTEPS, file=verbose, end="")
     data_calls = _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT)
     if verbose is not None:
-        print("done.\n5/5) generating Excel output: ...", file=verbose, end="")
+        print(" done.\n5/%i) gathering gene coverage: ..." % NUMSTEPS, file=verbose, end="")
+    data_genepanels = _get_genepanel_data(samplesheets, prefix, config)
+    if verbose is not None:
+        print("done.\n5/%i) generating Excel output: ..." % NUMSTEPS, file=verbose, end="")
 
-    return (data_yields, data_coverage, data_snupy, data_calls)
+    return (data_yields, data_coverage, data_snupy, data_calls, data_genepanels)
 
 
 def write_status_update(data, filename, samplesheets, config, offset_rows=0, offset_cols=0, min_yield=5.0, verbose=sys.stderr):
@@ -433,7 +453,7 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         If not None: print verbose information.
     """
     global RESULT_NOT_PRESENT
-    data_yields, data_coverage, data_snupy, data_calls = data
+    data_yields, data_coverage, data_snupy, data_calls, data_genepanels = data
 
     # start creating the Excel result
     workbook = xlsxwriter.Workbook(filename)
@@ -452,6 +472,11 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
     info_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     info_machine = socket.gethostname()
     worksheet.merge_range(cellrange, ('status report created\nat %s\nby %s\non %s' % (info_now, info_username, info_machine)),format_info)
+
+    gene_order = []
+    for panel in sorted(data_genepanels.index.get_level_values('genepanel').unique()):
+        for gene in sorted(data_genepanels.loc(axis=0)[:, :, panel, :].index.get_level_values('gene').unique()):
+            gene_order.append((panel, gene))
 
     # header action
     format_action = workbook.add_format({
@@ -483,6 +508,25 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         'font_size': 8})
     worksheet.write(offset_rows+1, offset_cols+6+len(ACTION_PROGRAMS), 'sequenced at', format_spike_seqdate)
 
+    # header for gene panels
+    format_header_genes = workbook.add_format({
+        'rotation': 90,
+        'bold': False,
+        'valign': 'vcenter',
+        'align': 'center',
+        'font_size': 8})
+    for caption, g in pd.DataFrame(gene_order).groupby(0):
+        left = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[0]
+        right = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[-1]
+        cellrange = '%s%i:%s%i' % (chr(65+left), offset_rows+1, chr(65+right), offset_rows+1)
+        if left == right:
+             worksheet.write(offset_rows, left, caption, format_action)
+        else:
+             worksheet.merge_range(cellrange, caption, format_action)
+    for i, (panel, gene) in enumerate(gene_order):
+        worksheet.write(offset_rows+1, offset_cols+6+len(ACTION_PROGRAMS)+1+i, gene, format_header_genes)
+    worksheet.set_column(offset_cols+6+len(ACTION_PROGRAMS)+1, offset_cols+6+len(ACTION_PROGRAMS)+1+len(gene_order), 3)
+
     worksheet.freeze_panes(offset_rows+2, offset_cols+4)
 
     # body
@@ -501,6 +545,16 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         'valign': 'vcenter',
         'align': 'center',
         'font_color': '#ff0000'})
+    format_gene_coverage_good = workbook.add_format({
+        'valign': 'vcenter',
+        'align': 'right',
+        'font_size': 6,
+        'bg_color': '#ccffcc'})
+    format_gene_coverage_bad = workbook.add_format({
+        'valign': 'vcenter',
+        'align': 'right',
+        'font_size': 6,
+        'bg_color': 'ffcccc'})
     row = offset_rows+2
     for sample_project, grp_project in samplesheets.groupby('Sample_Project'):
         # add in lines to indicate missing samples, e.g. for trios that are incomplete
@@ -623,6 +677,19 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
                     worksheet.write(row, offset_cols+6+len(ACTION_PROGRAMS), ' / '.join(sorted(map(
                         lambda x: datetime.datetime.strptime('20%s' % x.split('_')[0], '%Y%m%d').strftime("%Y-%m-%d"), grp_sample_id['run'].unique()))), format_spike_seqdate)
                     worksheet.set_column(offset_cols+6+len(ACTION_PROGRAMS), offset_cols+6+len(ACTION_PROGRAMS), 16)
+
+                    # gene panel coverage
+                    if pd.notnull(role):
+                        role_sample_project, role_sample_id = get_role(sample_project, spike_entity_group, role, samplesheets).split('/')
+                        for gene_index, (panel, gene) in enumerate(gene_order):
+                            if (role_sample_project, role_sample_id, panel, gene) in data_genepanels.index:
+                                cov = data_genepanels.loc[role_sample_project, role_sample_id, panel, gene]
+                                #cov_text = '%i | %.1f | %i' % (cov['mincov'], cov['avgcov_0'], cov['maxcov'])
+                                cov_text = '%.1f' % cov['avgcov_0']
+                                frmt = format_gene_coverage_bad
+                                if cov['avgcov_0'] >= get_min_coverage(sample_project, config):
+                                    frmt = format_gene_coverage_good
+                                worksheet.write(row, offset_cols+6+len(ACTION_PROGRAMS)+1+gene_index, cov_text, frmt)
 
                 row += 1
     print("done.\n", file=verbose, end="")
