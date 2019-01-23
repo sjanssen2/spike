@@ -192,10 +192,3 @@ rule excavator_trio:
         " --output {output}"
         " --mode pooling"
         " 2>> {log} 1>&2"
-        # renaming of output file / dirs to adopt trio name, not patient name
-        " && mv -v {output}/Plots/`basename {input.patient}` {output}/Plots/{params.name_trio} 2>> {log} 1>&2"
-        " && mv -v {output}/Results/`basename {input.patient}` {output}/Results/{params.name_trio} 2>> {log} 1>&2"
-        " && mv -v {output}/Results/{params.name_trio}/EXCAVATORRegionCall_`basename {input.patient}`.vcf {output}/Results/{params.name_trio}/EXCAVATORRegionCall_{params.name_trio}.vcf 2>> {log} 1>&2"
-        " && mv -v {output}/Results/{params.name_trio}/EXCAVATORWindowCall_`basename {input.patient}`.vcf {output}/Results/{params.name_trio}/EXCAVATORWindowCall_{params.name_trio}.vcf 2>> {log} 1>&2"
-        " && mv -v {output}/Results/{params.name_trio}/FastCallResults_`basename {input.patient}`.txt {output}/Results/{params.name_trio}/FastCallResults_{params.name_trio}.txt 2>> {log} 1>&2"
-        " && mv -v {output}/Results/{params.name_trio}/HSLMResults_`basename {input.patient}`.txt {output}/Results/{params.name_trio}/HSLMResults_{params.name_trio}.txt 2>> {log} 1>&2"
