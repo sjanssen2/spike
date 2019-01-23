@@ -337,9 +337,11 @@ references:
     SureSelect Human All Exon V6 r2:
       file: "Agilent_SureSelect_Human_AllExon_V6_r2.hGRC37.Covered.bed"
       protocol_name: "SureSelectHumanAllExonV6r2"
+      agilent_coverage_file: "S07604514_hs_hg19.zip"
     SureSelect Human All Exon V7:
       file: "Agilent_SureSelect_Human_AllExon_V7.hGRC37.Covered.bed"
       protocol_name: "SureSelectHumanAllExonV7"
+      agilent_coverage_file: "S31285117_Covered.bed"
     SureSelect Mouse All Exon V1:
       file: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
       protocol_name: "SureSelectXTmouse"
