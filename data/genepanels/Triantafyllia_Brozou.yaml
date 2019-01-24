@@ -1,39 +1,35 @@
 genes:
-  - NBN
-  - CEBPA
-  - RUNX1
-  - TP53
-  - ETV6
-  - PAX5
+  - ALK
+  - APC
   - ATM
-  - RUNX1
   - BLM
   - BRCA2
-  - GATA2
-  - SAMD9
-  - NF1
   - CBL
-  - PTPN11
+  - CEBPA
+  - DICER1
+  - ETV6
+  - GATA2
+  - GPC3
+  - HRAS
   - KRAS
   - MLH1
   - MSH2
   - MSH6
+  - NBN
+  - NF1
+  - PAX5
+  - PHOX2B
   - PMS2
   - PTCH1
-  - SUFU
+  - PTPN11
   - RB1
-  - DICER1
-  - ALK
-  - PHOX2B
-  - GPC3
-  - WT1
   - REST
-  - GPC3
-  - TRIM37
-  - GPC3
-  - APC
-  - HRAS
-  - HRASLS2
-  - HRASLS5
-  - HRASLS
+  - RUNX1
+  - SAMD9
+  - SAMD9L
   - SMARCA4
+  - SMARCB1
+  - SUFU
+  - TP53
+  - TRIM37
+  - WT1
