@@ -324,8 +324,7 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                 elif meta['spike_entity_role'].unique()[0] == 'sibling':
                     name = samplesheets[(samplesheets['Sample_Project'] == role_sample_project) & (samplesheets['Sample_ID'] == role_sample_id)]['spike_entity_id'].iloc[0]
                 if program == 'Excavator2':
-                    trio = meta['spike_entity_id'].unique()[0]
-                    name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (role_sample_id, role_sample_id, role_sample_id)
+                    name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (meta['spike_entity_id'].iloc[0], role_sample_id, role_sample_id)
             if (action == 'tumornormal'):
                 roles = meta['spike_entity_role'].dropna().unique()
                 if len(roles) <= 0:
@@ -333,7 +332,7 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                 if roles[0].startswith('tumor'):
                     name = meta['spike_entity_id'].iloc[0]
                     if program == 'Excavator2':
-                        name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (role_sample_id, role_sample_id, role_sample_id)
+                        name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (meta['spike_entity_id'].iloc[0], role_sample_id, role_sample_id)
                     elif 'tumor_' in roles[0]:
                         name = role_sample_id
             fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][stepname], role_sample_project, name, file_ending)
@@ -467,11 +466,10 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         'valign': 'vcenter',
         'align': 'center',
         'font_size': 9})
-    cellrange = '%s%i:%s%i' % (chr(65+offset_cols), offset_rows+1, chr(65+offset_cols+3), offset_rows+2)
     info_username = getpass.getuser()
     info_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     info_machine = socket.gethostname()
-    worksheet.merge_range(cellrange, ('status report created\nat %s\nby %s\non %s' % (info_now, info_username, info_machine)),format_info)
+    worksheet.merge_range(offset_rows, offset_cols, offset_rows+1, offset_cols+3, ('status report created\nat %s\nby %s\non %s' % (info_now, info_username, info_machine)),format_info)
 
     gene_order = []
     for panel in sorted(data_genepanels.index.get_level_values('genepanel').unique()):
@@ -487,11 +485,10 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
     for caption, g in aps.groupby(0):
         left = offset_cols+6+g.index[0]
         right = offset_cols+6+g.index[-1]
-        cellrange = '%s%i:%s%i' % (chr(65+left), offset_rows+1, chr(65+right), offset_rows+1)
         if left == right:
              worksheet.write(offset_rows, left, caption, format_action)
         else:
-             worksheet.merge_range(cellrange, caption, format_action)
+             worksheet.merge_range(offset_rows, left, offset_rows, right, caption, format_action)
 
     # header
     format_header = workbook.add_format({
@@ -518,11 +515,10 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
     for caption, g in pd.DataFrame(gene_order).groupby(0):
         left = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[0]
         right = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[-1]
-        cellrange = '%s%i:%s%i' % (chr(65+left), offset_rows+1, chr(65+right), offset_rows+1)
         if left == right:
-             worksheet.write(offset_rows, left, caption, format_action)
+            worksheet.write(offset_rows, left, caption, format_action)
         else:
-             worksheet.merge_range(cellrange, caption, format_action)
+            worksheet.merge_range(offset_rows, left, offset_rows, right, caption, format_action)
     for i, (panel, gene) in enumerate(gene_order):
         worksheet.write(offset_rows+1, offset_cols+6+len(ACTION_PROGRAMS)+1+i, gene, format_header_genes)
     worksheet.set_column(offset_cols+6+len(ACTION_PROGRAMS)+1, offset_cols+6+len(ACTION_PROGRAMS)+1+len(gene_order), 3)
@@ -573,22 +569,20 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         # combine samples from samplesheets AND those that are expected but missing
         samples_and_missing = pd.concat([grp_project, pd.DataFrame(missing_samples)], sort=False).fillna(value={'spike_entity_id': ''})
 
-        cellrange = '%s%i:%s%i' % (chr(65+offset_cols), row+1, chr(65+offset_cols), row+len(samples_and_missing.groupby(['spike_entity_id', 'Sample_ID'])))
-        worksheet.merge_range(cellrange, sample_project.replace('_', '\n'), format_project)
+        worksheet.merge_range(row, offset_cols, row+len(samples_and_missing.groupby(['spike_entity_id', 'Sample_ID']))-1, offset_cols, sample_project.replace('_', '\n'), format_project)
         worksheet.set_column(offset_cols, offset_cols, 4)
 
         # groupby excludes NaNs, thus I have to hack: replace NaN by "" here and
         # reset to np.nan within the loop
         for spike_entity_group, grp_spike_entity_group in samples_and_missing.groupby('spike_entity_id'):
-            cellrange = '%s%i:%s%i' % (chr(65+offset_cols+1), row+1, chr(65+offset_cols+1), row+len(grp_spike_entity_group.groupby('Sample_ID')))
             if spike_entity_group != "":
                 label = spike_entity_group
                 if _isKnownDuo(sample_project, spike_entity_group, config):
                     label += "\n(known duo)"
-                if len(set(cellrange.split(':'))) > 1:
-                    worksheet.merge_range(cellrange, label, format_spike_entity_id)
+                if len(grp_spike_entity_group.groupby('Sample_ID')) > 1:
+                    worksheet.merge_range(row, offset_cols+1, row+len(grp_spike_entity_group.groupby('Sample_ID'))-1, offset_cols+1, label, format_spike_entity_id)
                 else:
-                    worksheet.write(cellrange.split(':')[0], label, format_spike_entity_id)
+                    worksheet.write(row, offset_cols+1, label, format_spike_entity_id)
             else:
                 spike_entity_group = np.nan
             worksheet.set_column(offset_cols+1, offset_cols+1, 10)
@@ -605,7 +599,6 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
                     col_start -= 1
                 if pd.isnull(role):
                     col_end += 1
-                cellrange = '%s%i:%s%i' % (chr(65+col_start), row+1, chr(65+col_end), row+1)
                 sample_id_value = sample_id
                 # if sample_id starts with name of the entity group, we are using "..." to make it visually more pleasing
                 if pd.notnull(spike_entity_group) and sample_id_value.startswith(spike_entity_group):
@@ -615,21 +608,20 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
                     sample_id_value = '?'
                     if not _isKnownDuo(sample_project, spike_entity_group, config):
                         frmt = format_spike_entity_role_missing
-                if len(set(cellrange.split(':'))) > 1:
-                    worksheet.merge_range(cellrange, sample_id_value, frmt)
+                if col_start != col_end:
+                    worksheet.merge_range(row, col_start, row, col_end, sample_id_value, frmt)
                 else:
-                    worksheet.write(cellrange.split(':')[0], sample_id_value, frmt)
+                    worksheet.write(row, col_start, sample_id_value, frmt)
 
                 # spike_entity_role
                 if pd.notnull(role):
                     worksheet.write(row, offset_cols+3, str(role), frmt)
 
                 if is_missing:
-                    cellrange = '%s%i:%s%i' % (chr(65+offset_cols+4), row+1, chr(65+offset_cols+3+2+len(ACTION_PROGRAMS)+1), row+1)
                     fmt = format_spike_entity_role_missing
                     if _isKnownDuo(sample_project, spike_entity_group, config):
                         fmt = format_spike_sampleID
-                    worksheet.merge_range(cellrange, "missing sample", fmt)
+                    worksheet.merge_range(row, offset_cols+4, row, offset_cols+3+2+len(ACTION_PROGRAMS)+1, "missing sample", fmt)
                 else:
                     # demultiplexing yield
                     frmt = format_bad
