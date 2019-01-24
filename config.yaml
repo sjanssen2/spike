@@ -170,16 +170,12 @@ projects:
       - fil
   ALL_family_LB:
     species: homo sapiens
-    exometrack:
-      file: "Agilent_SureSelect_Human_AllExon_V6_r2.hGRC37.Covered.bed"
-      protocol_name: "SureSelectHumanAllExonV6r2"
+    capture_kit: SureSelect Human All Exon V6 r2
   Translokation_t7_12_Hauer:
     species: homo sapiens
   Kit_Test:
     species: homo sapiens
-    exometrack:
-      file: "Agilent_SureSelect_Human_AllExon_V7.hGRC37.Covered.bed"
-      protocol_name: "SureSelectHumanAllExonV7"
+    capture_kit: SureSelect Human All Exon V7
   ALL_Study1_Hauer:
     species: homo sapiens
 
@@ -332,14 +328,24 @@ references:
 
       - file: "CBAJDBA2.genoc7.ref.snp.recode.vcf.gz"
         VariantRecalibrator_SNP: "CBAJDBA2_snps,VCF,known=false,training=true,truth=true,prior=12.0"
-  exometrack:
-    homo sapiens:
+  capture_kits:
+    SureSelect Human All Exon V5+UTRs:
       file: "Agilent_SureSelect_V5plusUTR.bed"
       protocol_name: "SureSelectXTV5plusUTRautomated"
       agilent_coverage_file: "S04380219_Covered.bed"
-    mus musculus:
+      default_for_species: "homo sapiens"
+    SureSelect Human All Exon V6 r2:
+      file: "Agilent_SureSelect_Human_AllExon_V6_r2.hGRC37.Covered.bed"
+      protocol_name: "SureSelectHumanAllExonV6r2"
+      agilent_coverage_file: "S07604514_hs_hg19.zip"
+    SureSelect Human All Exon V7:
+      file: "Agilent_SureSelect_Human_AllExon_V7.hGRC37.Covered.bed"
+      protocol_name: "SureSelectHumanAllExonV7"
+      agilent_coverage_file: "S31285117_Covered.bed"
+    SureSelect Mouse All Exon V1:
       file: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
       protocol_name: "SureSelectXTmouse"
+      default_for_species: "mus musculus"
   varscan_somatic:
     homo sapiens: " --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 "
     mus musculus: " --min-coverage-normal 6 --min-coverage-tumor 8 "

@@ -465,20 +465,58 @@ def get_reference_knowns(sample, samplesheets, config, _key):
     return [k for k in config['references']['knowns'][get_species(sample, samplesheets, config)] if _key in k]
 
 
-def get_reference_exometrack(sample, samplesheets, config, returnfield='file'):
-    # there might be a project specific exome track, like for samples we got sequenced by macrogen:
-    projects = samplesheets[
-        ((samplesheets['fastq-prefix'] == sample) | # check samplenames
-        (samplesheets['Sample_Project'].astype(str) + '/' + samplesheets['spike_entity_id'].astype(str) == sample)) & # or project-name / spike_entity
-        (samplesheets['is_alias'] != True)]['Sample_Project'].unique()
-    if len(projects) != 1:
-        raise ValueError('Ambigious or missing project for sample "%s"!' % sample)
-    if projects[0] in config['projects']:
-        if 'exometrack' in config['projects'][projects[0]]:
-            return config['projects'][projects[0]]['exometrack'][returnfield]
+def get_reference_exometrack(sample, samplesheets, config, returnfield='file', debug=False):
+    # there are three ways to define the capture kit for a sample:
+    # 1. by adding a column "capture_kit" to the input samplesheet and set the cell value to a capture kit name defined in config.yaml
+    # 2. by specifing a key "capture_kit" at the project in config.yaml. Value must match one of the defined capture kits in config.yaml
+    # 3. by specifing the species for the project, which than select the default kit defined in config.yaml for the species.
+    # 1,2,3 are listed in order of their precedence, i.e. of 1 and 3 is defined, 1 wins.
 
-    # by default, we return the species specific exome track
-    return config['references']['exometrack'][get_species(sample, samplesheets, config)][returnfield]
+    if 'references' not in config:
+        raise ValueError("Key 'references' is not defined in config.yaml")
+    if 'capture_kits' not in config['references']:
+        raise ValueError('Definition of "capture_kits" in config.yaml is missing.')
+
+    capture_kit = None
+    # use-case 1
+    if capture_kit is None:
+        if 'capture_kit' in samplesheets.columns:
+            sample_capture_kits = samplesheets[(samplesheets['fastq-prefix'] == sample) & (samplesheets['is_alias'] != True)]['capture_kit'].dropna().unique()
+            if sample_capture_kits.shape[0] > 1:
+                raise ValueError("Ambiguous per-sample capture-kit definition in samplesheet for sample '%s': '%s'" % (sample, "', '".join(sample_capture_kits)))
+            if sample_capture_kits.shape[0] == 1:
+                capture_kit = sample_capture_kits[0]
+                if debug:
+                    print('per-sample:', sample, capture_kit)
+
+    # use-case 2
+    if capture_kit is None:
+        sample_project = samplesheets[(samplesheets['fastq-prefix'] == sample) & (samplesheets['is_alias'] != True)]['Sample_Project'].dropna().unique()
+        if sample_project.shape[0] > 1:
+            raise ValueError("Ambigious projects for '%s': %s" % (sample, "', '".join(sample_project)))
+        if sample_project.shape[0] == 0:
+            raise ValueError("Missing project definition for sample '%s'." % sample)
+        sample_project = sample_project[0]
+        if ('projects' in config) and (sample_project in config['projects']) and ('capture_kit' in config['projects'][sample_project]):
+            capture_kit = config['projects'][sample_project]['capture_kit']
+            if debug:
+                print('per-project', sample, sample_project, capture_kit)
+
+    # use-case 3
+    if capture_kit is None:
+        species = get_species(sample, samplesheets, config)
+        for kit_name in config['references']['capture_kits']:
+            if 'default_for_species' in config['references']['capture_kits'][kit_name]:
+                if config['references']['capture_kits'][kit_name]['default_for_species'] == species:
+                    capture_kit = kit_name
+                    if debug:
+                        print('per-species', sample, kit_name)
+
+    if capture_kit is None:
+        raise ValueError("Could not determine capture kit for sample '%s'." % sample)
+
+    # finally, return found capture_kit information
+    return config['references']['capture_kits'][capture_kit][returnfield]
 
 
 def get_reference_varscan_somatic(sample, samplesheets, config):
@@ -596,7 +634,7 @@ def get_genepanels(samplesheets, config, prefix):
         for sample in config['sample_aliases']:
             if ('roles' in sample) and ('real_id' in sample):
                 for role in sample['roles']:
-                    if 'Sample_Project' in role:
+                    if ('Sample_Project' in role) and (role['Sample_Project'] in project_panels):
                         for panel in project_panels[role['Sample_Project']]:
                             if ('Sample_Project' in sample['real_id']) and ('Sample_ID' in sample['real_id']):
                                 to_be_created.append('%s%s%s/%s.yaml/%s/%s.tsv' % (prefix, config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'], panel, sample['real_id']['Sample_Project'], sample['real_id']['Sample_ID']))
