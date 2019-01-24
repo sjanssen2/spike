@@ -152,11 +152,11 @@ def validate_samplesheet(ss: pd.DataFrame, config, line_offset: int=22, err=sys.
                              'ill be applied.') % (prj))
 
     # check that spike_entity_role is a defined one
-    exp_roles = {'trio': {'patient', 'father', 'mother'},
-                 'tumornormal': {'healthy', 'tumor'}}
+    exp_roles = {         'patient',       'father',       'mother',       'sibling',     'healthy',
+                 'tumor', 'tumor_patient', 'tumor_father', 'tumor_mother', 'tumor_sibling'}
     for idx, row in ss.iterrows():
         if pd.notnull(row['spike_entity_role']):
-            if row['Sample_Project'] in config['projects']:
+            if row['spike_entity_role'] not in exp_roles:
                 warnings.append('spike_entity_role "%s" in line %i for Sample_Project "%s" is unknown!' % (row['spike_entity_role'], line_offset+idx, row['Sample_Project']))
 
     # test that entity name is infix of sample name
