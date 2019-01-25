@@ -978,7 +978,13 @@ def get_gene_panel_coverage(fp_genepanel, fp_bamstat, fp_agilent_coverage, fp_ou
     coverage['avgcov_0'] = coverage['avgcov_0'].astype(float)
 
     # subset coverage for genes of interest
-    coverage_per_probe = probes_of_interest.merge(coverage, left_on=['chromosome', 'start', 'end'], right_on=['chromosome', 'start', 'end'], how="left")
+    # we might experience +/- 1 errors. Currently only observed for -1 if "start"
+    for i in range(2):
+        coverage_per_probe = probes_of_interest.merge(coverage, left_on=['chromosome', 'start', 'end'], right_on=['chromosome', 'start', 'end'])
+        if coverage_per_probe.shape[0] == 0:
+            coverage['start'] -= 1
+        else:
+            break
 
     # determine min, max, avg coverage across all probes of the chip per gene
     result = pd.concat([
