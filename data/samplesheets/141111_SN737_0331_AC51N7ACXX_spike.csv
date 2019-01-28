@@ -43,5 +43,5 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 7,57C,,,,Index_4,TGACCA,Maus_Hauer,,57,healthy,
 7,58T,,,,Index_5,ACAGTG,Maus_Hauer,,58,tumor,
 8,58C,,,,Index_12,CTTGTA,Maus_Hauer,,58,healthy,
-8,ALPS_19a,,,,Index_4,TGACCA,Alps,,ALPS_19,,
-8,ALPS_24a,,,,Index_5,ACAGTG,Alps,,ALPS_24,,
+8,ALPS_19a,,,,Index_4,TGACCA,Alps,,ALPS_19,father,
+8,ALPS_24a,,,,Index_5,ACAGTG,Alps,,ALPS_24,father,

@@ -40,7 +40,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 5,UKDEBV_201M,,,,,CTTGTA,UKDEBV,,,,
 6,UKDEBV_201F,,,,,TGACCA,UKDEBV,,,,
 6,AML_m_20_initial,,,,,GCCAAT,DKTK,,,,
-6,ALPS_22,,,,,CTTGTA,Alps,,ALPS_22,,
+6,ALPS_22,,,,,CTTGTA,Alps,,ALPS_22,patient,
 7,AML_m_14_inititial,,,,,TGACCA,DKTK,,,,
 7,AML_m_25_remission,,,,,GCCAAT,DKTK,,,,
 7,AML_m_25_initial,,,,,CTTGTA,DKTK,,,,
