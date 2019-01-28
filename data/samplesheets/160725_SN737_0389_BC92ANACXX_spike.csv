@@ -35,7 +35,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 4,KB0072_f,,,,G01,ATTGGCTC,Keimbahn,,KB0072,father,
 5,KB0019_c,,,,E01,GCCAAGAC,Keimbahn,,KB0019,patient,
 5,KB0075_c,,,,B01,GAATCTGA,Keimbahn,,KB0075,patient,
-5,ALPS_41_c,,,,H01,GATGAATC,Alps,,ALPS_41,sibling,
+5,ALPS_41_c,,,,H01,GATGAATC,Alps,healthy sibling,ALPS_41,sibling,
 6,KB0046_f_t,,,,A01,ATGCCTAA,Keimbahn,,KB0046,tumor_father,
 6,KB0046_f,,,,B01,GAATCTGA,Keimbahn,,KB0046,father,
 7,KB0036_m,,,,E01,GCCAAGAC,Keimbahn,,KB0036,mother,

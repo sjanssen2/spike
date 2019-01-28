@@ -24,7 +24,7 @@ AdapterRead2,,,,,,,,,,,
 Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,spike_entity_id,spike_entity_role,spike_ignore_sample
 ,ALPS_23a,,,,,,Alps,,ALPS_23,father,
 ,ALPS_29b,,,,,,Alps,,ALPS_29,mother,
-,ALPS_29c,,,,,,Alps,,ALPS_29,,
+,ALPS_29c,,,,,,Alps,,ALPS_29,sibling,
 ,ALPS_29,,,,,,Alps,,ALPS_29,patient,
 ,3299,,,,,,AT_NBS,,,,
 ,ALPS_35,,,,,,Alps,,ALPS_35,patient,
