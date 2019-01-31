@@ -42,7 +42,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 6,KB0113_f,,,,C01,AACGTGAT,Keimbahn,,KB0113,father,,
 6,KB0113_m,,,,D01,CACTTCGA,Keimbahn,,KB0113,mother,,
 7,KB0114_c,,,,E01,GCCAAGAC,Keimbahn,,KB0114,patient,,
-7,KB0114_f,,,,F01,GACTAGTA,Keimbahn,,KB0114,father,,
+7,KB0114_f,,,,F01,GACTAGTA,Keimbahn,"Data suggest, this person is not father of KB0114_c. Thus, I should ignore this sample!",KB0114,father,yes,
 7,KB0114_m,,,,G01,ATTGGCTC,Keimbahn,,KB0114,mother,,
 8,REH_100_Gel,,,,D01,CACTTCGA,Gipfel,"we know that this lane failed, probably due to wrong mixture between Gipfel / Keimbahn",,,yes,
 8,REH_100,,,,E01,GCCAAGAC,Gipfel,"we know that this lane failed, probably due to wrong mixture between Gipfel / Keimbahn",,,yes,
