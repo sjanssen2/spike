@@ -29,10 +29,10 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 1,G1,,,,H01,GATGAATC,Singlecell,,,,,
 2,KB0086_c,,,,B01,GAATCTGA,Keimbahn,,KB0086,patient,,KB0020_c
 2,KB0086_f,,,,C01,AACGTGAT,Keimbahn,,KB0086,father,,KB0020_m
-3,unknown_sample,,,,D01,CACTTCGA,unknown,Kati checked that original tube has KB0020_f written on it,,,,"KB0020_f, not related to any sample, especially not to KB0020 samples!"
-3,KB0088_m,,,,E01,GCCAAGAC,Keimbahn,,KB0088,mother,,KB0072_c not related to KB0072
-4,KB0088_f,,,,F01,GACTAGTA,Keimbahn,,KB0088,father,,KB0072_m not related to KB0072
-4,KB0091_c,,,,G01,ATTGGCTC,Keimbahn,,KB0091,patient,,KB0072_f not related to KB0072
+3,unknown_sample,,,,D01,CACTTCGA,unknown,"Kati checked that original tube has KB0020_f written on it, not related to any sample, especially not to KB0020 samples!",,,,KB0020_f
+3,KB0088_m,,,,E01,GCCAAGAC,Keimbahn,,KB0088,mother,,KB0072_c
+4,KB0088_f,,,,F01,GACTAGTA,Keimbahn,,KB0088,father,,KB0072_m
+4,KB0091_c,,,,G01,ATTGGCTC,Keimbahn,,KB0091,patient,,KB0072_f
 5,KB0019_c,,,,E01,GCCAAGAC,Keimbahn,,KB0019,patient,,
 5,KB0075_c,,,,B01,GAATCTGA,Keimbahn,,KB0075,patient,,
 5,KB0091_m,,,,H01,GATGAATC,Keimbahn,,KB0091,mother,,ALPS_41_c
