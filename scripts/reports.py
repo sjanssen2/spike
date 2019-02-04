@@ -8,7 +8,7 @@ import numpy as np
 from scipy import stats
 import xlsxwriter
 import matplotlib.pyplot as plt
-from scripts.parse_samplesheet import get_min_coverage, get_role, add_aliassamples
+from scripts.parse_samplesheet import get_min_coverage, get_role, add_aliassamples, get_species
 from scripts.snupy import check_snupy_status
 import json
 import datetime
@@ -172,7 +172,9 @@ ACTION_PROGRAMS = [
     {'action': 'tumornormal',
      'program': 'Varscan',
      'fileending_snupy_extract': '.somatic.varscan',
-     'fileending_spike_calls': '.snp.somatic_germline.vcf',
+     'fileending_spike_calls':
+        {'homo_sapiens': '.snp.somatic_germline.vcf',
+         'mus musculus': '.indel_snp.vcf'},
      'stepname_spike_calls': 'merge_somatic',
     },
     {'action': 'tumornormal',
@@ -313,6 +315,8 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
     results = []
     for (sample_project, sample_id), meta in samplesheets.groupby(['Sample_Project', 'Sample_ID']):
         for file_ending, stepname, action, program in [(ap['fileending_spike_calls'], ap['stepname_spike_calls'], ap['action'], ap['program']) for ap in ACTION_PROGRAMS]:
+            if isinstance(file_ending, dict):
+                file_ending = file_ending[get_species('%s/%s' % (sample_project, sample_id), samplesheets, config)]
             role_sample_project, role_sample_id = sample_project, sample_id
             if ((meta['is_alias'] == True).any()) & (action in ['background', 'trio']):
                 role_sample_project, role_sample_id = get_role(sample_project, meta['spike_entity_id'].unique()[0], meta['spike_entity_role'].unique()[0], samplesheets).split('/')
