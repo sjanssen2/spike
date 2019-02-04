@@ -146,7 +146,7 @@ rule excavator_somatic:
         ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2>> {log}'
         ' && configfile=$(mktemp) 2>> {log} 1>&2'
         ' && echo "C1 {input.healthy} `basename {input.healthy}`" > $configfile 2>> {log}'
-        ' && echo "T1 {input.tumor} {params.name_tumor}" >> $configfile 2>> {log}'
+        ' && echo "T1 {input.tumor} `basename {input.tumor}`" >> $configfile 2>> {log}'
         " && perl {wildcards.prefix}{config[dirs][intermediate]}{config[stepnames][excavator_install]}/{excavator_version}/EXCAVATORDataAnalysis.pl"
         " $configfile"
         " --processors {threads}"
