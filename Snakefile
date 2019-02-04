@@ -52,7 +52,7 @@ rule all:
         # create backup for each run
         # don't backup per sample fastq runs
         # backup=["%s%s%s/%s.done" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['backup_validate'], run)
-        #         for run in set(SAMPLESHEETS['run'].unique()) - set(SAMPLESHEETS[pd.notnull(SAMPLESHEETS['Lane'])]['run'].unique())],
+        #         for run in set(SAMPLESHEETS['run'].unique()) - set(SAMPLESHEETS[pd.isnull(SAMPLESHEETS['Lane'])]['run'].unique())],
         #
         # demultiplex all samples for projects that ONLY need to demultiplex, e.g. AG_Remke and create yield reports
         demux=[res for run in get_demux_samples(SAMPLESHEETS, config) for res in [
