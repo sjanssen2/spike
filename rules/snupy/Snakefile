@@ -48,7 +48,8 @@ rule snupy_upload_tumornormal:
         vcf_files = []
         for file in input:
             if config['stepnames']['excavator_somatic'] in file:
-                vcf_files.append("%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_somatic'], wildcards.project, wildcards.entity, wildcards.entity, wildcards.entity))
+                tumor = get_role(wildcards.project, wildcards.entity, 'tumor', SAMPLESHEETS).split('/')[-1]
+                vcf_files.append("%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_somatic'], wildcards.project, wildcards.entity, tumor, tumor))
                 continue
             vcf_files.append(file)
         upload_to_snupy(wildcards.project, wildcards.entity, vcf_files, config, SAMPLESHEETS, output, log, _type='tumornormal')
