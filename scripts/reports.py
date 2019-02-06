@@ -173,7 +173,7 @@ ACTION_PROGRAMS = [
      'program': 'Varscan',
      'fileending_snupy_extract': '.somatic.varscan',
      'fileending_spike_calls':
-        {'homo_sapiens': '.snp.somatic_germline.vcf',
+        {'homo sapiens': '.snp.somatic_germline.vcf',
          'mus musculus': '.indel_snp.vcf'},
      'stepname_spike_calls': 'merge_somatic',
     },
