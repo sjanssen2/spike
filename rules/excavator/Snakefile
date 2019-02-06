@@ -155,6 +155,8 @@ rule excavator_somatic:
         " --output {output}"
         " --mode paired"
         " 2>> {log} 1>&2"
+        # check if plot files have been generated, since it happened that above command exits with 0 although plot were not generated
+        ' && find {output} -name "PlotResultsS*.pdf" | grep "PlotResults >> {log}'
 
 
 rule excavator_trio:
@@ -192,3 +194,4 @@ rule excavator_trio:
         " --output {output}"
         " --mode pooling"
         " 2>> {log} 1>&2"
+        ' && find {output} -name "PlotResultsS*.pdf" | grep "PlotResults >> {log}'
