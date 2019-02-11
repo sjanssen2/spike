@@ -1,3 +1,6 @@
+## Requirements
+You might have to install (mini|ana)conda https://docs.conda.io/en/latest/miniconda.html, create an environment https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-environments and install snakemake https://snakemake.readthedocs.io/en/stable/getting_started/installation.html#installation-via-conda first.
+
 # Read this first
 `Snakemake` greatly supports execution of a pipeline on a grid compute system with very little overhead. However, it will help reading Snakemake's own documentation to get familiar with with basic concepts and commands: https://snakemake.readthedocs.io/en/stable/executable.html#cluster-execution
 
@@ -19,7 +22,7 @@ Resources on shared computer clusters are not infinit and the job of the admins 
  
 Second entry in the `cluster.json` file is for the rule "demultiplex". This rule will inherit `account`, `queue`, and `nodes` from the "__default__", but override the requested memory to 16GB, the number of cores to just 4 and increase runtime to nearly 2 hours.
 
-## `--cluster "qsub -l select={cluster.nodes}:ncpus{cluster.ppn}:mem={cluster.mem} -l walltime={cluster.time}"`
+## `--cluster "qsub -A {cluster.account} -q {cluster.queue} -l select={cluster.nodes}:ncpus{cluster.ppn}:mem={cluster.mem} -l walltime={cluster.time}"`
 You make use of all those above settings by invoking `snakemake` with the flag `--cluster-config cluster.json`, but you also have to define which grid command shall be used to actually submit a job to the grid. For the HPC and the cluster.json file of spike, it looks like `--cluster "qsub -l select={cluster.nodes}:ncpus{cluster.ppn}:mem={cluster.mem} -l walltime={cluster.time}"`. I might recognize the variable names from cluster.json appear here in curly brackets, i.e. those strings will be replaced by the values defined in the cluster.json file.
 
 ## `--cluster-status scripts/barnacle_status.py`
@@ -41,4 +44,13 @@ This parameter specifies how many of your maybe ten thousands of jobs are submit
 ## `--keep-going`
 It might happen that single rules / programs of your pipeline execution fails. Since with `spike` you typically process a multitude of independent samples / trios you don't want to immediatly stop execution of all jobs if one failes for one sample. Once you identified and fixed the issue with the one failing job, just re-execute the snakemake command and it will continue from there. Very convenient.
 
+## `-p` and `-r`
+The flag `-p` will print the (shell) commands to be executed. Useful for debugging. The flag `-r` reports why a specific rule for a specific input need to be (re)executed. Using both aids debugging and understanding the flow of your pipeline.
+
 # Executing
+  1. You should start a new screen https://linuxize.com/post/how-to-use-linux-screen/ session: `screen -S spike`.
+  2. Since the login node has very limited resources, you should start an new interactive gird job, with medium memory, one node and one core, but relatively long runtime: `qsub -I -A ngsukdkohi -l mem=10GB -l walltime="40:59:50,nodes=1:ppn=1"`
+  3. navigate to your `spike` clone and make sure you configure `spike` correctly (docs to be come), specifically `snupy` credentials and selection of samples to be processed.
+  4. Trigger a dry run of the pipeline by using the `-n` flag of snakemake and check that everything looks good: ```snakemake --cluster-config cluster.json --cluster "qsub -A {cluster.account} -q {cluster.queue} -l select={cluster.nodes}:ncpus{cluster.ppn}:mem={cluster.mem} -l walltime={cluster.time}" -j 100 --latency-wait 900 --use-conda --cluster-status scripts/barnacle_status.py --max-status-checks-per-second 1 --keep-going -p -r -n```
+  4b. (During development of `spike` it happened to me that `snakemake` wanted to re-execute long running programs because of changes in the Snakefiles, but it would produce identical results. To avoid the waste of compute, I am sometimes "touching" output files to update the time stamp such that snakemake will not reinvoke execution. This habours the risk of computing with outdated or even incomplete intermediate results! Be careful: replace `-n` with `--touch`.
+  5. Trigger actual snakemake run, by removing `-n` (and `--touch`) from the above command.
