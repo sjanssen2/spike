@@ -1,10 +1,13 @@
-## Read this first
+# Read this first
 `Snakemake` greatly supports execution of a pipeline on a grid compute system with very little overhead. However, it will help reading Snakemake's own documentation to get familiar with with basic concepts and commands: https://snakemake.readthedocs.io/en/stable/executable.html#cluster-execution
 
 We are here listing our best practice experience running `spike` on the `High Performance Computing` (HPC) system at University of Duesseldorf: https://www.zim.hhu.de/high-performance-computing.html Great people support users on the HPC via https://rocketchat.hhu.de/ or by phone or email and it is definitively worth reading their Wiki https://wiki.hhu.de/display/HPC/Wissenschaftliches+Hochleistungs-Rechnen+am+ZIM **before** submitting thousands of jobs to their grid.
 
-## `--cluster-config`
-Resources on shared computer clusters are not infinit and the job of the admins in to ensure that multiple users get their fair share. This is only possible, if each user behaves nicely, i.e. spends some efforts to find small upper boundaries for their programs needs in terms of memory, CPUs/cores and execution time. Naturally, you are greedy, but admins counteract by putting greedy jobs late in the queue, i.e. you have to wait longer until your greedy job is executed compared to a small job.
+# Compose the snakemake master command
+Here, I am giving some background information about the multiple flags you should set when executing a `spike` pipeline via snakemake.
+
+## `--cluster-config cluster.json`
+Resources on shared computer clusters are not infinit and the job of the admins in to ensure that multiple users get their fair share. This is only possible, if each user behaves nicely, i.e. spends some efforts to find small upper boundaries for their programs needs in terms of memory, CPUs/cores and execution time. Naturally, you are greedy, but admins counteract by putting greedy jobs late in the queue, i.e. you have to wait longer until your greedy job is executed compared to a small job. More details are in Snakemakes documentation. https://snakemake.readthedocs.io/en/stable/snakefiles/configuration.html?highlight=cluster-status#cluster-configuration
 
 `spike` has ~70 different rules, each rule running a different command with different resource demands, depending on typical input sizes. Thus, finding working upper bounds required some experience, which is now distilled in the file https://github.com/sjanssen2/spike/blob/master/cluster.json First entry is the default, which will be applied to every rule if no further matching definition can be found. 
  - In this default rule, we define the `account` to which the used service units get "billed" to. I once had to contact HPC admins and request to create this new account for spike.
@@ -14,6 +17,28 @@ Resources on shared computer clusters are not infinit and the job of the admins 
  - `mem` is the main memory you request for your job. The scheduler will kill your program if you exceed `time` or `memory` for a significant amount. But keep in mind, too greedy resource definitions will delay execution of your job.
  - `ppn` is the number of compute cored / CPUs for your job. Make sure your program can actually use multiple cores if you request them, otherwise execution is inefficient and other users will start complain about your bad resourse estimates!
  
-Seconda entry in the `cluster.json` file is for the rule "demultiplex". This rule will inherit `account`, `queue`, and `nodes` from the "__default__", but override the requested memory to 16GB, the number of cores to just 4 and increase runtime to nearly 2 hours.
+Second entry in the `cluster.json` file is for the rule "demultiplex". This rule will inherit `account`, `queue`, and `nodes` from the "__default__", but override the requested memory to 16GB, the number of cores to just 4 and increase runtime to nearly 2 hours.
 
-You make use of all those settings by invoking `snakemake` with the flag `--cluster-config cluster.json`.
+## `--cluster "qsub -l select={cluster.nodes}:ncpus{cluster.ppn}:mem={cluster.mem} -l walltime={cluster.time}"`
+You make use of all those above settings by invoking `snakemake` with the flag `--cluster-config cluster.json`, but you also have to define which grid command shall be used to actually submit a job to the grid. For the HPC and the cluster.json file of spike, it looks like `--cluster "qsub -l select={cluster.nodes}:ncpus{cluster.ppn}:mem={cluster.mem} -l walltime={cluster.time}"`. I might recognize the variable names from cluster.json appear here in curly brackets, i.e. those strings will be replaced by the values defined in the cluster.json file.
+
+## `--cluster-status scripts/barnacle_status.py`
+From Snakemakes documentation `Status command for cluster execution. This is only considered in combination with the –cluster flag. If provided, Snakemake will use the status command to determine if a job has finished successfully or failed. For this it is necessary that the submit command provided to –cluster returns the cluster job id. Then, the status command will be invoked with the job id. Snakemake expects it to return ‘success’ if the job was successfull, ‘failed’ if the job failed and ‘running’ if the job still runs.` We are using the script https://github.com/sjanssen2/spike/blob/master/scripts/barnacle_status.py for this purpose. (Side note: "barnacle" is the cluster system I was using in San Diego and I was lazy and copy & pasted this script from https://github.com/biocore/oecophylla Thanks Jon for working that one out!)
+
+## `--max-status-checks-per-second 1`
+`Snakemake` need to "ping" the scheduler frequently to ask for the status of its jobs. In order to avoid too much asking overhead, I am limiting the number of questions to just one per seconds. This works fine, since `spike` jobs usually run for hours and thus this is no real delay for executing the whole pipeline.
+
+## `--latency-wait 900`
+Jobs are executed on specific machines and results will be written in some file. The grid file system than needs to make sure that this file is synchronized with all other machines before execution of a dependent job. This process sometimes takes some time. In my experience, it doesn't hurt to be patient and wait for 900 seconds. If the file does not appear during this long period of time, `snakemake` will treat the job as failed, even though the correct result might pop up later.
+
+## `--use-conda`
+HPC admins encurage you to **not** use conda installed packages and instead use their optimized software versions which can be loaded via `module` http://modules.sourceforge.net/
+However, since reproducibility is of paramount importance for `spike`, I decided against HPCs suggestion and used many different conda environments to enforce exact program versions that can also easily installed by collaboration partners on their machines. Via the parameter `--use-conda` you enable `snakemake`s fantastic mechanism that automatically downloads and creates conda environments for different rules.
+
+## `-j 100`
+This parameter specifies how many of your maybe ten thousands of jobs are submitted at the same time to the scheduler. Don't use much higher numbers as there is the risk that it crashes or slows down the scheduler; not only for you but for *all* users of the HPC!
+
+## `--keep-going`
+It might happen that single rules / programs of your pipeline execution fails. Since with `spike` you typically process a multitude of independent samples / trios you don't want to immediatly stop execution of all jobs if one failes for one sample. Once you identified and fixed the issue with the one failing job, just re-execute the snakemake command and it will continue from there. Very convenient.
+
+# Executing
