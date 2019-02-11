@@ -28,13 +28,13 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 1,166_T,,,,D02,GAGTTAGC,Maus_Hauer,,166,tumor,
 2,164_C,,,,A02,AGCAGGAA,Maus_Hauer,,164,healthy,
 2,164_T,,,,B02,GAGCTGAA,Maus_Hauer,,164,tumor,
-2,176_C,,,,C02,AAACATCG,Maus_Hauer,,176,healthy,
+2,176_C,,,,C02,AAACATCG,Maus_Hauer,,176,healthy,yes
 2,170_C,,,,E02,CGAACTTA,Maus_Hauer,,170,healthy,
 3,624,,,,E02,CGAACTTA,ARA_Maus,,,tumor,
 3,166_C,,,,C02,AAACATCG,Maus_Hauer,,166,healthy,
 3,C3,,,,G02,AAGGACAC,ARA_Maus,,,tumor,
 3,171_T,,,,H02,GACAGTGC,Maus_Hauer,,171,tumor,
-4,176_T,,,,D02,GAGTTAGC,Maus_Hauer,,176,tumor,
+4,176_T,,,,D02,GAGTTAGC,Maus_Hauer,,176,tumor,yes
 4,170_T,,,,F02,GATAGACA,Maus_Hauer,,170,tumor,
 4,157_C,,,,B02,GAGCTGAA,Maus_Hauer,,157,healthy,
 4,157_T,,,,C02,AAACATCG,Maus_Hauer,,157,tumor,
