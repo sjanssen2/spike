@@ -311,74 +311,109 @@ def _get_statusdata_snupyextracted(samplesheets, prefix, config):
     return pd.DataFrame(results).set_index(['Sample_Project', 'Sample_ID', 'action', 'program'])
 
 
-def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT):
+def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT, verbose=sys.stderr):
     results = []
-    for (sample_project, sample_id), meta in samplesheets.groupby(['Sample_Project', 'Sample_ID']):
-        for file_ending, stepname, action, program in [(ap['fileending_spike_calls'], ap['stepname_spike_calls'], ap['action'], ap['program']) for ap in ACTION_PROGRAMS]:
+
+    # leave out samples aliases
+    for (sample_project, spike_entity_id, spike_entity_role, fastq_prefix), meta in samplesheets[samplesheets['is_alias'] != True].fillna('not defined').groupby(['Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']):
+        def _get_fileending(file_ending, fastq_prefix, samplesheets, config):
             if isinstance(file_ending, dict):
-                file_ending = file_ending[get_species('%s/%s' % (sample_project, sample_id), samplesheets, config)]
-            role_sample_project, role_sample_id = sample_project, sample_id
-            if ((meta['is_alias'] == True).any()) & (action in ['background', 'trio']):
-                role_sample_project, role_sample_id = get_role(sample_project, meta['spike_entity_id'].unique()[0], meta['spike_entity_role'].unique()[0], samplesheets).split('/')
-            name = role_sample_id
-            if (action == 'trio'):
-                if meta['spike_entity_role'].unique()[0] == 'patient':
-                    name = meta['spike_entity_id'].iloc[0]
-                    role_sample_project = sample_project
-                elif meta['spike_entity_role'].unique()[0] == 'sibling':
-                    name = samplesheets[(samplesheets['Sample_Project'] == role_sample_project) & (samplesheets['Sample_ID'] == role_sample_id)]['spike_entity_id'].iloc[0]
-                if program == 'Excavator2':
-                    name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (meta['spike_entity_id'].iloc[0], role_sample_id, role_sample_id)
-            if (action == 'tumornormal'):
-                roles = meta['spike_entity_role'].dropna().unique()
-                if len(roles) <= 0:
-                    continue
-                if roles[0].startswith('tumor'):
-                    name = meta['spike_entity_id'].iloc[0]
-                    if program == 'Excavator2':
-                        name = '%s/Results/%s/EXCAVATORRegionCall_%s' % (meta['spike_entity_id'].iloc[0], role_sample_id, role_sample_id)
-                    elif 'tumor_' in roles[0]:
-                        name = role_sample_id
-            fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][stepname], role_sample_project, name, file_ending)
+                return file_ending[get_species(fastq_prefix, samplesheets, config)]
+            else:
+                return file_ending
+        for ap in ACTION_PROGRAMS:
+            fp_vcf = None
+            if (ap['action'] == 'background') and pd.notnull(spike_entity_role):
+                if (ap['program'] == 'GATK'):
+                    fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                elif (ap['program'] == 'Platypus'):
+                    fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+            elif (ap['action'] == 'tumornormal') and (spike_entity_role.split('_')[0] in set(['tumor'])):
+                if (ap['program'] == 'Varscan'):
+                    fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                elif (ap['program'] == 'Mutect'):
+                    fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                elif (ap['program'] == 'Excavator2'):
+                    fp_vcf = '%s%s%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+            elif (ap['action'] == 'trio'):
+                # Trios are a more complicated case, since by default the result name is given by the
+                # spike_entity_id, but if computed for siblings, the name is given by the fastq-prefix
+                if (ap['program'] == 'Varscan\ndenovo'):
+                    if (spike_entity_role in set(['patient'])):
+                        fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], sample_project, spike_entity_id, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                    elif (spike_entity_role in set(['sibling'])):
+                        fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                elif (ap['program'] == 'Excavator2'):
+                    if (spike_entity_role in set(['patient'])):
+                        fp_vcf = '%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], sample_project, spike_entity_id, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                    elif (spike_entity_role in set(['sibling'])):
+                        fp_vcf = '%s%s%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
 
-            nr_calls = RESULT_NOT_PRESENT
-            if exists(fp_vcf):
-                if (action == 'tumornormal') and (program == 'Varscan'):
-                    nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[7], squeeze=True).apply(lambda x: ';SS=2;' in x).sum()
-                else:
-                    nr_calls = pd.read_csv(fp_vcf, comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
+            results.append({
+                    'Sample_Project': sample_project,
+                    'Sample_ID': fastq_prefix.split('/')[-1],
+                    'action': ap['action'],
+                    'program': ap['program'],
+                    'fp_calls': fp_vcf,
+            })
 
-            if (role_sample_project in config['projects']) and (pd.notnull(meta['spike_entity_role'].iloc[0])):
-                if ((action == 'trio') and (meta['spike_entity_role'].iloc[0] in ['patient', 'sibling']) and (not _isKnownDuo(role_sample_project, meta['spike_entity_id'].iloc[0], config))) or\
-                   ((action == 'background')) or\
-                   ((action == 'tumornormal') and (meta['spike_entity_role'].iloc[0].startswith('tumor'))):
-                    results.append({
-                        'Sample_Project': sample_project,
-                        'Sample_ID': sample_id,
-                        'action': action,
-                        'program': program,
-                        'number_calls': nr_calls,
-                    })
+    status = 0
+    num_status = 20
+    if verbose is not None:
+        print('of %i: ' % num_status, file=verbose, end="")
+    for i, res in enumerate(results):
+        if (verbose is not None) and int(i % len(results) / num_status) == 0:
+            status+=1
+            print('%i ' % status, file=verbose, end="")
+        nr_calls = RESULT_NOT_PRESENT
+        if (res['fp_calls'] is not None) and exists(res['fp_calls']):
+            if res['program'] == 'Varscan':
+                nr_calls = pd.read_csv(res['fp_calls'], comment='#', sep="\t", dtype=str, header=None, usecols=[7], squeeze=True).apply(lambda x: ';SS=2;' in x).sum()
+            else:
+                nr_calls = pd.read_csv(res['fp_calls'], comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
+        res['number_calls'] = nr_calls
+    if verbose is not None:
+        print('done.', file=verbose)
+
     if len(results) <= 0:
         return pd.DataFrame()
-    return pd.DataFrame(results).set_index(['Sample_Project', 'Sample_ID', 'action', 'program'])['number_calls']
+    results = pd.DataFrame(results)
+    results = results[pd.notnull(results['fp_calls'])].set_index(['Sample_Project', 'Sample_ID', 'action', 'program'])['number_calls']
+
+    # add alias sample results
+    for (sample_project, spike_entity_id, spike_entity_role, fastq_prefix), meta in samplesheets[samplesheets['is_alias'] == True].groupby(['Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']):
+        for (_, _, action, program), row in results.loc[fastq_prefix.split('/')[0], fastq_prefix.split('/')[-1], :].iteritems():
+            results.loc[sample_project, meta['Sample_ID'].unique()[0], action, program] = row
+
+    return results
 
 
 def _get_genepanel_data(samplesheets, prefix, config):
-    coverages = []
-    for file in glob('%s%s%s/*/*/*.tsv' % (prefix, config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'])):
-        coverage = pd.read_csv(file, sep="\t")
+    results = []
 
-        parts = file.split('/')
-        # determine genepanel name, project and sample_id from filename
-        coverage['Sample_Project'] = parts[-2]
-        coverage['Sample_ID'] = parts[-1][:-4]
-        coverage['genepanel'] = parts[-3][:-5]
-        coverage = coverage.set_index(['Sample_Project', 'Sample_ID', 'genepanel', 'gene'])
+    # leave out samples aliases
+    for (sample_project, spike_entity_id, spike_entity_role, fastq_prefix), meta in samplesheets[samplesheets['is_alias'] != True].fillna('not defined').groupby(['Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']):
+        #print(sample_project, spike_entity_id, spike_entity_role, fastq_prefix)
+        for file in glob('%s%s%s/*/%s.tsv' % (prefix, config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'], fastq_prefix)):
+            #print("\t", file)
+            coverage = pd.read_csv(file, sep="\t")
 
-        coverages.append(coverage)
+            parts = file.split('/')
+            # determine genepanel name, project and sample_id from filename
+            coverage['Sample_Project'] = sample_project
+            coverage['Sample_ID'] = meta['Sample_ID'].unique()[0]
+            coverage['genepanel'] = parts[-3][:-5]
+            coverage = coverage.set_index(['Sample_Project', 'Sample_ID', 'genepanel', 'gene'])
 
-    return pd.concat(coverages).sort_values(by=['Sample_Project', 'Sample_ID', 'genepanel', 'gene'])
+            results.append(coverage)
+    results = pd.concat(results).sort_values(by=['Sample_Project', 'Sample_ID', 'genepanel', 'gene'])
+
+    # add alias sample results
+    for (sample_project, spike_entity_id, spike_entity_role, fastq_prefix), meta in samplesheets[samplesheets['is_alias'] == True].groupby(['Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']):
+        for (_, _, action, program), row in results.loc[fastq_prefix.split('/')[0], fastq_prefix.split('/')[-1], :].iterrows():
+            results.loc[sample_project, meta['Sample_ID'].unique()[0], action, program] = row
+
+    return results
 
 
 def get_status_data(samplesheets, config, prefix=None, verbose=sys.stderr):
@@ -419,12 +454,12 @@ def get_status_data(samplesheets, config, prefix=None, verbose=sys.stderr):
     data_snupy = _get_statusdata_snupyextracted(samplesheets, prefix, config)
     if verbose is not None:
         print(" done.\n4/%i) gathering number of PASSing calls: ..." % NUMSTEPS, file=verbose, end="")
-    data_calls = _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT)
+    data_calls = _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT, verbose=verbose)
     if verbose is not None:
         print(" done.\n5/%i) gathering gene coverage: ..." % NUMSTEPS, file=verbose, end="")
     data_genepanels = _get_genepanel_data(samplesheets, prefix, config)
     if verbose is not None:
-        print("done.\n5/%i) generating Excel output: ..." % NUMSTEPS, file=verbose, end="")
+        print("done.\n6/%i) generating Excel output: ..." % NUMSTEPS, file=verbose, end="")
 
     return (data_yields, data_coverage, data_snupy, data_calls, data_genepanels)
 
@@ -676,7 +711,8 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
 
                     # gene panel coverage
                     if pd.notnull(role):
-                        role_sample_project, role_sample_id = get_role(sample_project, spike_entity_group, role, samplesheets).split('/')
+                        print("DEBUG", sample_project, sample_id)
+                        role_sample_project, role_sample_id = get_role(sample_project, sample_id, role, samplesheets).split('/')
                         for gene_index, (panel, gene) in enumerate(gene_order):
                             if (role_sample_project, role_sample_id, panel, gene) in data_genepanels.index:
                                 cov = data_genepanels.loc[role_sample_project, role_sample_id, panel, gene]
