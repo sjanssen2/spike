@@ -349,6 +349,9 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                         fp_vcf = '%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], sample_project, spike_entity_id, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
                     elif (spike_entity_role in set(['sibling'])):
                         fp_vcf = '%s%s%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                # remove entry, if it is known (config.yaml) that this trio is incomplete
+                if (spike_entity_role == 'patient') and (spike_entity_id in config.get('projects', []).get(sample_project, []).get('known_duos', [])):
+                    fp_vcf = None
 
             results.append({
                     'Sample_Project': sample_project,
