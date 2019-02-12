@@ -18,6 +18,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 import urllib3
 import yaml
+import pickle
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 plt.switch_backend('Agg')
 
@@ -491,6 +492,10 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         If not None: print verbose information.
     """
     global RESULT_NOT_PRESENT
+
+    # for debugging purposes
+    pickle.dump(data, open('%s.datadump' % filename, 'wb'))
+
     data_yields, data_coverage, data_snupy, data_calls, data_genepanels = data
 
     # start creating the Excel result
@@ -711,11 +716,9 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
 
                     # gene panel coverage
                     if pd.notnull(role):
-                        print("DEBUG", sample_project, sample_id)
-                        role_sample_project, role_sample_id = get_role(sample_project, sample_id, role, samplesheets).split('/')
                         for gene_index, (panel, gene) in enumerate(gene_order):
-                            if (role_sample_project, role_sample_id, panel, gene) in data_genepanels.index:
-                                cov = data_genepanels.loc[role_sample_project, role_sample_id, panel, gene]
+                            if (sample_project, sample_id, panel, gene) in data_genepanels.index:
+                                cov = data_genepanels.loc[sample_project, sample_id, panel, gene]
                                 #cov_text = '%i | %.1f | %i' % (cov['mincov'], cov['avgcov_0'], cov['maxcov'])
                                 cov_text = '%.1f' % cov['avgcov_0']
                                 frmt = format_gene_coverage_bad
