@@ -50,8 +50,8 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 7,KB0084_c,,,,E01,GCCAAGAC,Keimbahn,,KB0084,patient,
 7,KB0084_f,,,,F01,GACTAGTA,Keimbahn,,KB0084,father,
 7,KB0084_m,,,,G01,ATTGGCTC,Keimbahn,,KB0084,mother,
-7,KB0120_c,,,,H01,GATGAATC,Keimbahn,,KB0120,patient,
+7,KB0120_c,,,,H01,GATGAATC,Keimbahn,"ignore this sample, since it is way too close to the sample from the child. Something is messed up, but I do not know what.",KB0120,patient,yes
 8,KB0084_c,,,,E01,GCCAAGAC,Keimbahn,,KB0084,patient,
 8,KB0084_f,,,,F01,GACTAGTA,Keimbahn,,KB0084,father,
 8,KB0084_m,,,,G01,ATTGGCTC,Keimbahn,,KB0084,mother,
-8,KB0120_c,,,,H01,GATGAATC,Keimbahn,,KB0120,patient,
+8,KB0120_c,,,,H01,GATGAATC,Keimbahn,"ignore this sample, since it is way too close to the sample from the child. Something is messed up, but I do not know what.",KB0120,patient,yes

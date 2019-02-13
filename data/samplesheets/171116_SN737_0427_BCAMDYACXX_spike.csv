@@ -47,11 +47,11 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 4,mouse_BANK_3_Spleen_T,,,,C02,AAACATCG,Maus_Hauer,,mouse_BANK_3,tumor,
 4,mouse_BANK_4_BM_T,,,,G02,AAGGACAC,Maus_Hauer,Set 3,mouse_BANK_4,tumor,
 4,mouse_BANK_4_N,,,,H02,GACAGTGC,Maus_Hauer,Set 3,mouse_BANK_4,healthy,
-5,KB0120_f,,,,A01,ATGCCTAA,Keimbahn,Set3,KB0120,father,
+5,KB0120_f,,,,A01,ATGCCTAA,Keimbahn,"ignore this sample, since it is way too close to the sample from the child. Something is messed up, but I do not know what.",KB0120,father,yes
 5,KB0120_m,,,,B01,GAATCTGA,Keimbahn,Set3,KB0120,mother,
 5,KB0149_c,,,,C01,AACGTGAT,Keimbahn,Set3,KB0149,patient,
 5,KB0149_f,,,,D01,CACTTCGA,Keimbahn,Set3,KB0149,father,
-6,KB0120_f,,,,A01,ATGCCTAA,Keimbahn,Set3,KB0120,father,
+6,KB0120_f,,,,A01,ATGCCTAA,Keimbahn,"ignore this sample, since it is way too close to the sample from the child. Something is messed up, but I do not know what.",KB0120,father,
 6,KB0120_m,,,,B01,GAATCTGA,Keimbahn,Set3,KB0120,mother,
 6,KB0149_c,,,,C01,AACGTGAT,Keimbahn,Set3,KB0149,patient,
 6,KB0149_f,,,,D01,CACTTCGA,Keimbahn,Set3,KB0149,father,
