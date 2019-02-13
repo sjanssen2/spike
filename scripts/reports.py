@@ -329,29 +329,32 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                     fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
                 elif (ap['program'] == 'Platypus'):
                     fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
-            elif (ap['action'] == 'tumornormal') and (spike_entity_role.split('_')[0] in set(['tumor'])):
-                if (ap['program'] == 'Varscan'):
-                    fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
-                elif (ap['program'] == 'Mutect'):
-                    fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
-                elif (ap['program'] == 'Excavator2'):
-                    fp_vcf = '%s%s%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+            elif (ap['action'] == 'tumornormal'):
+                for (alias_sample_project, alias_spike_entity_role, alias_sample_id), alias_meta in samplesheets[(samplesheets['fastq-prefix'] == fastq_prefix) & (samplesheets['spike_entity_role'].apply(lambda x: x.split('_')[0] if pd.notnull(x) else x).isin(['tumor']))].groupby(['Sample_Project', 'spike_entity_role', 'Sample_ID']):
+                    if (alias_spike_entity_role.split('_')[0] in set(['tumor'])):
+                        if (ap['program'] == 'Varscan'):
+                            fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], alias_sample_project, alias_sample_id, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                        elif (ap['program'] == 'Mutect'):
+                            fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], alias_sample_project, alias_sample_id, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                        elif (ap['program'] == 'Excavator2'):
+                            fp_vcf = '%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], alias_sample_project, alias_sample_id, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
             elif (ap['action'] == 'trio'):
-                # Trios are a more complicated case, since by default the result name is given by the
-                # spike_entity_id, but if computed for siblings, the name is given by the fastq-prefix
-                if (ap['program'] == 'Varscan\ndenovo'):
-                    if (spike_entity_role in set(['patient'])):
-                        fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], sample_project, spike_entity_id, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
-                    elif (spike_entity_role in set(['sibling'])):
-                        fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
-                elif (ap['program'] == 'Excavator2'):
-                    if (spike_entity_role in set(['patient'])):
-                        fp_vcf = '%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], sample_project, spike_entity_id, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
-                    elif (spike_entity_role in set(['sibling'])):
-                        fp_vcf = '%s%s%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
-                # remove entry, if it is known (config.yaml) that this trio is incomplete
-                if (spike_entity_role == 'patient') and (spike_entity_id in config.get('projects', []).get(sample_project, []).get('known_duos', [])):
-                    fp_vcf = None
+                for (alias_sample_project, alias_spike_entity_role, alias_sample_id, alias_spike_entity_id), alias_meta in samplesheets[(samplesheets['fastq-prefix'] == fastq_prefix) & (samplesheets['spike_entity_role'].isin(['patient', 'sibling']))].groupby(['Sample_Project', 'spike_entity_role', 'Sample_ID', 'spike_entity_id']):
+                    # Trios are a more complicated case, since by default the result name is given by the
+                    # spike_entity_id, but if computed for siblings, the name is given by the fastq-prefix
+                    if (ap['program'] == 'Varscan\ndenovo'):
+                        if (alias_spike_entity_role in set(['patient'])):
+                            fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], alias_sample_project, alias_spike_entity_id, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                        elif (alias_spike_entity_role in set(['sibling'])):
+                            fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                    elif (ap['program'] == 'Excavator2'):
+                        if (alias_spike_entity_role in set(['patient'])):
+                            fp_vcf = '%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], alias_sample_project, alias_spike_entity_id, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                        elif (alias_spike_entity_role in set(['sibling'])):
+                            fp_vcf = '%s%s%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                    # remove entry, if it is known (config.yaml) that this trio is incomplete
+                    if (spike_entity_role == 'patient') and (spike_entity_id in config.get('projects', []).get(sample_project, []).get('known_duos', [])):
+                        fp_vcf = None
 
             results.append({
                     'Sample_Project': sample_project,
@@ -366,7 +369,7 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
     if verbose is not None:
         print('of %i: ' % num_status, file=verbose, end="")
     for i, res in enumerate(results):
-        if (verbose is not None) and int(i % len(results) / num_status) == 0:
+        if (verbose is not None) and int(i % (len(results) / num_status)) == 0:
             status+=1
             print('%i ' % status, file=verbose, end="")
         nr_calls = RESULT_NOT_PRESENT
@@ -388,6 +391,10 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
     for (sample_project, spike_entity_id, spike_entity_role, fastq_prefix), meta in samplesheets[samplesheets['is_alias'] == True].groupby(['Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']):
         for (_, _, action, program), row in results.loc[fastq_prefix.split('/')[0], fastq_prefix.split('/')[-1], :].iteritems():
             results.loc[sample_project, meta['Sample_ID'].unique()[0], action, program] = row
+
+    # remove samples, that don't have their own role, but were used for aliases
+    for (sample_project, sample_id), _ in samplesheets[pd.isnull(samplesheets['spike_entity_role'])].groupby(['Sample_Project', 'Sample_ID']):
+        results.drop(index=results.loc[sample_project, sample_id, ['tumornormal', 'trio'], :].index, inplace=True)
 
     return results
 
