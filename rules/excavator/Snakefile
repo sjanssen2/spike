@@ -90,6 +90,12 @@ rule excavator_install:
         " {wildcards.assembly}"
         " 2>> {log} 1>&2"
 
+        # some conda magic:
+        # we will run into some concurrency issues when activating the same conda env at the same time multiple times (as done when processing several samples)
+        # further details: https://github.com/conda-forge/r-base-feedstock/issues/67
+        # I will try to workaround by deleting the offending activation script, after Excavator is installed
+        " && rm -v -f $CONDA_PREFIX/etc/conda/activate.d/activate-r-base.sh 2>> {log}"
+
 
 rule excavator_dataprepare:
     input:
@@ -108,8 +114,10 @@ rule excavator_dataprepare:
     threads:
         1
     shell:
+        # see excavator_install for the following line
+        " rm -v -f $CONDA_PREFIX/etc/conda/activate.d/activate-r-base.sh 2> {log}"
         # make sure we are using conda's R and not the one loaded by module
-        ' module unload R 2> {log}'
+        ' && module unload R 2>> {log}'
         ' && assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2>> {log}'
         ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2>> {log}'
         ' && configfile=$(mktemp) 2>> {log} 1>&2'
@@ -141,7 +149,10 @@ rule excavator_somatic:
     params:
         name_tumor=lambda wildcards: wildcards.entity.split('/')[-1]
     shell:
-        ' module unload R 2> {log}'
+        # see excavator_install for the following line
+        " rm -v -f $CONDA_PREFIX/etc/conda/activate.d/activate-r-base.sh 2> {log}"
+        # make sure we are using conda's R and not the one loaded by module
+        ' && module unload R 2>> {log}'
         ' && assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2>> {log}'
         ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2>> {log}'
         ' && configfile=$(mktemp) 2>> {log} 1>&2'
@@ -179,7 +190,10 @@ rule excavator_trio:
     params:
         name_trio=lambda wildcards: wildcards.trio.split('/')[-1]
     shell:
-        ' module unload R 2> {log}'
+        # see excavator_install for the following line
+        "rm -v -f $CONDA_PREFIX/etc/conda/activate.d/activate-r-base.sh 2> {log}"
+        # make sure we are using conda's R and not the one loaded by module
+        ' && module unload R 2>> {log}'
         ' && assembly=`basename "{input.assembly}" | rev | cut -b 4- | rev` 2>> {log}'
         ' && exometrack=`basename "{input.exometrack}" | rev | cut -b 5- | rev` 2>> {log}'
         ' && configfile=$(mktemp) 2>> {log} 1>&2'
