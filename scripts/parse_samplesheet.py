@@ -429,7 +429,7 @@ def get_role(spike_project, spike_entity_id, spike_entity_role, samplesheets):
 
     res = {sample['fastq-prefix'] for idx, sample in samples.iterrows()}
     if len(res) > 1:
-        raise ValueError("Stefan, check if use cases can occour with more than one result!")
+        raise ValueError("Stefan, check if use cases can occour with more than one result!\nspike_project: %s, spike_entity_id: %s, spike_entity_role: %s\n%s" % (spike_project, spike_entity_id, spike_entity_role, res))
 
     return list(res)[0]
 

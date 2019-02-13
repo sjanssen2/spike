@@ -6,7 +6,7 @@
       "nodes" : 1,
       "time" : "00:59:59",
       "mem" : "12GB",
-      "ppn" : "12"
+      "ppn" : "12",
     },
 
     "demultiplex" :
@@ -25,7 +25,7 @@
     "trim":
     { "mem" : "4GB",
       "ppn" : "16",
-      "time" : "04:59:59",
+      "time" : "06:59:59",
     },
 
     "xenograft_bwa_aln":
@@ -64,13 +64,13 @@
     "gatk_BaseRecalibrator":
     {
       "mem" : "8GB",
-      "time" : "08:59:59",
+      "time" : "12:59:59",
       "ppn" : "3",
     },
 
     "gatk_PrintReads":
     {
-      "time" : "08:59:59",
+      "time" : "10:59:59",
       "mem" : "16GB",
       "ppn" : "16",
     },
@@ -85,7 +85,7 @@
     "varscan_trio":
     {
       "ppn": "1",
-      "time" : "07:59:59",
+      "time" : "11:59:59",
       "mem" : "3GB"
     },
 
@@ -189,7 +189,7 @@
 
     "gatk_ApplyRecalibration":
     {
-      "time": "00:29:59",
+      "time": "00:59:59",
       "ppn" : "3",
       "mem" : "4GB"
     },
@@ -287,19 +287,21 @@
     "excavator_dataprepare":
     { "mem" : "1GB",
       "ppn" : "1",
-      "time" : "00:59:59",
+      "time" : "01:59:59",
     },
 
     "excavator_somatic":
     { "mem" : "1GB",
       "ppn" : "1",
       "time" : "00:29:59",
+      "arch" : "SkyLake_6136"
     },
 
     "excavator_trio":
     { "mem" : "2GB",
       "ppn" : "1",
       "time" : "00:29:59",
+      "arch" : "SkyLake_6136"
     },
 
 }
