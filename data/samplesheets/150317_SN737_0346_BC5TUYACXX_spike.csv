@@ -53,7 +53,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 5,1479_Rem,,,,Index_1,ATCACG,dsALL,,1479,healthy,
 5,1479_Rel_II,,,,Index_4,TGACCA,dsALL,,1479,tumor,
 5,Dahe_Fibros,,,,Index_12,CTTGTA,MSC,,,,
-6,32c,,,,Index_2,CGATGT,Maus_Hauer,,32,healthy,
+6,32C,,,,Index_2,CGATGT,Maus_Hauer,,32,healthy,
 6,32T,,,,Index_7,CAGATC,Maus_Hauer,,32,tumor,
 6,33C,,,,Index_19,GTGAAA,Maus_Hauer,,33,healthy,
 7,33T,,,,Index_2,CGATGT,Maus_Hauer,,33,tumor,
