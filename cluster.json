@@ -19,7 +19,7 @@
     "rejoin_sample":
     { "mem" : "1GB",
       "ppn" : "2",
-      "time" : "01:59:59",
+      "time" : "02:59:59",
     },
 
     "trim":
@@ -44,7 +44,7 @@
     {
       "ppn" : "3",
       "mem" : "20GB",
-      "time" : "16:59:59",
+      "time" : "18:59:59",
     },
 
     "remove_pcr_duplicates":
@@ -71,14 +71,14 @@
     "gatk_PrintReads":
     {
       "time" : "10:59:59",
-      "mem" : "16GB",
+      "mem" : "24GB",
       "ppn" : "16",
     },
 
     "gatk_HaplotypeCaller":
     {
       "ppn" : "1",
-      "time" : "06:59:59",
+      "time" : "09:59:59",
       "mem" : "8GB",
     },
 
@@ -124,6 +124,7 @@
     {
       "mem" : "1GB",
       "ppn" : "1",
+      "time" : "01:59:59",
     },
 
     "freec":
@@ -147,14 +148,14 @@
 
     "gatk_VariantFiltration_SNP":
     {
-      "time": "00:19:59",
+      "time": "00:59:59",
       "ppn" : "1",
       "mem" : "3GB",
     },
 
     "gatk_VariantFiltration_INDEL":
     {
-      "time": "00:09:59",
+      "time": "00:29:59",
       "ppn" : "1",
       "mem" : "4GB"
     },
