@@ -81,6 +81,12 @@ rule all:
         biom_background=['%s%s%s/%s.gatk.snp_indel.biom' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], sample)
                          for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
 
+rule trim_16s:
+    input:
+        ['%s%s%s/%s_R%i.fastq.gz' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['remove_16s_primer'], row['fastq-prefix'], direction)
+         for idx, row in SAMPLESHEETS.iterrows()
+         for direction in [1, 2]]
+
 rule status:
     output:
         "status_update.xlsx"
