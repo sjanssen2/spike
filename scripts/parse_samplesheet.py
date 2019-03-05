@@ -637,7 +637,8 @@ def get_genepanels(samplesheets, config, prefix):
                     if ('Sample_Project' in role) and (role['Sample_Project'] in project_panels):
                         for panel in project_panels[role['Sample_Project']]:
                             if ('Sample_Project' in sample['real_id']) and ('Sample_ID' in sample['real_id']):
-                                to_be_created.append('%s%s%s/%s.yaml/%s/%s.tsv' % (prefix, config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'], panel, sample['real_id']['Sample_Project'], sample['real_id']['Sample_ID']))
+                                if samplesheets[(samplesheets['Sample_Project'] == sample['real_id']['Sample_Project']) & (samplesheets['Sample_ID'] == sample['real_id']['Sample_ID'])].shape[0] > 0:
+                                    to_be_created.append('%s%s%s/%s.yaml/%s/%s.tsv' % (prefix, config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'], panel, sample['real_id']['Sample_Project'], sample['real_id']['Sample_ID']))
 
     return to_be_created
 
