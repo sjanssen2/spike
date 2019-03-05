@@ -48,6 +48,7 @@ stepnames:
   convert_illumina_report: "030_convert_illumina_report"
   rejoin_samples: "035_rejoin_samples"
   trim: "040_trim"
+  remove_16s_primer: "041_remove_16s_primer"
   xenograft_bwa_aln: "045_xenograft_bwa_aln"
   xenograft_bwa_sampe: "050_xenograft_bwa_sampe"
   xenograft_check: "055_xenograft_check"
