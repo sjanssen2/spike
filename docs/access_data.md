@@ -20,7 +20,9 @@ Once the firewall is open towards the HPC, you need to ask the administrators to
 ### 4. Browse your data
 Once you managed the above three hurdles, you can use any (s)FTP client to access your data. You might want to use a program with a graphical user interface like [WinSCP](https://winscp.net/), which is in the lucky case already installed on your machine or you have to ask IT to install it for you if you don't have the necessary right to install software yourself.
 When you first start WinSCP, it asks for the address to which you want to connect. Fill the necessary fields like in the following screenshot (sorry for German version):
+
 ![alt text](winscp.jpg "configure WinSCP")
+
 In short: 
 
  - IP-address is: 134.99.128.206
