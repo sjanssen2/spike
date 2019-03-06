@@ -305,4 +305,9 @@
       "arch" : "SkyLake_6136"
     },
 
+    "remove_16s_primer":
+    { "mem" : "4GB",
+      "ppn" : "1",
+      "time" : "00:29:59",
+    },
 }
