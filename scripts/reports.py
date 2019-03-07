@@ -271,9 +271,14 @@ def _isKnownDuo(sample_project, spike_entity_id, config):
 def _get_statusdata_snupyextracted(samplesheets, prefix, config):
     results = []
     for sample_project, meta in samplesheets.groupby('Sample_Project'):
-        if (sample_project not in config['projects']) or ('snupy' not in config['projects'][sample_project]) or ('project_id' not in config['projects'][sample_project]['snupy']):
-            # project in config file is not properly configure for snupy!
+        # project in config file is not properly configure for snupy!
+        if config['projects'].get(sample_project, None) is None:
             continue
+        if config['projects'][sample_project].get('snupy', None) is None:
+            continue
+        if config['projects'][sample_project]['snupy'].get('project_id', None) is None:
+            continue
+
         r = requests.get('%s/experiments/%s.json' % (config['credentials']['snupy']['host'], config['projects'][sample_project]['snupy']['project_id']),
             auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
             verify=False)
@@ -374,10 +379,13 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
             print('%i ' % status, file=verbose, end="")
         nr_calls = RESULT_NOT_PRESENT
         if (res['fp_calls'] is not None) and exists(res['fp_calls']):
-            if res['program'] == 'Varscan':
-                nr_calls = pd.read_csv(res['fp_calls'], comment='#', sep="\t", dtype=str, header=None, usecols=[7], squeeze=True).apply(lambda x: ';SS=2;' in x).sum()
-            else:
-                nr_calls = pd.read_csv(res['fp_calls'], comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
+            try:
+                if res['program'] == 'Varscan':
+                    nr_calls = pd.read_csv(res['fp_calls'], comment='#', sep="\t", dtype=str, header=None, usecols=[7], squeeze=True).apply(lambda x: ';SS=2;' in x).sum()
+                else:
+                    nr_calls = pd.read_csv(res['fp_calls'], comment='#', sep="\t", dtype=str, header=None, usecols=[6], squeeze=True).value_counts()['PASS']
+            except pd.io.common.EmptyDataError:
+                nr_calls = 0
         res['number_calls'] = nr_calls
     if verbose is not None:
         print('done.', file=verbose)
