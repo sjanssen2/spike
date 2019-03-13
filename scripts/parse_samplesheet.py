@@ -617,7 +617,7 @@ def get_genepanels(samplesheets, config, prefix):
         raise ValueError('config.yaml does not contain any projects!')
     for project in samplesheets['Sample_Project'].unique():
         if project in config['projects']:
-            if 'genepanels' in config['projects'][project]:
+            if (config['projects'][project] is not None) and ('genepanels' in config['projects'][project]):
                 project_panels[project] = config['projects'][project]['genepanels']
 
     # for every sample, check which panels have to be computed
