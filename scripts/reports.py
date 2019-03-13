@@ -336,13 +336,18 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
                     fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], fastq_prefix, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
             elif (ap['action'] == 'tumornormal'):
                 for (alias_sample_project, alias_spike_entity_role, alias_sample_id), alias_meta in samplesheets[(samplesheets['fastq-prefix'] == fastq_prefix) & (samplesheets['spike_entity_role'].apply(lambda x: x.split('_')[0] if pd.notnull(x) else x).isin(['tumor']))].groupby(['Sample_Project', 'spike_entity_role', 'Sample_ID']):
+                    # for Keimbahn, the tumor sample needs to include the name of the original sample ID
+                    instance_id = '%s/%s' % (alias_sample_project, alias_sample_id)
+                    if alias_spike_entity_role == 'tumor':
+                        # for Maus_Hauer, the filename holds the entity name, but not the Sample ID
+                        instance_id = '%s/%s' % (sample_project, spike_entity_id)
                     if (alias_spike_entity_role.split('_')[0] in set(['tumor'])):
                         if (ap['program'] == 'Varscan'):
-                            fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], alias_sample_project, alias_sample_id, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                            fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], instance_id, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
                         elif (ap['program'] == 'Mutect'):
-                            fp_vcf = '%s%s%s/%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], alias_sample_project, alias_sample_id, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                            fp_vcf = '%s%s%s/%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], instance_id, _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
                         elif (ap['program'] == 'Excavator2'):
-                            fp_vcf = '%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], alias_sample_project, alias_sample_id, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
+                            fp_vcf = '%s%s%s/%s/Results/%s/EXCAVATORRegionCall_%s%s' % (prefix, config['dirs']['intermediate'], config['stepnames'][ap['stepname_spike_calls']], instance_id, fastq_prefix.split('/')[-1], fastq_prefix.split('/')[-1], _get_fileending(ap['fileending_spike_calls'], fastq_prefix, meta, config))
             elif (ap['action'] == 'trio'):
                 for (alias_sample_project, alias_spike_entity_role, alias_sample_id, alias_spike_entity_id), alias_meta in samplesheets[(samplesheets['fastq-prefix'] == fastq_prefix) & (samplesheets['spike_entity_role'].isin(['patient', 'sibling']))].groupby(['Sample_Project', 'spike_entity_role', 'Sample_ID', 'spike_entity_id']):
                     # Trios are a more complicated case, since by default the result name is given by the
