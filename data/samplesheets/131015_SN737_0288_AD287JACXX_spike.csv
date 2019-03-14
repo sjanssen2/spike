@@ -1,47 +1,47 @@
-[Header],,,,,,,,,,,
-IEMFileVersion,5,,,,,,,,,,
-Date,10/15/13,,,,,,,,,,
-Workflow,GenerateFASTQ,,,,,,,,,,
-Application,HiSeq FASTQ Only,,,,,,,,,,
-Instrument Type,HiSeq 1500/2500,,,,,,,,,,
-Assay,Agilent_Sure_SelectXT,,,,,,,,,,
-Index Adapters,Agilent_Sure_SelectXT,,,,,,,,,,
-Chemistry,Default,,,,,,,,,,
-Description,,,,,,,,,,,
-Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,
-Backup_NAS_name,Phex,,,,,,,,,,
-kind_of_run,2x101bp,,,,,,,,,,
-[Reads],,,,,,,,,,,
-101,,,,,,,,,,,
-101,,,,,,,,,,,
-[Settings],,,,,,,,,,,
-ReverseComplement,0,,,,,,,,,,
-Adapter,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,
-AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,
-,,,,,,,,,,,
-[Data],,,,,,,,,,,
-Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,spike_entity_id,spike_entity_role,spike_ignore_sample
-1,514_rez2,,,,Index_4,TGACCA,Inform,,,,
-1,514_rez_pSCT,,,,Index_6,GCCAAT,Inform,,,,
-1,514_rem,,,,Index_12,CTTGTA,Inform,,,,
-2,514_pSCT,,,,Index_4,TGACCA,Inform,,,,
-2,514_ini,,,,Index_6,GCCAAT,Inform,,,,
-2,514_ini2,,,,Index_12,CTTGTA,Inform,,,,
-3,590_rez,,,,Index_4,TGACCA,Inform,,,,
-3,590_rez_pSCT,,,,Index_6,GCCAAT,Inform,,,,
-3,590_rem,,,,Index_12,CTTGTA,Inform,,,,
-4,590_DONOR,,,,Index_6,GCCAAT,Inform,,,,
-4,590_pSCT,,,,Index_12,CTTGTA,Inform,,,,
-4,660_rez,,,,Index_4,TGACCA,Inform,,,,
-5,660_rez_pSCT,,,,Index_4,TGACCA,Inform,,,,
-5,660_rem,,,,Index_6,GCCAAT,Inform,,,,
-5,660_pSCT,,,,Index_12,CTTGTA,Inform,,,,
-6,685_rez,,,,Index_4,TGACCA,Inform,,,,
-6,685_rez_pSCT,,,,Index_6,GCCAAT,Inform,,,,
-6,735_rez,,,,Index_12,CTTGTA,Inform,,,,
-7,685_pSCT,,,,Index_4,TGACCA,Inform,,,,
-7,707_rez,,,,Index_6,GCCAAT,Inform,,,,
-7,707_rez_pSCT,,,,Index_12,CTTGTA,Inform,,,,
-8,707_rem,,,,Index_4,TGACCA,Inform,,,,
-8,685_rem,,,,Index_6,GCCAAT,Inform,,,,
-8,735_rez_pSCT,,,,Index_12,CTTGTA,Inform,,,,
+[Header],,,,,,,,,,,,
+IEMFileVersion,5,,,,,,,,,,,
+Date,10/15/13,,,,,,,,,,,
+Workflow,GenerateFASTQ,,,,,,,,,,,
+Application,HiSeq FASTQ Only,,,,,,,,,,,
+Instrument Type,HiSeq 1500/2500,,,,,,,,,,,
+Assay,Agilent_Sure_SelectXT,,,,,,,,,,,
+Index Adapters,Agilent_Sure_SelectXT,,,,,,,,,,,
+Chemistry,Default,,,,,,,,,,,
+Description,,,,,,,,,,,,
+Operator,Katayoun Alemazkour/Michael Gombert,,,,,,,,,,,
+Backup_NAS_name,Phex,,,,,,,,,,,
+kind_of_run,2x101bp,,,,,,,,,,,
+[Reads],,,,,,,,,,,,
+101,,,,,,,,,,,,
+101,,,,,,,,,,,,
+[Settings],,,,,,,,,,,,
+ReverseComplement,0,,,,,,,,,,,
+Adapter,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,,
+AdapterRead2,AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT,,,,,,,,,,,
+,,,,,,,,,,,,
+[Data],,,,,,,,,,,,
+Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Project,Description,spike_entity_id,spike_entity_role,spike_ignore_sample,spike_original_but_wrong_sample_id
+2,514_INIT,,,,Index_6,GCCAAT,Inform,,514,,,514_ini
+2,514_INIT_B,,,,Index_12,CTTGTA,Inform,,514,,,514_ini2
+2,514_TREMI,,,,Index_4,TGACCA,Inform,,514,,,514_pSCT
+1,514_REMI,,,,Index_12,CTTGTA,Inform,,514,,,514_rem
+1,514_TRLPS,,,,Index_6,GCCAAT,Inform,,514,,,514_rez_pSCT
+1,514_RLPS,,,,Index_4,TGACCA,Inform,,514,,,514_rez2
+4,590_TRANS,,,,Index_6,GCCAAT,Inform,,590,,,590_DONOR
+4,590_TREMI,,,,Index_12,CTTGTA,Inform,,590,,,590_pSCT
+3,590_REMI,,,,Index_12,CTTGTA,Inform,,590,,,590_rem
+3,590_RLPS,,,,Index_4,TGACCA,Inform,,590,,,590_rez
+3,590_TRLPS,,,,Index_6,GCCAAT,Inform,,590,,,590_rez_pSCT
+5,660_TREMI,,,,Index_12,CTTGTA,Inform,,660,,,660_pSCT
+5,660_rem,,,,Index_6,GCCAAT,Inform,,,,,
+4,660_RLPS,,,,Index_4,TGACCA,Inform,,660,,,660_rez
+5,660_TRLPS,,,,Index_4,TGACCA,Inform,,660,,,660_rez_pSCT
+7,685_pSCT,,,,Index_4,TGACCA,Inform,,,,,
+8,685_rem,,,,Index_6,GCCAAT,Inform,,,,,
+6,685_rez,,,,Index_4,TGACCA,Inform,,,,,
+6,685_rez_pSCT,,,,Index_6,GCCAAT,Inform,,,,,
+8,707_REMI,,,,Index_4,TGACCA,Inform,,707,,,707_rem
+7,707_rez,,,,Index_6,GCCAAT,Inform,,,,,
+7,707_TRLPS,,,,Index_12,CTTGTA,Inform,,707,,,707_rez_pSCT
+6,735_RLPS,,,,Index_12,CTTGTA,Inform,,735,,,735_rez
+8,735_rez_pSCT,,,,Index_12,CTTGTA,Inform,,,,,
