@@ -749,3 +749,19 @@ def get_min_coverage(project, config):
         if 'min_coverage' in config['projects'][project]:
             return int(config['projects'][project]['min_coverage'])
     return 30
+
+
+def get_reverse_file(fp_reverse, wildcards, SAMPLESHEETS, config):
+    # some older runs were only single end (SE) runs instead of the "normal" paired end (PE) runs.
+    # Thus, for the SE runs, we don't have reverse reads (R2) and cannot feed them into the bwa mem program
+    # We get this information by looking at the header field 'header_kind_of_run', which should start with either 2x or 1x
+    kor = SAMPLESHEETS[SAMPLESHEETS['fastq-prefix'] == wildcards.sample]['header_kind_of_run']
+    if (kor.dropna().shape[0] <= 0) or ('x' not in kor.dropna().unique()[0]):
+        raise ValueError('Abort, since "kind_of_run" is not defined for sample %s. Please identify the matching samplesheet and add the header field "kind_of_run" which should hold the information if the run is either paired end (2xYYY) or single end (1xYYY), were YYY is the number of sequenced nucleotids.' % wildcards.sample)
+    single_paired_end = kor.unique()[0].split('x')[0]
+    if single_paired_end == '1':
+        return []
+    elif single_paired_end == '2':
+        return fp_reverse
+    else:
+        raise ValueError('The information in header field "kind_of_run" in the sample sheet for sample "%s" is not properly formatted. It should look like "2xYYY" were YYY is the length of the sequences.' % wildcards.sample)
