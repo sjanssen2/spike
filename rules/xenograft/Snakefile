@@ -1,13 +1,13 @@
 rule xenograft_bwa_aln:
     input:
         hybridreference=lambda wildcards: ['%s%s%s%s' % (wildcards.prefix, config['dirs']['references'], get_xenograft_hybridreference(wildcards.sample, SAMPLESHEETS, config), ending) for ending in ['', '.amb', '.ann', '.bwt', '.pac', '.sa']],
-        fastq="{prefix}%s%s/Paired/{sample}_{direction}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim'])
+        fastq="{prefix}%s%s/{kindofrun}/{sample}_{direction}.fastq.gz",
     output:
-        "{prefix}%s%s/Paired/{sample, .*?}_{direction,R1|R2}.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln'])
+        "{prefix}%s%s/{kindofrun,Paired|Unpaired}/{sample, .*?}_{direction,R1|R2}.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln'])
     log:
-        "{prefix}%s%s/{sample}_{direction}.log" % (config['dirs']['logs'], config['stepnames']['xenograft_bwa_aln'])
+        "{prefix}%s%s/{kindofrun}/{sample}_{direction}.log" % (config['dirs']['logs'], config['stepnames']['xenograft_bwa_aln'])
     benchmark:
-        "{prefix}%s%s/{sample}_{direction}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_aln'])
+        "{prefix}%s%s/{kindofrun}/{sample}_{direction}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_aln'])
     conda:
         "envs/spike_xenograft_bwa_sampe.yaml"
     threads:
@@ -75,15 +75,60 @@ rule xenograft_bwa_sampe:
         # bwa sampe /data/biotools/reference/GRCh_GRCm_filter_hybrid/GRCh_GRCm_filtering_hybrid.fa F49_R1.sai F49_R2.sai F49_R1.fastq.gz F49_R2.fastq.gz | samtools view -S -L GRCh.bed - | java -Xmx6g -jar /data/Michael/software/picard-tools-1.89/picard-tools-1.89/SamToFastq.jar I=/dev/stdin VALIDATION_STRINGENCY=SILENT FASTQ=F49_cln_R1.fastq.gz SECOND_END_FASTQ=F49_cln_R2.fastq.gz
 
 
+rule xenograft_bwa_samse:
+    input:
+        hybridreference=lambda wildcards: ['%s%s%s%s' % (wildcards.prefix, config['dirs']['references'], get_xenograft_hybridreference(wildcards.sample, SAMPLESHEETS, config), ending) for ending in ['', '.amb', '.ann', '.bwt', '.pac', '.sa']],
+        bed=lambda wildcards: '%s%s%s.bed' % (wildcards.prefix, config['dirs']['references'], get_xenograft_hybridreference(wildcards.sample, SAMPLESHEETS, config).split('_')[0]),
+        sai_forward="{prefix}%s%s/Unpaired/{sample}_R1.sai" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_aln']),
+        fastq_forward="{prefix}%s%s/Unpaired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['trim']),
+    output:
+        forward="{prefix}%s%s/Unpaired/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_bwa_sampe']),
+    log:
+        bwa="{prefix}%s%s/{sample}.bwa.log" % (config['dirs']['logs'], config['stepnames']['xenograft_bwa_sampe']),
+        samtools="{prefix}%s%s/{sample}.samtools.log" % (config['dirs']['logs'], config['stepnames']['xenograft_bwa_sampe']),
+        sam2fastq="{prefix}%s%s/{sample}.sam2fastq.log" % (config['dirs']['logs'], config['stepnames']['xenograft_bwa_sampe'])
+    benchmark:
+        "{prefix}%s%s/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_bwa_sampe'])
+    conda:
+        "envs/spike_xenograft_bwa_sampe.yaml"
+    threads:
+        1
+    shell:
+        "bwa"
+        " samse"
+        " {input.hybridreference[0]}"
+        " {input.sai_forward}"
+        " {input.fastq_forward}"
+        " 2> {log.bwa}"
+        " | samtools"
+        " view"
+        " -S"
+        " -L {input.bed}"
+        " -"
+        " 2> {log.samtools}"
+        " | java "
+        " -Xmx6g"
+        " -jar"
+        " $CONDA_PREFIX/share/picard-2.0.1-1/picard.jar"
+        " SamToFastq"
+        " I=/dev/stdin"
+        " VALIDATION_STRINGENCY=SILENT"
+        " FASTQ={output.forward}"
+        " 2> {log.sam2fastq}"
+
+        # bwa sampe /data/biotools/reference/GRCh_GRCm_filter_hybrid/GRCh_GRCm_filtering_hybrid.fa 42_R1.sai 42_R2.sai 42_R1.fastq.gz 42_R2.fastq.gz | samtools view -S -L GRCh.bed - | java -Xmx6g -jar /data/Michael/software/picard-tools-1.89/picard-tools-1.89/SamToFastq.jar I=/dev/stdin VALIDATION_STRINGENCY=SILENT FASTQ=42_cln_R1.fastq.gz SECOND_END_FASTQ=42_cln_R2.fastq.gz &
+        # bwa sampe /data/biotools/reference/GRCh_GRCm_filter_hybrid/GRCh_GRCm_filtering_hybrid.fa F49_R1.sai F49_R2.sai F49_R1.fastq.gz F49_R2.fastq.gz | samtools view -S -L GRCh.bed - | java -Xmx6g -jar /data/Michael/software/picard-tools-1.89/picard-tools-1.89/SamToFastq.jar I=/dev/stdin VALIDATION_STRINGENCY=SILENT FASTQ=F49_cln_R1.fastq.gz SECOND_END_FASTQ=F49_cln_R2.fastq.gz
+
+
 rule xenograft_check:
     input:
-        fastq=lambda wildcards: '%s%s%s/Paired/%s_%s.fastq.gz' % (wildcards.prefix, config['dirs']['intermediate'], get_xenograft_stepname(wildcards.sample, SAMPLESHEETS, config), wildcards.sample, wildcards.direction)
+        fastq=lambda wildcards: '%s%s%s/%s/%s_%s.fastq.gz' % (wildcards.prefix, config['dirs']['intermediate'], get_xenograft_stepname(wildcards.sample, SAMPLESHEETS, config), wildcards.kindofrun, wildcards.sample, wildcards.direction)
     output:
-        "{prefix}%s%s/Paired/{sample, .*?}_{direction,R1|R2}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check'])
+        "{prefix}%s%s/{kindofrun,Paired|Unpaired}/{sample, .*?}_{direction,R1|R2}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['xenograft_check'])
     log:
-        "{prefix}%s%s/{sample}_{direction}.log" % (config['dirs']['logs'], config['stepnames']['xenograft_check'])
+        "{prefix}%s%s/{kindofrun}/{sample}_{direction}.log" % (config['dirs']['logs'], config['stepnames']['xenograft_check'])
     benchmark:
-        "{prefix}%s%s/{sample}_{direction}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_check'])
+        "{prefix}%s%s/{kindofrun}/{sample}_{direction}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['xenograft_check'])
     threads:
         1
     shell:
