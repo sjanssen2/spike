@@ -414,6 +414,7 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
 
 def _get_genepanel_data(samplesheets, prefix, config):
     results = []
+    columns = ['Sample_Project', 'Sample_ID', 'genepanel', 'gene']
 
     # leave out samples aliases
     for (sample_project, spike_entity_id, spike_entity_role, fastq_prefix), meta in samplesheets[samplesheets['is_alias'] != True].fillna('not defined').groupby(['Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']):
@@ -427,10 +428,13 @@ def _get_genepanel_data(samplesheets, prefix, config):
             coverage['Sample_Project'] = sample_project
             coverage['Sample_ID'] = meta['Sample_ID'].unique()[0]
             coverage['genepanel'] = parts[-3][:-5]
-            coverage = coverage.set_index(['Sample_Project', 'Sample_ID', 'genepanel', 'gene'])
+            coverage = coverage.set_index(columns)
 
             results.append(coverage)
-    results = pd.concat(results).sort_values(by=['Sample_Project', 'Sample_ID', 'genepanel', 'gene'])
+    if len(results) > 0:
+        results = pd.concat(results).sort_values(by=columns)
+    else:
+        results = pd.DataFrame(columns=columns)
 
     # add alias sample results
     for (sample_project, spike_entity_id, spike_entity_role, fastq_prefix), meta in samplesheets[samplesheets['is_alias'] == True].groupby(['Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']):
