@@ -52,7 +52,7 @@ rule trim_singleend:
         " SE -threads {threads} -phred33"
         " {input.forward}"
         " {output.unpairedforward}"
-        " ILLUMINACLIP:${{CONDA_PREFIX}}/share/trimmomatic-0.33-1/adapters/TruSeq3-PE.fa:2:30:10 CROP:99 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36"
+        " ILLUMINACLIP:${{CONDA_PREFIX}}/share/trimmomatic-0.33-1/adapters/TruSeq3-SE.fa:2:30:10 CROP:99 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36"
         " > {log} 2>&1"
 
 rule remove_16s_primer:
