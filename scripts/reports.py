@@ -543,9 +543,10 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
     worksheet.merge_range(offset_rows, offset_cols, offset_rows+1, offset_cols+3, ('status report created\nat %s\nby %s\non %s' % (info_now, info_username, info_machine)),format_info)
 
     gene_order = []
-    for panel in sorted(data_genepanels.index.get_level_values('genepanel').unique()):
-        for gene in sorted(data_genepanels.loc(axis=0)[:, :, panel, :].index.get_level_values('gene').unique()):
-            gene_order.append((panel, gene))
+    if data_genepanels.shape[0] > 0:
+        for panel in sorted(data_genepanels.index.get_level_values('genepanel').unique()):
+            for gene in sorted(data_genepanels.loc(axis=0)[:, :, panel, :].index.get_level_values('gene').unique()):
+                gene_order.append((panel, gene))
 
     # header action
     format_action = workbook.add_format({
@@ -583,16 +584,17 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         'valign': 'vcenter',
         'align': 'center',
         'font_size': 8})
-    for caption, g in pd.DataFrame(gene_order).groupby(0):
-        left = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[0]
-        right = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[-1]
-        if left == right:
-            worksheet.write(offset_rows, left, caption, format_action)
-        else:
-            worksheet.merge_range(offset_rows, left, offset_rows, right, caption, format_action)
-    for i, (panel, gene) in enumerate(gene_order):
-        worksheet.write(offset_rows+1, offset_cols+6+len(ACTION_PROGRAMS)+1+i, gene, format_header_genes)
-    worksheet.set_column(offset_cols+6+len(ACTION_PROGRAMS)+1, offset_cols+6+len(ACTION_PROGRAMS)+1+len(gene_order), 3)
+    if len(gene_order) > 0:
+        for caption, g in pd.DataFrame(gene_order).groupby(0):
+            left = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[0]
+            right = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[-1]
+            if left == right:
+                worksheet.write(offset_rows, left, caption, format_action)
+            else:
+                worksheet.merge_range(offset_rows, left, offset_rows, right, caption, format_action)
+        for i, (panel, gene) in enumerate(gene_order):
+            worksheet.write(offset_rows+1, offset_cols+6+len(ACTION_PROGRAMS)+1+i, gene, format_header_genes)
+        worksheet.set_column(offset_cols+6+len(ACTION_PROGRAMS)+1, offset_cols+6+len(ACTION_PROGRAMS)+1+len(gene_order), 3)
 
     worksheet.freeze_panes(offset_rows+2, offset_cols+4)
 
