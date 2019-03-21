@@ -346,6 +346,7 @@ references:
     SureSelect Mouse All Exon V1:
       file: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
       protocol_name: "SureSelectXTmouse"
+      agilent_coverage_file: "S0276129_Covered.bed"
       default_for_species: "mus musculus"
   varscan_somatic:
     homo sapiens: " --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 "
