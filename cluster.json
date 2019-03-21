@@ -24,13 +24,13 @@
 
     "trim":
     { "mem" : "4GB",
-      "ppn" : "16",
+      "ppn" : "12",
       "time" : "06:59:59",
     },
 
     "trim_singleend":
     { "mem" : "4GB",
-      "ppn" : "16",
+      "ppn" : "12",
       "time" : "06:59:59",
     },
 
@@ -60,7 +60,7 @@
 
     "remove_pcr_duplicates":
     {
-      "time" : "02:59:59",
+      "time" : "04:59:59",
       "ppn" : "1",
       "mem" : "6GB",
     },
@@ -293,7 +293,7 @@
     {
       "mem" : "32GB",
       "ppn" : "1",
-      "time" : "01:59:59",
+      "time" : "02:59:59",
     },
 
     "excavator_dataprepare":
