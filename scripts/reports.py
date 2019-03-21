@@ -1019,6 +1019,34 @@ def create_html_yield_report(fp_yield_report, lane_meta, lane_summary, top_unkno
         f.write(out)
 
 
+def _agilent_annotation_to_genenames(annotation, field):
+    """Splits Agilent capture kit annotations into key-value pairs for different database sources.
+
+    Parameters
+    ----------
+    annotation : str
+        Annotation line of Agilent coverage.bed file, column 4.
+    field : str
+        Name of database entry to be returned.
+
+    Returns
+    -------
+    str : Name of entry.
+
+    Notes
+    -----
+    Should a reference database provide multiple names, only the first is used!"""
+
+    gene_names = dict()
+    if ',' not in annotation:
+        return np.nan
+    for entry in annotation.split(','):
+        db_name, _id = entry.split('|')
+        if db_name not in gene_names:
+            gene_names[db_name] = _id
+    return gene_names.get(field, np.nan)
+
+
 def get_gene_panel_coverage(fp_genepanel, fp_bamstat, fp_agilent_coverage, fp_output):
     """Looks up gene coverage for given panel in given sample, based on bamstat.
 
@@ -1040,7 +1068,8 @@ def get_gene_panel_coverage(fp_genepanel, fp_bamstat, fp_agilent_coverage, fp_ou
 
     # read capture kit probe positions, including gene names
     probes = pd.read_csv(fp_agilent_coverage, sep="\t", header=None, skiprows=2)
-    probes[3] = probes[3].apply(lambda x: x.split(',')[0].split('|')[-1])
+    #probes[3] = probes[3].apply(lambda x: x.split(',')[0].split('|')[-1])
+    probes[3] = probes[3].apply(lambda x: _agilent_annotation_to_genenames(x, panel['reference_name']))
     probes.columns = ['chromosome', 'start', 'end', 'gene']
 
     # subset probes to those covering genes of the panel
