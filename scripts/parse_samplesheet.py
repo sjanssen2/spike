@@ -749,3 +749,35 @@ def get_min_coverage(project, config):
         if 'min_coverage' in config['projects'][project]:
             return int(config['projects'][project]['min_coverage'])
     return 30
+
+
+def get_reverse_file(fp_reverse, wildcards, SAMPLESHEETS, config):
+    single_paired_end = get_kind_of_run(wildcards, SAMPLESHEETS, config)
+    if single_paired_end == 'Unpaired':
+        return []
+    elif single_paired_end == 'Paired':
+        return fp_reverse
+    else:
+        raise ValueError('get_reverse_file: that should not have happened')
+
+
+def get_kind_of_run(wildcards, SAMPLESHEETS, config):
+    """Depending on the kind of run (single end or paired end) a sample might produce files in sub-directory Paired or Unpaird.
+       This function returns the directory name.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    str : 'Paired' or 'Unpaired'"""
+    kor = SAMPLESHEETS[SAMPLESHEETS['fastq-prefix'] == wildcards.sample]['header_kind_of_run']
+    if (kor.dropna().shape[0] <= 0) or ('x' not in kor.dropna().unique()[0]):
+        raise ValueError('Abort, since "kind_of_run" is not defined for sample %s. Please identify the matching samplesheet and add the header field "kind_of_run" which should hold the information if the run is either paired end (2xYYY) or single end (1xYYY), were YYY is the number of sequenced nucleotids.' % wildcards.sample)
+    single_paired_end = kor.unique()[0].split('x')[0]
+    if single_paired_end == '1':
+        return 'Unpaired'
+    elif single_paired_end == '2':
+        return 'Paired'
+    else:
+        raise ValueError('The information in header field "kind_of_run" in the sample sheet for sample "%s" is not properly formatted. It should look like "2xYYY" were YYY is the length of the sequences.' % wildcards.sample)

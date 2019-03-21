@@ -407,13 +407,16 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
 
     # remove samples, that don't have their own role, but were used for aliases
     for (sample_project, sample_id), _ in samplesheets[pd.isnull(samplesheets['spike_entity_role'])].groupby(['Sample_Project', 'Sample_ID']):
-        results.drop(index=results.loc[sample_project, sample_id, ['tumornormal', 'trio'], :].index, inplace=True)
+        idx_to_drop = results.loc[sample_project, sample_id, ['tumornormal', 'trio'], :].index
+        if len(idx_to_drop) > 0:
+            results.drop(index=idx_to_drop, inplace=True)
 
     return results
 
 
 def _get_genepanel_data(samplesheets, prefix, config):
     results = []
+    columns = ['Sample_Project', 'Sample_ID', 'genepanel', 'gene']
 
     # leave out samples aliases
     for (sample_project, spike_entity_id, spike_entity_role, fastq_prefix), meta in samplesheets[samplesheets['is_alias'] != True].fillna('not defined').groupby(['Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']):
@@ -427,10 +430,13 @@ def _get_genepanel_data(samplesheets, prefix, config):
             coverage['Sample_Project'] = sample_project
             coverage['Sample_ID'] = meta['Sample_ID'].unique()[0]
             coverage['genepanel'] = parts[-3][:-5]
-            coverage = coverage.set_index(['Sample_Project', 'Sample_ID', 'genepanel', 'gene'])
+            coverage = coverage.set_index(columns)
 
             results.append(coverage)
-    results = pd.concat(results).sort_values(by=['Sample_Project', 'Sample_ID', 'genepanel', 'gene'])
+    if len(results) > 0:
+        results = pd.concat(results).sort_values(by=columns)
+    else:
+        results = pd.DataFrame(columns=columns)
 
     # add alias sample results
     for (sample_project, spike_entity_id, spike_entity_role, fastq_prefix), meta in samplesheets[samplesheets['is_alias'] == True].groupby(['Sample_Project', 'spike_entity_id', 'spike_entity_role', 'fastq-prefix']):
@@ -539,9 +545,10 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
     worksheet.merge_range(offset_rows, offset_cols, offset_rows+1, offset_cols+3, ('status report created\nat %s\nby %s\non %s' % (info_now, info_username, info_machine)),format_info)
 
     gene_order = []
-    for panel in sorted(data_genepanels.index.get_level_values('genepanel').unique()):
-        for gene in sorted(data_genepanels.loc(axis=0)[:, :, panel, :].index.get_level_values('gene').unique()):
-            gene_order.append((panel, gene))
+    if data_genepanels.shape[0] > 0:
+        for panel in sorted(data_genepanels.index.get_level_values('genepanel').unique()):
+            for gene in sorted(data_genepanels.loc(axis=0)[:, :, panel, :].index.get_level_values('gene').unique()):
+                gene_order.append((panel, gene))
 
     # header action
     format_action = workbook.add_format({
@@ -579,16 +586,17 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
         'valign': 'vcenter',
         'align': 'center',
         'font_size': 8})
-    for caption, g in pd.DataFrame(gene_order).groupby(0):
-        left = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[0]
-        right = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[-1]
-        if left == right:
-            worksheet.write(offset_rows, left, caption, format_action)
-        else:
-            worksheet.merge_range(offset_rows, left, offset_rows, right, caption, format_action)
-    for i, (panel, gene) in enumerate(gene_order):
-        worksheet.write(offset_rows+1, offset_cols+6+len(ACTION_PROGRAMS)+1+i, gene, format_header_genes)
-    worksheet.set_column(offset_cols+6+len(ACTION_PROGRAMS)+1, offset_cols+6+len(ACTION_PROGRAMS)+1+len(gene_order), 3)
+    if len(gene_order) > 0:
+        for caption, g in pd.DataFrame(gene_order).groupby(0):
+            left = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[0]
+            right = offset_cols+6+len(ACTION_PROGRAMS)+1+g.index[-1]
+            if left == right:
+                worksheet.write(offset_rows, left, caption, format_action)
+            else:
+                worksheet.merge_range(offset_rows, left, offset_rows, right, caption, format_action)
+        for i, (panel, gene) in enumerate(gene_order):
+            worksheet.write(offset_rows+1, offset_cols+6+len(ACTION_PROGRAMS)+1+i, gene, format_header_genes)
+        worksheet.set_column(offset_cols+6+len(ACTION_PROGRAMS)+1, offset_cols+6+len(ACTION_PROGRAMS)+1+len(gene_order), 3)
 
     worksheet.freeze_panes(offset_rows+2, offset_cols+4)
 
@@ -719,6 +727,8 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
                         frmt = None
                         if (sample_project, sample_id, action, program) in data_calls:
                             value_numcalls = data_calls.loc[sample_project, sample_id, action, program]
+                            if not isinstance(value_numcalls, np.int64):
+                                value_numcalls = value_numcalls.iloc[0]
                         if (sample_project, sample_id, action, program) in data_snupy.index:
                             if data_snupy.loc[sample_project, sample_id, action, program]['status']:
                                 frmt = format_good
