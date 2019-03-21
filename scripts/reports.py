@@ -407,7 +407,9 @@ def _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_
 
     # remove samples, that don't have their own role, but were used for aliases
     for (sample_project, sample_id), _ in samplesheets[pd.isnull(samplesheets['spike_entity_role'])].groupby(['Sample_Project', 'Sample_ID']):
-        results.drop(index=results.loc[sample_project, sample_id, ['tumornormal', 'trio'], :].index, inplace=True)
+        idx_to_drop = results.loc[sample_project, sample_id, ['tumornormal', 'trio'], :].index
+        if len(idx_to_drop) > 0:
+            results.drop(index=idx_to_drop, inplace=True)
 
     return results
 
@@ -725,6 +727,8 @@ def write_status_update(data, filename, samplesheets, config, offset_rows=0, off
                         frmt = None
                         if (sample_project, sample_id, action, program) in data_calls:
                             value_numcalls = data_calls.loc[sample_project, sample_id, action, program]
+                            if not isinstance(value_numcalls, np.int64):
+                                value_numcalls = value_numcalls.iloc[0]
                         if (sample_project, sample_id, action, program) in data_snupy.index:
                             if data_snupy.loc[sample_project, sample_id, action, program]['status']:
                                 frmt = format_good
