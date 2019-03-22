@@ -1068,7 +1068,6 @@ def get_gene_panel_coverage(fp_genepanel, fp_bamstat, fp_agilent_coverage, fp_ou
 
     # read capture kit probe positions, including gene names
     probes = pd.read_csv(fp_agilent_coverage, sep="\t", header=None, skiprows=2)
-    #probes[3] = probes[3].apply(lambda x: x.split(',')[0].split('|')[-1])
     probes[3] = probes[3].apply(lambda x: _agilent_annotation_to_genenames(x, panel['reference_name']))
     probes.columns = ['chromosome', 'start', 'end', 'gene']
 
