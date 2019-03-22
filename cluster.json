@@ -321,4 +321,10 @@
       "ppn" : "1",
       "time" : "00:29:59",
     },
+
+    "genepanel_coverage":
+    {"mem" : "8GB",
+     "ppn" : "1",
+     "time" : "00:59:59",
+    }
 }
