@@ -149,7 +149,7 @@ def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _
     # print(files)
     # return None
     r = requests.post(
-        str(config['credentials']['snupy']['host'] + '/vcf_files/batch_submit.json'),
+        str(config['credentials']['snupy'][snupy_instance]['host'] + '/vcf_files/batch_submit.json'),
         data=payload,
         auth=HTTPBasicAuth(config['credentials']['snupy'][snupy_instance]['username'], config['credentials']['snupy'][snupy_instance]['password']),
         verify=False,
