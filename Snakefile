@@ -17,6 +17,7 @@ if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith
     # shell.prefix("module load bcl2fastq;")
     shell.prefix("module load R;")
 
+SNUPY_INSTANCE = 'hhu'
 configfile: "config.yaml"
 SAMPLESHEETS = get_global_samplesheets(os.path.join(config['dirs']['prefix'], config['dirs']['inputs'], config['dirs']['samplesheets']), config)
 
@@ -70,11 +71,11 @@ rule all:
         genepanels=get_genepanels(SAMPLESHEETS, config, config['dirs']['prefix']),
 
         # upload and extract called variants to Snupy
-        background=['%s%s%s/%s.background.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], entity)
+        background=['%s%s%s/%s/%s.background.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], SNUPY_INSTANCE, entity)
                     for entity in set(map(lambda x: '%s/%s' % (x['Sample_Project'], x['spike_entity_id']), get_samples(SAMPLESHEETS, config)))],
-        tumornormal=['%s%s%s/%s/%s.tumornormal.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], pair['Sample_Project'], pair['spike_entity_id'])
+        tumornormal=['%s%s%s/%s/%s/%s.tumornormal.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], SNUPY_INSTANCE, pair['Sample_Project'], pair['spike_entity_id'])
                      for pair in get_tumorNormalPairs(SAMPLESHEETS, config)],
-        trio_calling=['%s%s%s/%s/%s.trio.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], trio['Sample_Project'], trio['spike_entity_id'])
+        trio_calling=['%s%s%s/%s/%s/%s.trio.extracted' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'], SNUPY_INSTANCE, trio['Sample_Project'], trio['spike_entity_id'])
                       for trio in get_trios(SAMPLESHEETS, config)],
 
         # STATISTICS ON BACKGROUND GATK
@@ -91,7 +92,7 @@ rule status:
     output:
         "status_update.xlsx"
     run:
-        status_data = get_status_data(SAMPLESHEETS, config)
+        status_data = get_status_data(SAMPLESHEETS, config, snupy_instance=SNUPY_INSTANCE)
         write_status_update(status_data, output[0], SAMPLESHEETS, config)
 
 # onerror:
