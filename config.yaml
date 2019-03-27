@@ -167,8 +167,7 @@ projects:
       - KB0174
       - KB0190
     genepanels:
-      - stefan1
-      - fil
+      - Triantafyllia_Brozou
   ALL_family_LB:
     species: homo sapiens
     capture_kit: SureSelect Human All Exon V6 r2
@@ -359,6 +358,43 @@ credentials:
     password: "thisisasecret"
     targetdirectory: "array1/Sequencing_Backups/Illumina_HiSeq"
   snupy:
-    host: 'https://snupy-aqua.bio.inf.h-brs.de'
-    username: "janssen"
-    password: "thisisasecret"
+    - bonn:
+      host: 'https://snupy-aqua.bio.inf.h-brs.de'
+      username: "janssen"
+      password: "thisisasecret"
+      # Snupy's database assigns IDs to all objects. Some of them need to be known, when
+      # uploading new data to Snupy. Here is the configuration for Snupy hosted at
+      # Sebastians alma mater Hochschule Bonn-Rhein-Sieg. You propable have to adopt
+      # IDs when switching to another instance of snupy!
+      snupy_ids:
+        institues:
+          UKD: 4
+        organisms:
+          homo sapiens: 1
+          mus musculus: 2
+        tools:
+          GATK: 118
+          GATK_RELAXED': 119
+          GATK_TRIO': 120
+          Mutect': 121
+          VarScan2': 122
+          Platypus': 123
+          Excavator2': 124
+    - hhu:
+      host: 'https://snupy.hpc.rz.uni-duesseldorf.de/'
+      username: "jansses"
+      password: "thisisasecret"
+      snupy_ids:
+        institues:
+          UKD: 2
+        organisms:
+          homo sapiens: 1
+          mus musculus: 2
+        tools:
+          GATK: 116
+          GATK_RELAXED: 117
+          GATK_TRIO: 118
+          Mutect: 119
+          VarScan2: 120
+          Platypus: 121
+          Excavator2: 122
