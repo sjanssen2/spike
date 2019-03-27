@@ -12,18 +12,6 @@ import re
 from scripts.parse_samplesheet import get_role
 
 
-MAP_INSTITUTES = {'UKD': 4}
-MAP_ORGANISMS = {'homo sapiens': 1,
-                 'mus musculus': 2}
-MAP_TOOLS = {'GATK': 118,
-             'GATK_RELAXED': 119,
-             'GATK_TRIO': 120,
-             'Mutect': 121,
-             'VarScan2': 122,
-             'Platypus': 123,
-             'Excavator2': 124,}
-
-
 def get_md5sum(fname):
     hash_md5 = hashlib.md5()
     with open(fname, "rb") as f:
@@ -120,7 +108,7 @@ def get_snupy_parser(config, filename):
     return 'VcfFile'
 
 
-def get_upload_content(project, entity, input, config, samplesheets, tmpdir, _type):
+def get_upload_content(project, entity, input, config, samplesheets, tmpdir, _type, snupy_instance):
     data = pd.DataFrame(index=input)
     zippedfiles = []
     for i, file in enumerate(data.index):
@@ -131,11 +119,11 @@ def get_upload_content(project, entity, input, config, samplesheets, tmpdir, _ty
                 shutil.copyfileobj(f_in, f_out)
             zippedfiles.append(file_gz)
     data['zipped'] = zippedfiles
-    data['contact'] = config['credentials']['snupy']['username']
-    data['institution_id'] = MAP_INSTITUTES['UKD']
-    data['tags[TOOL]'] = list(map(lambda x: MAP_TOOLS[get_toolname_from_stepname(config, x)], data.index))
+    data['contact'] = config['credentials']['snupy'][snupy_instance]['username']
+    data['institution_id'] = config['credentials']['snupy'][snupy_instance]['snupy_ids']['institues']['UKD']
+    data['tags[TOOL]'] = list(map(lambda x: config['credentials']['snupy'][snupy_instance]['snupy_ids']['tools'][get_toolname_from_stepname(config, x)], data.index))
     data['type'] = list(map(lambda x: get_snupy_parser(config, x), data.index))
-    data['organism_id'] = MAP_ORGANISMS[config['projects'][project]['species']]
+    data['organism_id'] = config['credentials']['snupy'][snupy_instance]['snupy_ids']['organisms'][config['projects'][project]['species']]
     data['md5checksum'] = list(map(get_md5sum, data.index))
     data['name'] = list(map(lambda x: get_snupy_sample_name(project, entity, x, config, samplesheets, _type), data.index))
 
@@ -153,17 +141,17 @@ def get_upload_content(project, entity, input, config, samplesheets, tmpdir, _ty
     return payload, files, data
 
 
-def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _type):
+def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _type, snupy_instance):
     tmpdir = tempfile.mkdtemp()
 
-    payload, files, data = get_upload_content(project, entity, input, config, samplesheets, tmpdir, _type)
+    payload, files, data = get_upload_content(project, entity, input, config, samplesheets, tmpdir, _type, snupy_instance)
     # print(payload)
     # print(files)
     # return None
     r = requests.post(
         str(config['credentials']['snupy']['host'] + '/vcf_files/batch_submit.json'),
         data=payload,
-        auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
+        auth=HTTPBasicAuth(config['credentials']['snupy'][snupy_instance]['username'], config['credentials']['snupy'][snupy_instance]['password']),
         verify=False,
         files=files
         )
@@ -199,7 +187,7 @@ def upload_to_snupy(project, entity, input, config, samplesheets, output, log, _
     return res
 
 
-def extractsamples(uploadtable, config, samplesheets, output, log, _type):
+def extractsamples(uploadtable, config, samplesheets, output, log, _type, snupy_instance):
     uploaded = pd.read_csv(uploadtable[0], sep="\t", index_col=0, dtype=str)
     uploaded.rename(columns={'snupy_id': 'vcf_file_id'}, inplace=True)
 
@@ -207,7 +195,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
     extracted['tags'] = None
     extracted['min_read_depth'] = 5
     extracted['specimen_probe_id'] = " "
-    extracted['contact'] = config['credentials']['snupy']['username']
+    extracted['contact'] = config['credentials']['snupy'][snupy_instance]['username']
     extracted['ignorefilter'] = '2'
     extracted['filters'] = 'PASS'
     extracted['info_matches'] = ""
@@ -223,27 +211,27 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
                 extracted.loc[idx, 'ignorefilter'] = '1'
         elif _type == 'tumornormal':
             extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"somatic"}'
-            if row['tags[TOOL]'] == str(MAP_TOOLS['VarScan2']):
+            if row['tags[TOOL]'] == str(config['credentials']['snupy'][snupy_instance]['snupy_ids']['tools']['VarScan2']):
                 extracted.loc[idx, 'snupy_Samples'] = 'TUMOR'
-            elif row['tags[TOOL]'] == str(MAP_TOOLS['Mutect']):
+            elif row['tags[TOOL]'] == str(config['credentials']['snupy'][snupy_instance]['snupy_ids']['tools']['Mutect']):
                 extracted.loc[idx, 'snupy_Samples'] = get_role(row['spike_project'], row['spike_entity_id'], 'tumor', samplesheets).split('/')[-1]
-            elif row['tags[TOOL]'] == str(MAP_TOOLS['Excavator2']):
+            elif row['tags[TOOL]'] == str(config['credentials']['snupy'][snupy_instance]['snupy_ids']['tools']['Excavator2']):
                 extracted.loc[idx, 'snupy_Samples'] = get_role(row['spike_project'], row['spike_entity_id'], 'tumor', samplesheets).split('/')[-1]
                 extracted.loc[idx, 'min_read_depth'] = 0
                 extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"cnv"}'
         elif _type == 'trio':
             extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"denovo"}'
-            if row['tags[TOOL]'] == str(MAP_TOOLS['VarScan2']):
+            if row['tags[TOOL]'] == str(config['credentials']['snupy'][snupy_instance]['snupy_ids']['tools']['VarScan2']):
                 extracted.loc[idx, 'snupy_Samples'] = 'Child'
-            elif row['tags[TOOL]'] == str(MAP_TOOLS['Excavator2']):
+            elif row['tags[TOOL]'] == str(config['credentials']['snupy'][snupy_instance]['snupy_ids']['tools']['Excavator2']):
                 extracted.loc[idx, 'snupy_Samples'] = get_role(row['spike_project'], row['spike_entity_id'], 'patient', samplesheets).split('/')[-1]
                 extracted.loc[idx, 'min_read_depth'] = 0
                 extracted.loc[idx, 'tags'] = '{"DATA_TYPE":"cnv"}'
         extracted.loc[idx, 'nickname'] = row['snupy_name'].split('/')[-1]
         extracted.loc[idx, 'project'] = str(config['projects'][row['spike_project']]['snupy']['project_id'])
         if row['spike_project'] not in cache_users:
-            r = requests.get(config['credentials']['snupy']['host'] + ('/experiments/%s.json' % extracted.loc[idx, 'project']),
-                auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
+            r = requests.get(config['credentials']['snupy'][snupy_instance]['host'] + ('/experiments/%s.json' % extracted.loc[idx, 'project']),
+                auth=HTTPBasicAuth(config['credentials']['snupy'][snupy_instance]['username'], config['credentials']['snupy'][snupy_instance]['password']),
                 verify=False)
             cache_users[row['spike_project']] = ';'.join(sorted(map(lambda x: x['name'], r.json()['users'])))
         extracted.loc[idx, 'users'] = cache_users[row['spike_project']]
@@ -264,8 +252,8 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type):
     files = {'sample[sample_sheet]': (
         'SampleExtractionSheet.csv',
         open(fp, 'rb'), 'application/txt', {'Expires': '0'})}
-    r = requests.post('https://snupy-aqua.bio.inf.h-brs.de/samples.json',
-                      auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
+    r = requests.post('%ssamples.json' % config['credentials']['snupy'][snupy_instance]['host'],
+                      auth=HTTPBasicAuth(config['credentials']['snupy'][snupy_instance]['username'], config['credentials']['snupy'][snupy_instance]['password']),
                       verify=False,
                       files=files,
                      )
