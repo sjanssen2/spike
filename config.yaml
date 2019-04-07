@@ -358,7 +358,7 @@ credentials:
     password: "thisisasecret"
     targetdirectory: "array1/Sequencing_Backups/Illumina_HiSeq"
   snupy:
-    - bonn:
+    bonn:
       host: 'https://snupy-aqua.bio.inf.h-brs.de'
       username: "janssen"
       password: "thisisasecret"
@@ -380,7 +380,7 @@ credentials:
           VarScan2': 122
           Platypus': 123
           Excavator2': 124
-    - hhu:
+    hhu:
       host: 'https://snupy.hpc.rz.uni-duesseldorf.de/'
       username: "jansses"
       password: "thisisasecret"

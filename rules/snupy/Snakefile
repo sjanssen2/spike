@@ -12,15 +12,15 @@ rule snupy_upload_background:
                                                            #'relax.'
                                                ]],
     output:
-        "{prefix}%s%s/{project}/{entity}.background.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.background.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
     log:
-        "{prefix}%s%s/{project}/{entity}.background.log" % (config['dirs']['logs'], config['stepnames']['snupy_upload'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.background.log" % (config['dirs']['logs'], config['stepnames']['snupy_upload'])
     benchmark:
-        "{prefix}%s%s/{project}/{entity}.background.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['snupy_upload'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.background.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['snupy_upload'])
     threads:
         1
     run:
-        upload_to_snupy(wildcards.project, wildcards.entity, input, config, SAMPLESHEETS, output, log, _type='background')
+        upload_to_snupy(wildcards.project, wildcards.entity, input, config, SAMPLESHEETS, output, log, _type='background', snupy_instance=wildcards.snupy_instance)
 
 
 rule snupy_upload_tumornormal:
@@ -35,11 +35,11 @@ rule snupy_upload_tumornormal:
         # ... excavator
         tumornormal_excavator=directory("{prefix}%s%s/{project}/{entity}" % (config['dirs']['intermediate'], config['stepnames']['excavator_somatic'])),
     output:
-        "{prefix}%s%s/{project}/{entity}.tumornormal.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.tumornormal.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
     log:
-        "{prefix}%s%s/{project}/{entity}.tumornormal.log" % (config['dirs']['logs'], config['stepnames']['snupy_upload'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.tumornormal.log" % (config['dirs']['logs'], config['stepnames']['snupy_upload'])
     benchmark:
-        "{prefix}%s%s/{project}/{entity}.tumornormal.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['snupy_upload'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.tumornormal.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['snupy_upload'])
     threads:
         1
     run:
@@ -52,7 +52,7 @@ rule snupy_upload_tumornormal:
                 vcf_files.append("%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_somatic'], wildcards.project, wildcards.entity, tumor, tumor))
                 continue
             vcf_files.append(file)
-        upload_to_snupy(wildcards.project, wildcards.entity, vcf_files, config, SAMPLESHEETS, output, log, _type='tumornormal')
+        upload_to_snupy(wildcards.project, wildcards.entity, vcf_files, config, SAMPLESHEETS, output, log, _type='tumornormal', snupy_instance=wildcards.snupy_instance)
 
 
 rule snupy_upload_trio:
@@ -62,11 +62,11 @@ rule snupy_upload_trio:
         # ... excavator
         trio_excavator=directory("{prefix}%s%s/{project}/{entity}" % (config['dirs']['intermediate'], config['stepnames']['excavator_trio'])),
     output:
-        "{prefix}%s%s/{project}/{entity}.trio.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.trio.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
     log:
-        "{prefix}%s%s/{project}/{entity}.trio.log" % (config['dirs']['logs'], config['stepnames']['snupy_upload'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.trio.log" % (config['dirs']['logs'], config['stepnames']['snupy_upload'])
     benchmark:
-        "{prefix}%s%s/{project}/{entity}.trio.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['snupy_upload'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.trio.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['snupy_upload'])
     threads:
         1
     run:
@@ -79,18 +79,18 @@ rule snupy_upload_trio:
                 vcf_files.append("%s%s%s/%s/%s/Results/%s/EXCAVATORRegionCall_%s.vcf" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['excavator_trio'], wildcards.project, wildcards.entity, patient, patient))
                 continue
             vcf_files.append(file)
-        upload_to_snupy(wildcards.project, wildcards.entity, vcf_files, config, SAMPLESHEETS, output, log, _type='trio')
+        upload_to_snupy(wildcards.project, wildcards.entity, vcf_files, config, SAMPLESHEETS, output, log, _type='trio', snupy_instance=wildcards.snupy_instance)
 
 
 rule snupy_extractsamples:
     input:
-        "{prefix}%s%s/{project}/{entity}.{type}.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.{type}.uploaded" % (config['dirs']['intermediate'], config['stepnames']['snupy_upload'])
     output:
-        "{prefix}%s%s/{project}/{entity}.{type,background|tumornormal|trio}.extracted" % (config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.{type,background|tumornormal|trio}.extracted" % (config['dirs']['intermediate'], config['stepnames']['snupy_extractsamples'])
     log:
-        "{prefix}%s%s/{project}/{entity}.{type}.log" % (config['dirs']['logs'], config['stepnames']['snupy_extractsamples'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.{type}.log" % (config['dirs']['logs'], config['stepnames']['snupy_extractsamples'])
     benchmark:
-        "{prefix}%s%s/{project}/{entity}.{type}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['snupy_extractsamples'])
+        "{prefix}%s%s/{snupy_instance}/{project}/{entity}.{type}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['snupy_extractsamples'])
     threads:
         1
     run:

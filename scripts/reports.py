@@ -268,7 +268,7 @@ def _isKnownDuo(sample_project, spike_entity_id, config):
     return False
 
 
-def _get_statusdata_snupyextracted(samplesheets, prefix, config):
+def _get_statusdata_snupyextracted(samplesheets, prefix, snupy_instance, config):
     results = []
     for sample_project, meta in samplesheets.groupby('Sample_Project'):
         # project in config file is not properly configure for snupy!
@@ -279,8 +279,8 @@ def _get_statusdata_snupyextracted(samplesheets, prefix, config):
         if config['projects'][sample_project]['snupy'].get('project_id', None) is None:
             continue
 
-        r = requests.get('%s/experiments/%s.json' % (config['credentials']['snupy']['host'], config['projects'][sample_project]['snupy']['project_id']),
-            auth=HTTPBasicAuth(config['credentials']['snupy']['username'], config['credentials']['snupy']['password']),
+        r = requests.get('%s/experiments/%s.json' % (config['credentials']['snupy'][snupy_instance]['host'], config['projects'][sample_project]['snupy']['project_id']),
+            auth=HTTPBasicAuth(config['credentials']['snupy'][snupy_instance]['username'], config['credentials']['snupy'][snupy_instance]['password']),
             verify=False)
         check_snupy_status(r)
         samples = [sample['name'] for sample in r.json()['samples']]
@@ -446,7 +446,7 @@ def _get_genepanel_data(samplesheets, prefix, config):
     return results
 
 
-def get_status_data(samplesheets, config, prefix=None, verbose=sys.stderr):
+def get_status_data(samplesheets, config, snupy_instance, prefix=None, verbose=sys.stderr):
     """
     Parameters
     ----------
@@ -481,7 +481,7 @@ def get_status_data(samplesheets, config, prefix=None, verbose=sys.stderr):
     data_coverage = _get_statusdata_coverage(samplesheets, prefix, config)
     if verbose is not None:
         print(" done.\n3/%i) gathering snupy extraction status: ..." % NUMSTEPS, file=verbose, end="")
-    data_snupy = _get_statusdata_snupyextracted(samplesheets, prefix, config)
+    data_snupy = _get_statusdata_snupyextracted(samplesheets, prefix, snupy_instance, config)
     if verbose is not None:
         print(" done.\n4/%i) gathering number of PASSing calls: ..." % NUMSTEPS, file=verbose, end="")
     data_calls = _get_statusdata_numberpassingcalls(samplesheets, prefix, config, RESULT_NOT_PRESENT, verbose=verbose)
