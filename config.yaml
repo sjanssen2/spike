@@ -407,7 +407,7 @@ credentials:
     bonn:
       host: 'https://snupy-aqua.bio.inf.h-brs.de'
       username: "janssen"
-      password: "quoYu4ai"
+      password: "thisisasecret"
     hhu:
       host: 'https://snupy.hpc.rz.uni-duesseldorf.de/'
       username: "jansses"
