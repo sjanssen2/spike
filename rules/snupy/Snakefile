@@ -94,4 +94,4 @@ rule snupy_extractsamples:
     threads:
         1
     run:
-        extractsamples(input, config, SAMPLESHEETS, output, log, wildcards.type)
+        extractsamples(input, config, SAMPLESHEETS, output, log, wildcards.type, snupy_instance=wildcards.snupy_instance)
