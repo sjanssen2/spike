@@ -276,10 +276,10 @@ def _get_statusdata_snupyextracted(samplesheets, prefix, snupy_instance, config)
             continue
         if config['projects'][sample_project].get('snupy', None) is None:
             continue
-        if config['projects'][sample_project]['snupy'].get('project_id', None) is None:
+        if config['projects'][sample_project]['snupy'][snupy_instance].get('project_id', None) is None:
             continue
 
-        r = requests.get('%s/experiments/%s.json' % (config['credentials']['snupy'][snupy_instance]['host'], config['projects'][sample_project]['snupy']['project_id']),
+        r = requests.get('%s/experiments/%s.json' % (config['credentials']['snupy'][snupy_instance]['host'], config['projects'][sample_project]['snupy'][snupy_instance]['project_id']),
             auth=HTTPBasicAuth(config['credentials']['snupy'][snupy_instance]['username'], config['credentials']['snupy'][snupy_instance]['password']),
             verify=False)
         check_snupy_status(r)
