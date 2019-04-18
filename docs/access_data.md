@@ -29,3 +29,9 @@ In short:
  - use non-default port: 2223
  - username: HHU account (not necessarily the same as your UKD account)
  - password: whatever you set as password for your HHU account
+
+### 5. What to look for?
+Once you got access to the files, you might wonder where to look for specific data. I am currently using the slightly misleading name `Intermediate` for the most important directory (sorry). Within this directory, you find numbered sub-directories - one for each step of the pipeline. (The number gives a hint about the order of the pipeline processes.) You are mist likely interested in either:
+
+  - the "bam" files: `Intermediate/085_gatk_PrintReads/` (there are several versions with file ending .bam, but this is the filtered, sorted, duplicate removed, re-aligned, re-calibrated version, which is suitable to be further inspected by e.g. [IGV](https://software.broadinstitute.org/software/igv/))
+  - copy number variation plots: either for tumor-normal `Intermediate/220_excavator_somatic` or trio comparisons `Intermediate/225_excavator_trio`. Each entity has its own sub-directory, e.g. `Intermediate/220_excavator_somatic/Keimbahn/KB0001_c2/Plots/KB0001_c2/` holds the 23 plots for the 23 chromosomes of the tumor-normal comparision for KB0001, where we also have tumor tissue for the child.
