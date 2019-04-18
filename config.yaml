@@ -11,7 +11,7 @@ endings_bwa:
   - '.fa.pac'
   - '.fa.sa'
 
-mail_attachment_parameter: "-A"
+mail_attachment_parameter: "-a"
 
 emails:
   demultiplexreport: "stefan.m.janssen@gmail.com,Alemazkour@med.uni-duesseldorf.de,Frauke.Meyer@med.uni-duesseldorf.de,Daniel.Scholtyssik@med.uni-duesseldorf.de"
@@ -121,32 +121,44 @@ projects:
   Alps:
     species: homo sapiens
     snupy:
-      contact: "Ute Fischer"
-      project_id: 19
+      bonn:
+        contact: "Ute Fischer"
+        project_id: 19
+      hhu:
+        contact: "Ute Fischer"
+        project_id: 2
   Canada_Reid:
     species: mus musculus
     snupy:
-      contact: "Marina Oldenburg"
-      project_id: 123
+      bonn:
+        contact: "Marina Oldenburg"
+        project_id: 123
   Fischer_Geron:
     species: homo sapiens
     xenograft: "GRCh_GRCm_filtering_hybrid.fa"
   Maus_Hauer:
     species: mus musculus
     snupy:
-      contact: "Julia Hauer"
-      project_id: 109
+      bonn:
+        contact: "Julia Hauer"
+        project_id: 109
   AG_Remke:
+  ARA_Maus:
   AG_Remke_GAC_LT:
     species: homo sapiens
     snupy:
-      contact: "Nan Qin"
-      project_id: 131
+      bonn:
+        contact: "Nan Qin"
+        project_id: 131
   Keimbahn:
     species: homo sapiens
     snupy:
-      contact: "Kuhlen"
-      project_id: 82
+      bonn:
+        contact: "Kuhlen"
+        project_id: 82
+      hhu:
+        contact: "Layal Jasin"
+        project_id: 1
     min_coverage: 60
     known_duos:
       - KB0005
@@ -351,6 +363,40 @@ references:
     homo sapiens: " --min-coverage-normal 8 --min-coverage-tumor 10 --min-reads 4 "
     mus musculus: " --min-coverage-normal 6 --min-coverage-tumor 8 "
 
+# Snupy's database assigns IDs to all objects. Some of them need to be known, when
+# uploading new data to Snupy. Here is the configuration for Snupy hosted at
+# Sebastians alma mater Hochschule Bonn-Rhein-Sieg. You propable have to adopt
+# IDs when switching to another instance of snupy!
+snupy_ids:
+  bonn:
+    institues:
+      UKD: 4
+    organisms:
+      homo sapiens: 1
+      mus musculus: 2
+    tools:
+      GATK: 118
+      GATK_RELAXED': 119
+      GATK_TRIO': 120
+      Mutect': 121
+      VarScan2': 122
+      Platypus': 123
+      Excavator2': 124
+  hhu:
+    institues:
+      UKD: 2
+    organisms:
+      homo sapiens: 1
+      mus musculus: 2
+    tools:
+      GATK: 116
+      GATK_RELAXED: 117
+      GATK_TRIO: 118
+      Mutect: 119
+      VarScan2: 120
+      Platypus: 121
+      Excavator2: 122
+
 credentials:
   backup:
     host: '10.2.5.12'
@@ -362,39 +408,7 @@ credentials:
       host: 'https://snupy-aqua.bio.inf.h-brs.de'
       username: "janssen"
       password: "thisisasecret"
-      # Snupy's database assigns IDs to all objects. Some of them need to be known, when
-      # uploading new data to Snupy. Here is the configuration for Snupy hosted at
-      # Sebastians alma mater Hochschule Bonn-Rhein-Sieg. You propable have to adopt
-      # IDs when switching to another instance of snupy!
-      snupy_ids:
-        institues:
-          UKD: 4
-        organisms:
-          homo sapiens: 1
-          mus musculus: 2
-        tools:
-          GATK: 118
-          GATK_RELAXED': 119
-          GATK_TRIO': 120
-          Mutect': 121
-          VarScan2': 122
-          Platypus': 123
-          Excavator2': 124
     hhu:
       host: 'https://snupy.hpc.rz.uni-duesseldorf.de/'
       username: "jansses"
       password: "thisisasecret"
-      snupy_ids:
-        institues:
-          UKD: 2
-        organisms:
-          homo sapiens: 1
-          mus musculus: 2
-        tools:
-          GATK: 116
-          GATK_RELAXED: 117
-          GATK_TRIO: 118
-          Mutect: 119
-          VarScan2: 120
-          Platypus: 121
-          Excavator2: 122
