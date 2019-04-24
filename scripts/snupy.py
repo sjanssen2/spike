@@ -51,6 +51,13 @@ def check_snupy_status(request_result):
 def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type):
     name = ''
 
+    # check if this sample is used as an alias ...
+    fastq_prefix = '/'.join(filename.split('/')[-2:]).split('.')[0]
+    aliases = samplesheets[(samplesheets['fastq-prefix'] == fastq_prefix) & (samplesheets['is_alias'] == True)]
+    # ... yes, we have a sample alias at hand
+    if aliases.shape[0] > 0:
+        filename = filename.replace(fastq_prefix, '%s/%s' % (project, aliases['Sample_ID'].iloc[0]))
+
     # original sample name if background else spike_entity_id
     sample_name = entity
     if _type == 'background':
