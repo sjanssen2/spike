@@ -48,15 +48,20 @@ def check_snupy_status(request_result):
     assert(status == '200 OK')
 
 
+def is_alias_sample(filename, samplesheets):
+    # check if this sample is used as an alias ...
+    fastq_prefix = '/'.join(filename.split('/')[-2:]).split('.')[0]
+    return samplesheets[(samplesheets['fastq-prefix'] == fastq_prefix) & (samplesheets['is_alias'] == True)]
+
+
 def get_snupy_sample_name(project, entity, filename, config, samplesheets, _type):
     name = ''
 
     # check if this sample is used as an alias ...
-    fastq_prefix = '/'.join(filename.split('/')[-2:]).split('.')[0]
-    aliases = samplesheets[(samplesheets['fastq-prefix'] == fastq_prefix) & (samplesheets['is_alias'] == True)]
-    # ... yes, we have a sample alias at hand
+    aliases = is_alias_sample(filename, samplesheets)
     if aliases.shape[0] > 0:
-        filename = filename.replace(fastq_prefix, '%s/%s' % (project, aliases['Sample_ID'].iloc[0]))
+        # ... yes, we have a sample alias at hand
+        filename = filename.replace(aliases['fastq-prefix'].iloc[0], '%s/%s' % (project, aliases['Sample_ID'].iloc[0]))
 
     # original sample name if background else spike_entity_id
     sample_name = entity
@@ -122,8 +127,18 @@ def get_upload_content(project, entity, input, config, samplesheets, tmpdir, _ty
         sys.stderr.write('compressing %i of %i files: %s\n' % (i+1, len(data.index), file.split('/')[-1]))
         with open(file, 'rb') as f_in:
             file_gz = join(tmpdir, file.split('/')[-1])+'.gz'
+
+            aliases = is_alias_sample(file, samplesheets)
             with gzip.open(file_gz, 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
+                #shutil.copyfileobj(f_in, f_out)
+                for line in f_in.readlines():
+                    # those are the first mandatory 8 columns:
+                    # https://en.wikipedia.org/wiki/Variant_Call_Format
+                    if (aliases.shape[0] > 0) and (line.startswith(b"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t")):
+                        # search for the original sample name and replace by alias
+                        line = line.replace(bytes(aliases['fastq-prefix'].iloc[0].split('/')[-1], encoding='utf-8'),
+                                            bytes(aliases['Sample_ID'].iloc[0], encoding='utf-8'))
+                    f_out.write(line)
             zippedfiles.append(file_gz)
     data['zipped'] = zippedfiles
     data['contact'] = config['credentials']['snupy'][snupy_instance]['username']
@@ -259,6 +274,7 @@ def extractsamples(uploadtable, config, samplesheets, output, log, _type, snupy_
     files = {'sample[sample_sheet]': (
         'SampleExtractionSheet.csv',
         open(fp, 'rb'), 'application/txt', {'Expires': '0'})}
+
     r = requests.post('%s/samples.json' % config['credentials']['snupy'][snupy_instance]['host'],
                       auth=HTTPBasicAuth(config['credentials']['snupy'][snupy_instance]['username'], config['credentials']['snupy'][snupy_instance]['password']),
                       verify=False,
