@@ -14,7 +14,7 @@ from scripts.parse_samplesheet import get_role
 
 def get_md5sum(fname):
     hash_md5 = hashlib.md5()
-    with open(fname, "rb") as f:
+    with gzip.open(fname, 'rb') as f:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
@@ -138,6 +138,7 @@ def get_upload_content(project, entity, input, config, samplesheets, tmpdir, _ty
                         # search for the original sample name and replace by alias
                         line = line.replace(bytes(aliases['fastq-prefix'].iloc[0].split('/')[-1], encoding='utf-8'),
                                             bytes(aliases['Sample_ID'].iloc[0], encoding='utf-8'))
+                        sys.stderr.write("  rename '%s' --> '%s'\n" % (aliases['fastq-prefix'].iloc[0].split('/')[-1], aliases['Sample_ID'].iloc[0]))
                     f_out.write(line)
             zippedfiles.append(file_gz)
     data['zipped'] = zippedfiles
@@ -146,7 +147,7 @@ def get_upload_content(project, entity, input, config, samplesheets, tmpdir, _ty
     data['tags[TOOL]'] = list(map(lambda x: config['snupy_ids'][snupy_instance]['tools'][get_toolname_from_stepname(config, x)], data.index))
     data['type'] = list(map(lambda x: get_snupy_parser(config, x), data.index))
     data['organism_id'] = config['snupy_ids'][snupy_instance]['organisms'][config['projects'][project]['species']]
-    data['md5checksum'] = list(map(get_md5sum, data.index))
+    data['md5checksum'] = list(map(get_md5sum, data['zipped'].values))
     data['name'] = list(map(lambda x: get_snupy_sample_name(project, entity, x, config, samplesheets, _type), data.index))
 
     payload = dict()
