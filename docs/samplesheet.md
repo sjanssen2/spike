@@ -39,6 +39,17 @@ The inherited field from Illumina's demultiplexing sheets are:
  - `Sample_Project`: Samples are organized into different, independent projects. Processing, data delivery and access rights within Snupy happens project-wise. Thus, it is important that you type in existing, correct names.
  - `Description`: feel free to leave notes, this field is ignored otherwise.
 
-Field for `spike`:
+Additional field for `spike`:
+The following field fundamentally control `spike`s type of processing. Thus, double check everything is correct here.
+ - `spike_entity_id`: The "name" of the family in case of the Keimbahn project, e.g. `KB0011`. Or e.g. `mTAS_360` for the mouse project. This groups a set of samples for different use cases, either being the plain demultiplexing if the field remains empty, trio computation for father-mother-child samples or tumornormal substraction for tumor-healthy tissue samples. For more see below:
+ - `spike_entity_role`: Within a `spike_entity_id` a sample has a specific "role". For the "trio" use case, there need to be at least the three roles "father", "mother", and "patient" (which is the child). An additional role is "sibling" for whome another trio computation is performed as for the patient. The second use case is "tumornormal" where a `spike_entity_id` needs to define `tumor` and `healthy` (= normal) sample. Edge cases are roles like `tumor_father` or `tumor_patient` where the same sample is not only used for "tumornormal" computation, but also for trio computation.
+ - `spike_ignore_sample`: you might want to completely exclude a sample for further processing if you e.g. know that sample preparation failed for biological reasons. Thus, you don't have to run into failing processing steps again and again.
 
+Optinal fields for `spike`:
+ - `spike_notes`: there are some badly designed combinations of barcodes (mixing amplicons and WES) where you need to lower `bcl2fastq`'s allowed error number to succeede with demultiplexing (with the risk of barcode hopping). You can mark all samples of such a lane by putting `colliding barcode` in this field.
+ - `capture_kit`: typically, the `Sample_Project` defines the WES capture kit, but there are a few instances where the kit is changed within the same project. Thus, you can define the kit here sample-wise instead of project-wise.
  
+## Global samplesheets table
+In the beginning of any `Spike` activity, first the configuration file is read, than **all** samplesheets in the defined directory are read and combined. Thus, violating the file format for one samplesheet can break everything! Thus, I suggest you copy and paste an existing samplesheet - edit the information as needed and save as a new file. Only if you really really know what you are doing you can create a samplesheet from scratch.
+
+Furthermore, there is a python function [validate_samplesheet](https://github.com/sjanssen2/spike/blob/ea474be625d9d8550dcf4be3950a25806120c4cd/scripts/parse_samplesheet.py#L86) which you should execute on a new samplesheet to programmatically check for common mistakes, like typos in Sample_IDs spread across multiple lanes, use of restricted character like `-`, notification about missing columns, warning about empty `Sample_Project`, untypical `spike_entity_roles` or mismatching `Sample_ID` to `spike_entity_id`, ... Just fire up a [jupyter notebook](https://jupyter.org/) and run the validation function!
