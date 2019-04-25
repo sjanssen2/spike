@@ -185,6 +185,10 @@ projects:
     capture_kit: SureSelect Human All Exon V6 r2
   Translokation_t7_12_Hauer:
     species: homo sapiens
+    snupy:
+      hhu:
+        contact: "Sanil Bhatia"
+        project_id: 3
   Kit_Test:
     species: homo sapiens
     capture_kit: SureSelect Human All Exon V7
