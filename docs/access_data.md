@@ -11,7 +11,7 @@ It might take up to two weeks until you get your credentials, thus better plan a
 
 ### 2. UKD Firewall
 The UKD computer network is tightly protected internet attacks or data breaches by a quite restrictive firewall. You need to ask [IT](Hotline.IKT@med.uni-duesseldorf.de) to drill a tiny hole for your needs through this big wall in order to access the data from your office computer. You do you by writing a friendly email to Hotline.IKT@med.uni-duesseldorf.de asking for this firewall rule exception. They want to know your IP address and Host Name. Both are displayed in the upper right corner of your Windows desktop:
-![alt text](obtain_pcinfo.jpg "screenshot of windows desktop to illustrate how to obtain IP and hostname")
+![alt text](images/obtain_pcinfo.jpg "screenshot of windows desktop to illustrate how to obtain IP and hostname")
 You should furthermore state why you need this special access and might want to refer to my (Stefan Maximilian Janssen), since I had some communications with IT about this topic. Write to the generic ITK-Hotline address, but you might indicate that this request should be forwarded to the firewall specialists, currently Hans-Jürgen Herder. Last, CC Ute Fischer or me to make this request look legitimate.
 
 ### 3. HPC permissions
@@ -21,7 +21,7 @@ Once the firewall is open towards the HPC, you need to ask the administrators to
 Once you managed the above three hurdles, you can use any (s)FTP client to access your data. You might want to use a program with a graphical user interface like [WinSCP](https://winscp.net/), which is in the lucky case already installed on your machine or you have to ask IT to install it for you if you don't have the necessary right to install software yourself.
 When you first start WinSCP, it asks for the address to which you want to connect. Fill the necessary fields like in the following screenshot (sorry for German version):
 
-![alt text](winscp.jpg "configure WinSCP")
+![alt text](images/winscp.jpg "configure WinSCP")
 
 In short: 
 
