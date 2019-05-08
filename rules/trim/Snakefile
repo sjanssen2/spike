@@ -83,4 +83,4 @@ rule remove_16s_primer:
         ' -o {output.forward}'
         ' -p {output.reverse}'
         ' {input.forward}'
-        ' {input.forward}'
+        ' {input.forward} 2> {log}'
