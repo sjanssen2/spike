@@ -35,10 +35,11 @@ You can use this document to be guided through the multiple steps to process new
                  username: "SeqUser"
                  password: "thisisasecret"
                  targetdirectory: "array1/Sequencing_Backups/Illumina_HiSeq"```
-      5. execute snakemake, first as a dry run: `snakemake -p --use-conda --cores 30 -r -n`
-      6. double check if number of reported samples match your expectations. If so, start the actual processing by `snakemake -p --use-conda --cores 30 -r`, i.e. the same as above without `-n`. Expected runtime for a flow cell backup is roughly one day!
+      5. execute snakemake, first as a dry run: `snakemake -p --use-conda --cores 30 -r backup -n`
+      6. double check if number of reported samples match your expectations. If so, start the actual processing by `snakemake -p --use-conda --cores 30 -r backup`, i.e. the same as above without `-n`. Expected runtime for a flow cell backup is roughly one day!
       7. after sucessful execution, `spike` should send a report via email. Once double checked, you can forward this email to the wet lab crew to let them know that the data are savely stored in our backup. They can than free up disk space on the controller PC to prepare the next run. Otherwise, limited hard disk space will not allow to start another run.
       8. From your Windows PC within the UKD network, you should be able to access the web interface of the backup NAS, by entering `https://10.2.5.12` in your favorite browser. User name is `admin`, password is known by e.g. Ute Fischer. Within this interface, you can check free capacity of the NAS. If space is running out, order a new one via a "Bestellschein". You should always have a spare NAS on the shelf in our office, such that you can directly replace. Currently, there are two spare ones - you should be good for ~1 year.
+      9. Once raw data have been transferred to the HPC and are savely packed on the NAS, you should delete the data in `/data/pipeline_in/` to free up space.
  4. **Execute spike**
     SSH into the hpc: `jansses@hpc.rz.uni-duesseldorf.de`
     
@@ -60,6 +61,6 @@ You can use this document to be guided through the multiple steps to process new
     
     7. Around 1 or 2 hours after you started snakemake, it will have finished demultiplexing and will automatically send you an email with attached demultiplex reports and first base statistics. You should manually inspect for oddities (e.g. close to no yield for samples, or high levels of unassigned barcode reads) and report to the wet lab crew, e.g. by forwarding them this email. They need this kind of feed back for their own logs, so please don't forget to let them know!
     
-    6. Upload results to Snupy
+    8. Upload results to Snupy. In principle, uploading results of spike processing to [SNuPy](https://snupy.hpc.rz.uni-duesseldorf.de/) is part of the pipeline. However, I made it my good practice to avoid automatic upload by setting the password to something invalid to have a chance to first inspect results. Also note that we currently have two different SNuPy instances: the original one in Bonn and the new one at HHU. You can conveniently chance the instance by setting the global variable `SNUPY_INSTANCE` in the main Snakefile to either `hhu` or `bonn`. According settings can be changed in the `config.yaml` file, e.g. your credentials. Just re-execute spike as in step 6 after saving a valid password. Unfortunately, `SNuPy` need two dependend steps to make results available for users: a) upload and b) extraction. Thus, you need to execute spike again two times. The first time, it will upload VCF files to `SNuPy` and error on the second task. Wait until everything has been processed by `SNuPy` and re-execute `spike` for a last time. It will trigger sample extraction in `SNuPy`.
     
-    8. send call report to investigators
+    9. Once everything is done, you should inform investigators that their samples are ready for being explored / analysed in `SNuPy`. You should also generate a *status_update* Excel file, by running `spike` as follows: `snakemake --force status_update.xlsx`. It will generate / overwrite the file `status_update.xlsx`, which you can than attach to the email you should send to the investigators. It includes yield and coverage statistics as well as numbers of found mutations.
