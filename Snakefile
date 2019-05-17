@@ -50,11 +50,6 @@ localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined
 
 rule all:
     input:
-        # create backup for each run
-        # don't backup per sample fastq runs
-        # backup=["%s%s%s/%s.done" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['backup_validate'], run)
-        #         for run in set(SAMPLESHEETS['run'].unique()) - set(SAMPLESHEETS[pd.isnull(SAMPLESHEETS['Lane'])]['run'].unique())],
-        #
         # demultiplex all samples for projects that ONLY need to demultiplex, e.g. AG_Remke and create yield reports
         demux=[res for run in get_demux_samples(SAMPLESHEETS, config) for res in [
                '%s%s%s/%s' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['join_demultiplex'], run),
@@ -81,6 +76,13 @@ rule all:
         # STATISTICS ON BACKGROUND GATK
         biom_background=['%s%s%s/%s.gatk.snp_indel.biom' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], sample)
                          for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
+
+rule backup:
+    input:
+        # create backup for each run
+        # don't backup per sample fastq runs
+        backup=["%s%s%s/%s.done" % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['backup_validate'], run)
+                for run in set(SAMPLESHEETS['run'].unique()) - set(SAMPLESHEETS[pd.isnull(SAMPLESHEETS['Lane'])]['run'].unique())],
 
 rule trim_16s:
     input:
