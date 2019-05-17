@@ -39,8 +39,11 @@ You can use this document to be guided through the multiple steps to process new
       6. double check if number of reported samples match your expectations. If so, start the actual processing by `snakemake -p --use-conda --cores 30 -r`, i.e. the same as above without `-n`. Expected runtime for a flow cell backup is roughly one day!
       7. after sucessful execution, `spike` should send a report via email. Once double checked, you can forward this email to the wet lab crew to let them know that the data are savely stored in our backup. They can than free up disk space on the controller PC to prepare the next run. Otherwise, limited hard disk space will not allow to start another run.
       8. From your Windows PC within the UKD network, you should be able to access the web interface of the backup NAS, by entering `https://10.2.5.12` in your favorite browser. User name is `admin`, password is known by e.g. Ute Fischer. Within this interface, you can check free capacity of the NAS. If space is running out, order a new one via a "Bestellschein". You should always have a spare NAS on the shelf in our office, such that you can directly replace. Currently, there are two spare ones - you should be good for ~1 year.
- 3. **Subset samples to be processed in Snakefile**
  4. **Execute spike**
+    1. Subset processed samples.
+    
+       As in the backup task, you most likely want to avoid processing all samples in `spike` at once (mainly because there are so many unprocessed ones, which first need to properly described - which is work in progress). However, Samples are sometimes split across lanes or even across flow cells / runs. Furthermore, processing often times requires multiple samples, e.g. father, mother, patient for trio computations. Thus, you need to make sure that all required samples are in your subset which is not necessarily just the samples of the current run. If you e.g. process new `Keimbahn` samples, you should always naturally include all Keimbahn samples - but there are a few samples originating from other projects but also being used in the `Keimbahn` study (so called *alias* samples). Thus, you need to have those alias samples in your subset as well. I have a short cut for the `Keimbahn` situation. Just change `False` to `True` in line 28 of the [main Snakefile](../Snakefile#L28)
+       
     1. send demux- and firstbase report to wetlab crew
  5. Handle errors, monitor progress, re-start failing jobs**
  6. Upload to Snupy
