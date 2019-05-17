@@ -40,11 +40,26 @@ You can use this document to be guided through the multiple steps to process new
       7. after sucessful execution, `spike` should send a report via email. Once double checked, you can forward this email to the wet lab crew to let them know that the data are savely stored in our backup. They can than free up disk space on the controller PC to prepare the next run. Otherwise, limited hard disk space will not allow to start another run.
       8. From your Windows PC within the UKD network, you should be able to access the web interface of the backup NAS, by entering `https://10.2.5.12` in your favorite browser. User name is `admin`, password is known by e.g. Ute Fischer. Within this interface, you can check free capacity of the NAS. If space is running out, order a new one via a "Bestellschein". You should always have a spare NAS on the shelf in our office, such that you can directly replace. Currently, there are two spare ones - you should be good for ~1 year.
  4. **Execute spike**
-    1. Subset processed samples.
+    SSH into the hpc: `jansses@hpc.rz.uni-duesseldorf.de`
     
-       As in the backup task, you most likely want to avoid processing all samples in `spike` at once (mainly because there are so many unprocessed ones, which first need to properly described - which is work in progress). However, Samples are sometimes split across lanes or even across flow cells / runs. Furthermore, processing often times requires multiple samples, e.g. father, mother, patient for trio computations. Thus, you need to make sure that all required samples are in your subset which is not necessarily just the samples of the current run. If you e.g. process new `Keimbahn` samples, you should always naturally include all Keimbahn samples - but there are a few samples originating from other projects but also being used in the `Keimbahn` study (so called *alias* samples). Thus, you need to have those alias samples in your subset as well. I have a short cut for the `Keimbahn` situation. Just change `False` to `True` in line 28 of the [main Snakefile](../Snakefile#L28)
+    1. Subset processed samples.
+       As in the backup task, you most likely want to avoid processing all samples in `spike` at once (mainly because there are so many unprocessed ones, which first need to properly described - which is work in progress). However, Samples are sometimes split across lanes or even across flow cells / runs. Furthermore, processing often times requires multiple samples, e.g. father, mother, patient for trio computations. Thus, you need to make sure that all required samples are in your subset which is not necessarily just the samples of the current run. If you e.g. process new `Keimbahn` samples, you should always naturally include all Keimbahn samples - but there are a few samples originating from other projects but also being used in the `Keimbahn` study (so called *alias* samples). Thus, you need to have those alias samples in your subset as well. I have a short cut for the `Keimbahn` situation. Just change `False` to `True` in the if condition in this line of the [main Snakefile](../Snakefile#L24). Assuming your flow cell `190327_SN737_0463_BCCN4KACXX` contains only samples from the `Alps` project, you could limit the samples in `spike` by adding this line `SAMPLESHEETS = SAMPLESHEETS[SAMPLESHEETS['Sample_Project'] == 'Alps']`
        
-    1. send demux- and firstbase report to wetlab crew
- 5. Handle errors, monitor progress, re-start failing jobs**
- 6. Upload to Snupy
-    1. send call report to investigators
+    2. open a new `screen` session (`screen -S spike_alps`)
+    
+    3. When ssh'ing to the HPC, you land on the head node. You should not do any serious computation on the machine, since it will very quickly negatively impact other users and the HPC will block you! To avoid this, request an interactive cluster session to get decend compute power `qsub -I -A ngsukdkohi -l mem=10GB -l walltime="50:29:50,nodes=1:ppn=1"`, which means one CPU for ~50 hours (`spike` should not take longer than that for your sampels) and 10 GB of RAM.
+    
+    4. `cd` into your spike install directory.
+    
+    5. execute snakemake, first as a dry run: `snakemake -p  --cluster-config cluster.json --cluster "qsub -A {cluster.account} -q {cluster.queue} -l mem={cluster.mem} -l walltime={cluster.time},nodes={cluster.nodes}:ppn={cluster.ppn}" -j 100 --latency-wait 900 --use-conda --cluster-status scripts/barnacle_status.py --max-status-checks-per-second 1 --keep-going -n`
+    
+       Double check if number of samples and tasks match to your expectations, e.g. check how many demuliplexing steps will be executed. If more than 8*#flow cells, something odd might go on and you should inspect very closely why more demuliplexing steps are necessary.
+       
+    6. Trigger the actual multi parallel execution of the pipeline: `snakemake -p  --cluster-config cluster.json --cluster "qsub -A {cluster.account} -q {cluster.queue} -l mem={cluster.mem} -l walltime={cluster.time},nodes={cluster.nodes}:ppn={cluster.ppn}" -j 100 --latency-wait 900 --use-conda --cluster-status scripts/barnacle_status.py --max-status-checks-per-second 1 --keep-going`
+    This will compute for ~2 days for a typical scenario. You might want to disconnect your screen session properly, but come back and check status from time to time. Some of the jobs will fail, due to file system latency at the HPC, i.e. the job finished succesfully, but Snakemake could not find the output file on time. This will stop further processing for this sample and in the end you have to re-start snakemake once again - however, all completed jobs will be found and only the missing jobs need to be executed.
+    
+    7. Around 1 or 2 hours after you started snakemake, it will have finished demultiplexing and will automatically send you an email with attached demultiplex reports and first base statistics. You should manually inspect for oddities (e.g. close to no yield for samples, or high levels of unassigned barcode reads) and report to the wet lab crew, e.g. by forwarding them this email. They need this kind of feed back for their own logs, so please don't forget to let them know!
+    
+    6. Upload results to Snupy
+    
+    8. send call report to investigators
