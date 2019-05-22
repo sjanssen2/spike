@@ -24,7 +24,9 @@ You can use this document to be guided through the multiple steps to process new
     1. open a new `screen` session (`screen -S backup`)
     2. navigate (`cd`) to your installation directory of `spike`.
     3. limit the samples known to the pipeline to those of the latest run:
-       Information about samples is stored in a [pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html) called `SAMPLESHEETS` of the main [Snakefile](../Snakefile#L31). You should add a new line above the statement that prints information about the number of samples and projects which starts as `print("%i samples in %i projects."` to subset `SAMPLESHEETS`. For example, you could limit to only those samples of a specific `run` (the better term would have been flow cell, since you can have two flow cells per run - but I haven't had the time to chance that term in spike): `SAMPLESHEETS = SAMPLESHEETS[SAMPLESHEETS['run'].isin(['190327_SN737_0463_BCCN4KACXX'])]`
+       Information about samples is stored in a [pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html) called `SAMPLESHEETS` of the main [Snakefile](../Snakefile#L31). You should add a new line above the statement that prints information about the number of samples and projects which starts as `print("%i samples in %i projects."` to subset `SAMPLESHEETS`. For example, you could limit to only those samples of a specific `run` (the better term would have been flow cell, since you can have two flow cells per run - but I haven't had the time to chance that term in spike): `SAMPLESHEETS = SAMPLESHEETS[SAMPLESHEETS['run'].isin(['190327_SN737_0463_BCCN4KACXX'])]`.
+       
+       For a typical run with two flowcells, you can simply extend the list of valid *runs* e.g. `SAMPLESHEETS = SAMPLESHEETS[SAMPLESHEETS['run'].isin(['190327_SN737_0463_BCCN4KACXX', '190327_SN737_0463_BCCN4KACXX'])]`
        
        **warning:** on the pipeline server, you need to do this limiting as most of the raw flow cell data is no longer present on this machine, causing `spike` to fail and complain about e.g.
         ```Building DAG of jobs...
