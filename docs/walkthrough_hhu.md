@@ -36,13 +36,15 @@ You can use this document to be guided through the multiple steps to process new
      4. double check that following settings in file [`config.yaml`](../config.yaml) are properly set:
         1. `dirs`: `prefix` should be the main working data directory for spike. At the pipeline server, this is currently `/data/Spike_data/`
         2. ensure the default temporary directory has sufficient free disk space. This is currently not the case on the pipeline server. Therefore, you must set `dirs`: `tmpdir` to `/data/tmp/`.
-        3. check user credentials for the backup NAS. On the pipeline server, it should look like the following, but the password `thisisasecret` must be replaced by the right one.
+        3. you might also want to use your email address for the mail that is automatically sent by `spike` once the backup has been copied to the backup NAS and has been validated. Edit the [config.yaml](https://github.com/sjanssen2/spike/blob/2f83a03701ba107163a00ff13d5a0441aac38b93/config.yaml#L18) file in a way that the first address in `emails`: `backup_validated` is yours. Following addresses, separated by `,` are used as *suggested recipients* and do **not** automatically receive this email - for now.
+        4. check user credentials for the backup NAS. On the pipeline server, it should look like the following, but the password `thisisasecret` must be replaced by the right one.
+
           ```credentials:
                backup:
                  host: '10.2.5.12'
                  username: "SeqUser"
                  password: "thisisasecret"
-                 targetdirectory: "array1/Sequencing_Backups/Illumina_HiSeq"```
+                 targetdirectory: "array1/Sequencing_Backups/Illumina_HiSeq"
       5. execute snakemake, first as a dry run: `snakemake -p --use-conda --cores 30 -r backup -n`
       6. double check if number of reported samples match your expectations. If so, start the actual processing by `snakemake -p --use-conda --cores 30 -r backup`, i.e. the same as above without `-n`. Expected runtime for a flow cell backup is roughly one day!
       7. after sucessful execution, `spike` should send a report via email. Once double checked, you can forward this email to the wet lab crew to let them know that the data are savely stored in our backup. They can than free up disk space on the controller PC to prepare the next run. Otherwise, limited hard disk space will not allow to start another run.
