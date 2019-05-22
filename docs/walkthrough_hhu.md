@@ -25,6 +25,12 @@ You can use this document to be guided through the multiple steps to process new
     2. navigate (`cd`) to your installation directory of `spike`.
     3. limit the samples known to the pipeline to those of the latest run:
        Information about samples is stored in a [pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/getting_started/10min.html) called `SAMPLESHEETS` of the main [Snakefile](../Snakefile#L31). You should add a new line above the statement that prints information about the number of samples and projects which starts as `print("%i samples in %i projects."` to subset `SAMPLESHEETS`. For example, you could limit to only those samples of a specific `run` (the better term would have been flow cell, since you can have two flow cells per run - but I haven't had the time to chance that term in spike): `SAMPLESHEETS = SAMPLESHEETS[SAMPLESHEETS['run'].isin(['190327_SN737_0463_BCCN4KACXX'])]`
+       
+       **warning:** on the pipeline server, you need to do this limiting as most of the raw flow cell data is no longer present on this machine, causing `spike` to fail and complain about e.g.
+        ```Building DAG of jobs...
+           MissingInputException in line 1 of /home/layal/spike/rules/demultiplex/Snakefile:
+           Missing input files for rule check_complete:
+           /data/Spike_data/Inputs/Raw_Illumina/151006_SN737_0367_BC7L4PACXX/RTAComplete.txt
      4. double check that following settings in file [`config.yaml`](../config.yaml) are properly set:
         1. `dirs`: `prefix` should be the main working data directory for spike. At the pipeline server, this is currently `/data/Spike_data/`
         2. ensure the default temporary directory has sufficient free disk space. This is currently not the case on the pipeline server. Therefore, you must set `dirs`: `tmpdir` to `/data/tmp/`.
