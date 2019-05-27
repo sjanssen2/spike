@@ -79,3 +79,16 @@ You can use this document to be guided through the multiple steps to process new
 The following schema shows which machines are used for the NGS processing, how they are connected, that the UKD firewall is making your job more complicated and how data should "flow".
 ![alt text](images/hhu_dataflow.png "Computer infrastructure at UKD")
 Black arrows indicate how you can communicate / control different machines. Green arrows show how data are autmatically copied / moved by the existing setting and magenat arrows indicate what you have to do to process the data. i.e. you get the data from the Illumina instrument, back them up on a NAS and process them at the HPC to finally upload results to `SNuPy`.
+
+# Troubleshooting
+  1. `conda: command not found`
+  
+      The conda binary might not be found in the directories listed in your PATH (https://en.wikipedia.org/wiki/Environment_variable)[environment variable]. The reason might be that your default are not loaded properly on the HPC. Try to enforce that by creating (if it does not exist) or editing the file `~/.profile` (the leading `.` means it is a hidden file and `~/` means it is stored in your home directory, e.g. `/home/jansses/`. Add the following two lines to the file:
+      Don't forget to replace `jansses` with your user name!
+      
+      ```export PATH="/home/jansses/miniconda3/bin:$PATH"
+         source /home/jansses/.bashrc
+         
+  2. `Could not run prolog: pro/epilogue failed, file: /var/spool/pbs/mom_priv/prologue, exit: 1, nonzero p/e exit status`
+     
+     The reason might be, that you are not (yet) added to the correct HPC project `ngsukdkohi`. Once your HPC account get's granted, you are assigned to at least one project which might be another than `ngsukdkohi`. Let the HPC guys know about this misconfiguration. Meanwhile, you can edit the defaul `account` in [cluster.yaml](../cluster.json#L4) and set it to your project.
