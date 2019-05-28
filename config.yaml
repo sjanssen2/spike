@@ -194,6 +194,8 @@ projects:
     capture_kit: SureSelect Human All Exon V7
   ALL_Study1_Hauer:
     species: homo sapiens
+  microbiome_mouse_pax5_prj2:
+    species: mus musculus
 
 sample_aliases:
   - real_id:
