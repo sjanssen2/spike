@@ -12,7 +12,7 @@ You can use this document to be guided through the multiple steps to process new
     SSH into the pipeline server (`134.99.133.111`) and use `rsync` to transfer the raw data from the UKD to the HPC network, best by:
     1. opening a new `screen` session (`screen -S transfer`)
     2. navigate (`cd`) to `/data/pipeline_in/`
-    3. `rsync -p -L -r -a -v -e ssh 190327_SN737_0463_BCCN4KACXX jansses@hpc.rz.uni-duesseldorf.de:/gpfs/project/projects/spike/Inputs/Raw_Illumina/`
+    3. `rsync -p -L -r -a -v -e ssh 190327_SN737_0463_BCCN4KACXX jansses@storage.hpc.rz.uni-duesseldorf.de:/gpfs/project/projects/spike/Inputs/Raw_Illumina/`
        
        Of course, you have to replace `190327_SN737_0463_BCCN4KACXX` by the directory of your flowcell, `jansses` by your username at the HPC, and you maybe have to adopt `/gpfs/project/projects/spike/Inputs/Raw_Illumina/` to the actual file path where you want to copy the data to.
        You can also provide multiple directories, in case two flowcells were sequenced in one run.
