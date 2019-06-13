@@ -142,6 +142,11 @@ projects:
       bonn:
         contact: "Julia Hauer"
         project_id: 109
+      hhu:
+        contact: "Julia Hauer"
+        project_id: 4
+    genepanels:
+      - mouse_biofilm
   AG_Remke:
   ARA_Maus:
   AG_Remke_GAC_LT:
