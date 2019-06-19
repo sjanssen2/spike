@@ -12,7 +12,7 @@ Important keys are:
  - `Operator`: is the person responsible for prep'ing the DNA, loading the samples onto the flowcell and operating the sequencer. You want to know this to be able to later ask the right person if something looks wired. Currently, these people are "Katayoun Alemazkour", "Daniel Scholtyssik" and "Frauke Meyer" (but this information might be outdated)
  - `Investigator`: is the person waiting for the data, e.g. "Ute Fischer" or "Daniel Picard". You want to notify them once you finished processing. Thus, it is handy to know who your "customer" was.
  - `Date`: the date of starting the run on the Illumina machine, unfortunately in american format, i.e. mm/dd/yy. This should be in sync with the directory name of the raw Illumina data.
- - `Instrument Type`: for now, this is our HiSeq machine, i.e. `HiSeq 15000/2500` or `MiSeq` for 16s data from the BMFZ or something else e.g. if sequencing was outsourced to another provider.
+ - `Instrument Type`: for now, this is our HiSeq machine, i.e. `HiSeq 1500/2500` or `MiSeq` for 16s data from the BMFZ or something else e.g. if sequencing was outsourced to another provider.
  - `Assay`: the capture kit, like `Agilent_Sure_SelectXT`
  - `Index Adapters`: `Agilent_Sure_SelectXT`
  - `Chemistry`: the chemisty version and lot used for the run, e.g. `20324563 Truseq PE cluster kit V3`
