@@ -48,7 +48,8 @@ rule install_bamstat:
         ' && cd $workdir >> {log} 2>&1'
         ' && git clone "https://github.com/lindenb/jvarkit.git" >> {log} 2>&1'
         ' && cd jvarkit 2>> {log}'
-        ' && make bamstats04 standalone=yes >> {log} 2>&1'
+        #' && make bamstats04 standalone=yes >> {log} 2>&1'
+        ' && ./gradlew bamstats04 >> {log} 2>&1'#new makefile
         ' && cp -v dist/bamstats04-fat.jar {output} >> {log} 2>&1'
         ' && cd 2>> {log}'
         ' && rm -rfv $workdir >> {log} 2>&1'
