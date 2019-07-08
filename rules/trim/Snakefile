@@ -22,7 +22,7 @@ rule trim:
         " & java"
         " -Xmx4g"
         " -XX:ParallelGCThreads={threads}"
-        " -jar ${{CONDA_PREFIX}}/share/trimmomatic-0.33-2/trimmomatic.jar"
+        " -jar ${{CONDA_PREFIX}}/share/trimmomatic-0.33-1/trimmomatic.jar"
         " PE -threads {threads} -phred33"
         " {input.forward}"
         " {input.reverse}"
@@ -30,7 +30,7 @@ rule trim:
         " {params.unpairedforward}"
         " {output.pairedreverse}"
         " {params.unpairedreverse}"
-        " ILLUMINACLIP:${{CONDA_PREFIX}}/share/trimmomatic-0.33-2/adapters/TruSeq3-PE.fa:2:30:10 CROP:99 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36"
+        " ILLUMINACLIP:${{CONDA_PREFIX}}/share/trimmomatic-0.33-1/adapters/TruSeq3-PE.fa:2:30:10 CROP:99 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36"
         " >> {log} 2>&1"
 
 rule trim_singleend:
@@ -50,11 +50,11 @@ rule trim_singleend:
         "java"
         " -Xmx4g"
         " -XX:ParallelGCThreads={threads}"
-        " -jar ${{CONDA_PREFIX}}/share/trimmomatic-0.33-2/trimmomatic.jar"
+        " -jar ${{CONDA_PREFIX}}/share/trimmomatic-0.33-1/trimmomatic.jar"
         " SE -threads {threads} -phred33"
         " {input.forward}"
         " {output.unpairedforward}"
-        " ILLUMINACLIP:${{CONDA_PREFIX}}/share/trimmomatic-0.33-2/adapters/TruSeq3-SE.fa:2:30:10 CROP:99 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36"
+        " ILLUMINACLIP:${{CONDA_PREFIX}}/share/trimmomatic-0.33-1/adapters/TruSeq3-SE.fa:2:30:10 CROP:99 LEADING:10 TRAILING:10 SLIDINGWINDOW:4:15 MINLEN:36"
         " > {log} 2>&1"
 
 rule remove_16s_primer:
