@@ -1094,8 +1094,8 @@ def get_gene_panel_coverage(fp_genepanel, fp_bamstat, fp_agilent_coverage, fp_ou
     result = pd.concat([
         coverage_per_probe.groupby('gene')['mincov'].min(),
         coverage_per_probe.groupby('gene')['avgcov_0'].mean(),
-        coverage_per_probe.groupby('gene')['maxcov'].max()], axis=1)
-        coverage_per_probe.groupby('gene')['nocoveragebp_0'].sum),
+        coverage_per_probe.groupby('gene')['maxcov'].max()],
+        coverage_per_probe.groupby('gene')['nocoveragebp_0'].sum(),
         coverage_per_probe.groupby('gene')['percentcovered_0'].mean()], axis=1)
 
 
