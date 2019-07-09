@@ -1077,7 +1077,7 @@ def get_gene_panel_coverage(fp_genepanel, fp_bamstat, fp_agilent_coverage, fp_ou
     # load coverage information
     coverage = pd.read_csv(fp_bamstat, sep="\s+", dtype=str).rename(columns={'#chrom': 'chromosome'})
     coverage['chromosome'] = coverage['chromosome'].apply(lambda x: 'chr%s' % x)
-    for field in ['start', 'end', 'mincov', 'maxcov']:
+    for field in ['start', 'end', 'mincov', 'maxcov', 'nocoveragebp_0', 'percentcovered_0']:
         coverage[field] = coverage[field].astype(int)
     coverage['avgcov_0'] = coverage['avgcov_0'].astype(float)
 
@@ -1095,5 +1095,8 @@ def get_gene_panel_coverage(fp_genepanel, fp_bamstat, fp_agilent_coverage, fp_ou
         coverage_per_probe.groupby('gene')['mincov'].min(),
         coverage_per_probe.groupby('gene')['avgcov_0'].mean(),
         coverage_per_probe.groupby('gene')['maxcov'].max()], axis=1)
+        coverage_per_probe.groupby('gene')['nocoveragebp_0'].sum),
+        coverage_per_probe.groupby('gene')['percentcovered_0'].mean()], axis=1)
+
 
     result.to_csv(fp_output, sep="\t", index=True, index_label='gene')
