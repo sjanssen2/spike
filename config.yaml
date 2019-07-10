@@ -127,6 +127,8 @@ projects:
       hhu:
         contact: "Ute Fischer"
         project_id: 2
+    genepanels:
+      - Sujal_Gosh
   Canada_Reid:
     species: mus musculus
     snupy:
