@@ -31,7 +31,7 @@ def annotate(fh_input, fh_output):
                     # prepare data in last two columns for easy access
                     data = OrderedDict(
                         [(k, v)
-                         for k,v
+                         for k, v
                          in zip(fields[-2].split(':'), fields[-1].split(':'))])
 
                     # do the actual computation
@@ -39,8 +39,8 @@ def annotate(fh_input, fh_output):
                     parts_nv = data['NV'].split(',')
                     data.update({
                         'AD':
-                        ','.join([str(int(data['DP']) - int(parts_nv[0]))] \
-                            + parts_nv)})
+                        ','.join([str(int(data['DP']) - int(parts_nv[0]))] +
+                                 parts_nv)})
 
                     # strang formatting as Sebastian's vcf-mapper does
                     for k in ['GOF']:

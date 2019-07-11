@@ -6,6 +6,7 @@ import time
 import re
 from io import StringIO
 
+
 def parse_qstat(lines):
     q_dict = {}
 
@@ -21,6 +22,7 @@ def parse_qstat(lines):
             q_dict[m.groups()[0].lower()] = m.groups()[1]
 
     return(q_dict)
+
 
 def get_status(q_dict):
     try:
@@ -38,6 +40,7 @@ def get_status(q_dict):
         status = "failed"
 
     return(status)
+
 
 def main():
     jobid = sys.argv[1]
@@ -59,6 +62,7 @@ def main():
     status = get_status(q_dict)
 
     print(status)
+
 
 if __name__ == '__main__':
     main()
