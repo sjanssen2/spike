@@ -363,6 +363,7 @@ rule merge_vcfs:
         " {input.indel}"
         ' > {output}'
         " 2> {log}"
+        " && chmod -v g+w {output} 2>> {log}"
 
         # #merge the vcfs
         # echo merging vcfs for $OUTPUTBASENAME
