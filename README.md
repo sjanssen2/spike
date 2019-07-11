@@ -1,3 +1,7 @@
+[![Coverage Status](https://coveralls.io/repos/github/sjanssen2/spike/badge.svg?branch=master)](https://coveralls.io/github/sjanssen2/spike?branch=master)
+
+[![Build Status](https://travis-ci.org/sjanssen2/spike.svg?branch=master)](https://travis-ci.org/sjanssen2/spike)
+
 # Spike
 Spike is one of [SNuPy's](https://snupy-aqua.bio.inf.h-brs.de/) brothers.
 
