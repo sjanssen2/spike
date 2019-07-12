@@ -25,8 +25,9 @@ install:
   - source activate test_env
   - pip install -r ci/pip_requirements.txt
 script:
-  - cd scripts/ && COVERAGE_FILE=.coverage coverage run -p --concurrency=multiprocessing --rcfile .coveragerc test/test_parse_samplesheet.py test_reports.py
-  - coverage combine
-  - flake8 scripts/
+  #- cd scripts/ && COVERAGE_FILE=.coverage coverage run -p --concurrency=multiprocessing --rcfile .coveragerc tests/test_parse_samplesheet.py tests/test_reports.py
+  - nosetests --with-coverage scripts/ --cover-package=scripts/
+  #- coverage combine
+  #- flake8 scripts/
 after_success:
   - coveralls
