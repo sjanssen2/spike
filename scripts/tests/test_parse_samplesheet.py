@@ -15,7 +15,7 @@ class ParseSamplesheetTests(TestCase):
         self.samplesheets = get_global_samplesheets(
             'scripts/tests/data/', self.config)
         with open('config.yaml', 'r') as f:
-            self.config = yaml.load(f)
+            self.config = yaml.load(f, Loader=yaml.SafeLoader)
 
     def test_get_role(self):
         self.config = {'dirs': {'prefix': './',
