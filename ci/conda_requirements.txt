@@ -5,4 +5,5 @@ snakemake
 biom-format
 h5py
 xlsxwriter
+xlrd
 seaborn
