@@ -13,7 +13,7 @@ Chemistry,defualt,,,,,,,,,,,,
 [Settings],,,,,,,,,,,,,
 ReverseComplement,0,,,,,,,,,,,,
 Adapter,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,,,
-AdapterRead2,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,,,
+AdapterRead2,AGATCGGAAGAGCACACGTCTGAACTCCAGTCA,,,,,,,,,,,,?
 ,,,,,,,,,,,,,
 ,,,,,,,,,,,,,
 [Data],,,,,,,,,,,,,
