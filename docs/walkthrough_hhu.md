@@ -21,7 +21,7 @@ You can use this document to be guided through the multiple steps to process new
     Our backup strategy is quite primitive, as we use multiple individual NAS systems. They are stored in office 13.43.-01.65. The latest one is located in the wet lab room with the HiSeq as "the backup NAS" with IP `10.2.5.12`. We bundle and compress all raw files of each flowcell (which are automatically copied from the controller PC to drive Z:, which is `/data/pipeline_in` on the pipeline server, via this pipeline.
   
     SSH into the pipeline server (`134.99.133.111`)
-    1. create the sample sheet (please see spike/docs/samplesheet.md for more details) and copy it to the this directory at the pipeline server  /data/Spike_data/Inputs/SampleSheets/
+    1. create the sample sheet (please see [spike/docs/samplesheet.md](spike/docs/samplesheet.md) for more details) and copy it to this directory at the   pipeline server /data/Spike_data/Inputs/SampleSheets/
     2. open a new `screen` session (`screen -S backup`)
     3. navigate (`cd`) to your installation directory of `spike`.
     4. limit the samples known to the pipeline to those of the latest run:
