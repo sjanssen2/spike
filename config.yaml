@@ -14,8 +14,8 @@ endings_bwa:
 mail_attachment_parameter: "-a"
 
 emails:
-  demultiplexreport: "stefan.m.janssen@gmail.com,Alemazkour@med.uni-duesseldorf.de,Frauke.Meyer@med.uni-duesseldorf.de,Daniel.Scholtyssik@med.uni-duesseldorf.de"
-  backup_validated: "stefan.m.janssen@gmail.com,Alemazkour@med.uni-duesseldorf.de,Frauke.Meyer@med.uni-duesseldorf.de,Daniel.Scholtyssik@med.uni-duesseldorf.de"
+  demultiplexreport: "deyazoubi@gmail.com,stefan.m.janssen@gmail.com,Alemazkour@med.uni-duesseldorf.de,Frauke.Meyer@med.uni-duesseldorf.de,Daniel.Scholtyssik@med.uni-duesseldorf.de"
+  backup_validated: "deyazoubi@gmail.com,stefan.m.janssen@gmail.com,Alemazkour@med.uni-duesseldorf.de,Frauke.Meyer@med.uni-duesseldorf.de,Daniel.Scholtyssik@med.uni-duesseldorf.de"
 
 name_program: "spike"
 
@@ -129,6 +129,19 @@ projects:
         project_id: 2
     genepanels:
       - Sujal_Gosh
+  ETV6_RUNX1:
+    species: homo sapiens
+    snupy:
+      hhu:
+        contact: "Ute Fischer"
+        project_id: XX
+    genepanels:
+      - Sujal_Gosh
+      min_coverage: 55
+    known_duos:
+      - family7
+    xenograft: "GRCh_GRCm_filtering_hybrid.fa"
+    capture_kit: SureSelect Human All Exon V6 r2
   Canada_Reid:
     species: mus musculus
     snupy:
