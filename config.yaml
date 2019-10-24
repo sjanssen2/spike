@@ -203,7 +203,18 @@ projects:
     species: homo sapiens
   microbiome_mouse_pax5_prj2:
     species: mus musculus
-
+ ETV6_RUNX1:
+    species: homo sapiens
+    snupy:
+      hhu:
+        contact: "Ute Fischer"
+        project_id: XX# add this after add the project to Sunpy
+    genepanels:
+      - Sujal_Gosh
+    min_coverage: 60
+    xenograft: "GRCh_GRCm_filtering_hybrid.fa"
+    capture_kit: SureSelect Human All Exon V6 r2
+    
 sample_aliases:
   - real_id:
       Sample_ID: 'HL_rem'
