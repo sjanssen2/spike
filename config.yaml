@@ -208,9 +208,8 @@ projects:
     snupy:
       hhu:
         contact: "Ute Fischer"
-        project_id: XX
+        project_id: 8
     min_coverage: 60
-    capture_kit: SureSelect Human All Exon V5+UTRs
     
 sample_aliases:
   - real_id:
