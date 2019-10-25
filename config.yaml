@@ -208,7 +208,7 @@ projects:
     snupy:
       hhu:
         contact: "Ute Fischer"
-        project_id: XX# add this after add the project to Sunpy
+        project_id: XX
     min_coverage: 60
     capture_kit: SureSelect Human All Exon V5+UTRs
     
