@@ -3,6 +3,7 @@ sys.path.append("..")
 
 from unittest import TestCase, main
 from scripts.parse_samplesheet import *
+from scripts.parse_samplesheet import _run2date
 import yaml
 from io import StringIO
 
@@ -321,6 +322,25 @@ class ParseSamplesheetTests(TestCase):
                      'spike_entity_id': None,
                      'spike_entity_role': None}]
             validate_samplesheet(pd.DataFrame(data), self.config)
+
+
+class HelperFunctions(TestCase):
+    def test__run2date(self):
+        # Deya: I have tested this function for the following run
+        self.assertEqual('2019/10/09', _run2date('191009_SN737_0479_ACDU95ACXX'))
+        self.assertEqual('2019/08/21', _run2date('190821_SN737_0472_BCDPEFACXX'))
+        # Stefan
+        self.assertEqual('2012/03/23', _run2date('120323_SN737_0172_BC0G9NACXX'))
+        self.assertEqual('2012/08/01', _run2date('120801_SN737_0199_AC0TNHACXX'))
+        self.assertEqual('2014/11/23', _run2date('141123_M02092_0031_000000000-ABGCR'))
+        self.assertEqual('2016/06/09', _run2date('160609_SN737_0385_AC8N1RACXX'))
+        self.assertEqual('2017/07/25', _run2date('170725_SN737_0416_BCAD2RACXX'))
+        self.assertEqual('2018/09/13', _run2date('180913_M04304_0134_000000000-C45VP'))
+        self.assertEqual('2018/09/20', _run2date('180920_SN737_0447_ACC9UWACXX'))
+        self.assertEqual('2019/08/02', _run2date('190802_SN737_0470_ACDT87ACXX'))
+        self.assertEqual('2019/08/02', _run2date('190802_SN737_0471_BCDPE4ACXX'))
+        self.assertEqual('2018/09/06', _run2date('180906_M04304_0133_000000000-C2VLP'))
+        self.assertEqual('2018/09/20', _run2date('180920_SN737_0448_BCC9V5ACXX'))
 
 
 if __name__ == '__main__':
