@@ -3,6 +3,7 @@ sys.path.append("..")
 
 from unittest import TestCase, main
 from scripts.parse_samplesheet import *
+from scripts.parse_samplesheet import _run2date
 import yaml
 from io import StringIO
 
@@ -321,6 +322,15 @@ class ParseSamplesheetTests(TestCase):
                      'spike_entity_id': None,
                      'spike_entity_role': None}]
             validate_samplesheet(pd.DataFrame(data), self.config)
+
+
+class HelperFunctions(TestCase):
+    def test__run2date(self):
+        # Deya: I have tested this function for the following run
+        self.assertEqual('2019/10/09', _run2date('191009_SN737_0479_ACDU95ACXX'))
+        self.assertEqual('2019/08/21', _run2date('190821_SN737_0472_BCDPEFACXX'))
+        # Stefan
+        self.assertEqual('2012/03/23', _run2date('120323_SN737_0172_BC0G9NACXX'))
 
 
 if __name__ == '__main__':
