@@ -1,9 +1,7 @@
-SAMPS = ["a.chr21", "b.chr21"]
-
 rule all:
     input:
         "data/multiqc/multiqc_report.html",
-
+       
 rule fastqc: 
     input: 
         expand(["ngs-test-data/reads/{sample}.1.fq", "ngs-test-data/reads/{sample}.2.fq"], sample=SAMPS)
@@ -16,6 +14,8 @@ rule fastqc:
     shell:
         "fastqc -o data/fastqc -t {params.threads} {input}"
 
+        
+        
 rule multiqc: 
     input: 
         expand(["data/fastqc/{sample}.1_fastqc.html","data/fastqc/{sample}.2_fastqc.html"], sample=SAMPS)
