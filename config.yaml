@@ -11,7 +11,7 @@ endings_bwa:
   - '.fa.pac'
   - '.fa.sa'
 
-mail_attachment_parameter: "-a"
+mail_attachment_parameter: "-A"
 
 emails:
   demultiplexreport: "deyazoubi@gmail.com,Layal.Yasin@med.uni-duesseldorf.de,stefan.m.janssen@gmail.com,Alemazkour@med.uni-duesseldorf.de,Frauke.Meyer@med.uni-duesseldorf.de,Daniel.Scholtyssik@med.uni-duesseldorf.de"
@@ -36,7 +36,7 @@ dirs:
 
 stepnames:
   check_complete: "005_check_complete"
-
+    
   backup_compress: "010_backup_compress"
   backup_transfer: "015_backup_transfer"
   backup_validate: "020_backup_validate"
@@ -47,6 +47,7 @@ stepnames:
   yield_report: "027_yield_report"
   convert_illumina_report: "030_convert_illumina_report"
   rejoin_samples: "035_rejoin_samples"
+  Fastqc: "039_Fastqc"########################################
   trim: "040_trim"
   remove_16s_primer: "041_remove_16s_primer"
   xenograft_bwa_aln: "045_xenograft_bwa_aln"
