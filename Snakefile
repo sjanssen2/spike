@@ -44,7 +44,7 @@ include: "rules/mutect/Snakefile"
 include: "rules/snupy/Snakefile"
 include: "rules/excavator/Snakefile"
 include: "rules/analyses/Snakefile"
-
+include: "rules/fastqc/Snakefile"## new rule
 
 localrules: check_complete, aggregate_undetermined_filesizes, check_undetermined_filesizes, convert_illumina_report, check_coverage, xenograft_check, correct_genotypes_somatic, varscan_fpfilter_somatic, somatic_FPfilter, vcf_annotate, merge_somatic_mus_musculus, merge_somatic_homo_sapiens, writing_headers, merge_vcfs, varscan_filter_INDEL, varscan_processSomatic, split_demultiplex, yield_report
 
@@ -76,6 +76,8 @@ rule all:
         # STATISTICS ON BACKGROUND GATK
         biom_background=['%s%s%s/%s.gatk.snp_indel.biom' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], sample)
                          for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
+        
+                    
 
 rule backup:
     input:
