@@ -77,7 +77,12 @@ rule all:
         biom_background=['%s%s%s/%s.gatk.snp_indel.biom' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], sample)
                          for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
         
-                    
+        #A quality control tool for high throughput sequence data.
+        #determined reads
+        Fastqc_determined="{prefix}%s%s/determined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        #Undetermined reads
+        Fastqc_Undetermined="{prefix}%s%s/Undetermined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+                        
 
 rule backup:
     input:
