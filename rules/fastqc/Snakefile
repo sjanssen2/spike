@@ -1,28 +1,44 @@
-rule all:
-    input:
-        "data/multiqc/multiqc_report.html",
-       
+     
 rule fastqc: 
-    input: 
-        expand(["ngs-test-data/reads/{sample}.1.fq", "ngs-test-data/reads/{sample}.2.fq"], sample=SAMPS)
+    input:
+        forward="{prefix}%s%s/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
+        reverse="{prefix}%s%s/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
     output: 
-        expand(["data/fastqc/{sample}.1_fastqc.html","data/fastqc/{sample}.2_fastqc.html"], sample=SAMPS)
+        determinedforward="{prefix}%s%s/determined/fastqc/{sample, .*?}_R1.fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        determinedreverse="{prefix}%s%s/determined/fastqc/{sample, .*?}_R2.fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+    log:
+        "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['Fastqc'])
     conda: 
         "envs/qc.yml"
-    params: 
-        threads = "4"
-    shell:
-        "fastqc -o data/fastqc -t {params.threads} {input}"
-
-        
+    threads: 
+        "4"
+    params:
+        undeterminedforward="{prefix}%s%s/Undetermined/fastqc/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        undeterminedreverse="{prefix}%s%s/Undetermined/fastqc/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['Fastqc'])
+     shell:
+        " {input.forward}"
+        " {input.reverse}"
+        " {output.determinedforward}"
+        " {params.undeterminedforward}"
+        " {output.determinedreverse}"
+        " {params.undeterminedreverse}"
+        "fastqc -t {threads.threads} {input}"# here return 
+        #"fastqc -o data/fastqc -t {threads.threads} {input}"# here return 
         
 rule multiqc: 
-    input: 
-        expand(["data/fastqc/{sample}.1_fastqc.html","data/fastqc/{sample}.2_fastqc.html"], sample=SAMPS)
+    input:
+        forward="{prefix}%s%s/determined/fastqc/{sample}_R1.fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        reverse="{prefix}%s%s/determined/fastqc/{sample}_R2.fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
     output:
-        "data/multiqc/multiqc_report.html"
+        determinedMulti="{prefix}%s%s/determined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
     conda: 
         "envs/qc.yml"
+    params:
+        undeterminedMulti="{prefix}%s%s/Undetermined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
     shell: 
-        "multiqc data -o data/multiqc "
-
+        " {input.forward}"
+        " {input.reverse}"
+        " {output.determinedMulti}"
+        " {params.undeterminedMulti}"
+        " {output.undeterminedMulti}"
+        "multiqc {input}"# here return 
