@@ -1,0 +1,44 @@
+     
+rule fastqc: 
+    input:
+        forward="{prefix}%s%s/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
+        reverse="{prefix}%s%s/{sample}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
+    output: 
+        determinedforward="{prefix}%s%s/determined/fastqc/{sample, .*?}_R1.fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        determinedreverse="{prefix}%s%s/determined/fastqc/{sample, .*?}_R2.fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+    log:
+        "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['Fastqc'])
+    conda: 
+        "envs/qc.yml"
+    threads: 
+        "4"
+    params:
+        undeterminedforward="{prefix}%s%s/Undetermined/fastqc/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        undeterminedreverse="{prefix}%s%s/Undetermined/fastqc/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['Fastqc'])
+     shell:
+        " {input.forward}"
+        " {input.reverse}"
+        " {output.determinedforward}"
+        " {params.undeterminedforward}"
+        " {output.determinedreverse}"
+        " {params.undeterminedreverse}"
+        "fastqc -t {threads.threads} {input}"# here return 
+        #"fastqc -o data/fastqc -t {threads.threads} {input}"# here return 
+        
+rule multiqc: 
+    input:
+        forward="{prefix}%s%s/determined/fastqc/{sample}_R1.fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        reverse="{prefix}%s%s/determined/fastqc/{sample}_R2.fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+    output:
+        determinedMulti="{prefix}%s%s/determined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+    conda: 
+        "envs/qc.yml"
+    params:
+        undeterminedMulti="{prefix}%s%s/Undetermined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+    shell: 
+        " {input.forward}"
+        " {input.reverse}"
+        " {output.determinedMulti}"
+        " {params.undeterminedMulti}"
+        " {output.undeterminedMulti}"
+        "multiqc {input}"# here return 
