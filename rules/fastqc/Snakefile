@@ -8,7 +8,7 @@ rule fastqc:
     log:
         "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['Fastqc'])
     conda: 
-        "envs/qc.yml"
+        "envs/qc.yaml"
     threads: 
         4
     params:
@@ -31,7 +31,7 @@ rule multiqc:
     output:
         determinedMulti="{prefix}%s%s/determined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
     conda: 
-        "envs/qc.yml"
+        "envs/qc.yaml"
     params:
         undeterminedMulti="{prefix}%s%s/Undetermined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
     shell: 
