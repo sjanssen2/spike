@@ -29,11 +29,11 @@ rule multiqc:
         forward="{prefix}%s%s/determined/fastqc/{sample}_R1.fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
         reverse="{prefix}%s%s/determined/fastqc/{sample}_R2.fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
     output:
-        determinedMulti="{prefix}%s%s/determined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        determinedMulti="{prefix}%s%s/determined/multiqc/multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
     conda: 
         "envs/qc.yaml"
     params:
-        undeterminedMulti="{prefix}%s%s/Undetermined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        undeterminedMulti="{prefix}%s%s/Undetermined/multiqc/multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
     shell: 
         " {input.forward}"
         " {input.reverse}"
