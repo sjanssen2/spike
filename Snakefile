@@ -79,10 +79,7 @@ rule all:
        
         #A quality control tool for high throughput sequence data.
         #determined reads
-        Fastqc_determined="{prefix}%s%s/determined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
-        #Undetermined reads
-        Fastqc_Undetermined="{prefix}%s%s/Undetermined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
-
+        Fastqc_determined='%s%s%s/determined/multiqc/multiqc_report.html' % (config['dirs']['prefix'],config['dirs']['intermediate'], config['stepnames']['Fastqc']),        #Undetermined reads
                     
 
 rule backup:
