@@ -11,7 +11,7 @@ rule check_complete:
         with open(output.fp_check, 'w') as f:
             f.write("Raw Illumina data from run are complete.\n")
 
-
+'''
 rule split_demultiplex:
     input:
         fp_samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
@@ -26,43 +26,48 @@ rule split_demultiplex:
         1
     run:
         split_samplesheets(parse_samplesheet(input.fp_samplesheet), config, dry=False)
-
-
+'''
 rule demultiplex:
     input:
-        dir_samplesheets=directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex'])),
+        dir_samplesheets="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
+        #dir_samplesheets=directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex'])),
         raw=directory("{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina'])),
+        status="{prefix}%s%s/{run}.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete']),
     output:
-        directory("{prefix}%s%s/{run}/{part}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+        directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
+        #directory("{prefix}%s%s/{run}/{part}" % (config['dirs']['intermediate'], config['stepnames']['demultiplex'])),
     log:
-        "{prefix}%s%s/{run}_{part}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
+        "{prefix}%s%s/{run}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
+        #"{prefix}%s%s/{run}_{part}.log" % (config['dirs']['logs'], config['stepnames']['demultiplex'])
     benchmark:
-        "{prefix}%s%s/{run}_{part}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
+        "{prefix}%s%s/{run}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
+        #"{prefix}%s%s/{run}_{part}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['demultiplex'])
     threads:
         8
     conda:
         "envs/spike_demux.yaml"
-    params:
-        samplesheet="{prefix}%s%s/{run}/samplesheet_{part}.csv" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex']),
+    #params:
+        #samplesheet="{prefix}%s%s/{run}/samplesheet_{part}.csv" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex']),
     shell:
         # A little bit of magic is necessary to deal with colliding barcodes.
         # During sample sheet splitting, separat sheets are generated for samples that are marked in column "spike_notes" with "colliding barcode".
         # If lines in the [Data] table are found holding the value "colliding barcode", bcl2fastq is executed with --barcode-mismatches 0
-        'rowdata=`grep "^\[Data\]$" -n {params.samplesheet} | cut -d ":" -f 1`'
-        ' && num_colliding=`tail -n+$rowdata {params.samplesheet} | grep "colliding barcode" -c; true`'
+        #'rowdata=`grep "^\[Data\]$" -n {params.samplesheet} | cut -d ":" -f 1`'
+        #' && num_colliding=`tail -n+$rowdata {params.samplesheet} | grep "colliding barcode" -c; true`'
         " && bcl2fastq"
         " --runfolder-dir {input.raw}/"
         " --output-dir {output}/"
         " --ignore-missing-bcls"
-        " --sample-sheet {params.samplesheet}"
+        " --sample-sheet {input.dir_samplesheets}"
+        #" --sample-sheet {params.samplesheet}"
         " --loading-threads {threads}"
         " --processing-threads {threads}"
         " --writing-threads {threads}"
-        ' `if [ "$num_colliding" -ge 1 ]; then echo " --barcode-mismatches 0 "; fi`'
+        #' `if [ "$num_colliding" -ge 1 ]; then echo " --barcode-mismatches 0 "; fi`'
         " 2>> {log}"
         " 1>&2"
 
-
+'''
 rule join_demultiplex:
     input:
         demux_dirs=lambda wildcards: [directory("%s%s%s/%s/part_%i" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['demultiplex'], wildcards.run, p+1)) for p in range(split_samplesheets(parse_samplesheet("%s%s%s%s_spike.csv" % (wildcards.prefix, config['dirs']['inputs'], config['dirs']['samplesheets'], wildcards.run)), config, dry=True))],
@@ -86,7 +91,7 @@ rule join_demultiplex:
         ' && for f in `find {output}/ -name "*.fastq.gz"`; do '
         '    fnoS=`echo "$f" | sed -r "s/_S[0-9]+_/_/"`; mv -v $f $fnoS 2>> {log} 1>&2; '
         ' done'
-
+''''
 
 rule yield_report:
     input:
