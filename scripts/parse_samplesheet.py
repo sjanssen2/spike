@@ -37,9 +37,9 @@ def parse_samplesheet(fp_samplesheet):
     ss = pd.read_csv(fp_samplesheet, sep=",", skiprows=row_sampleinformation, dtype={'Sample_Name': str, 'Sample_ID': str, 'spike_entity_id': str})
 
     # bcl2fasta automatically changes - into _ char in output filenames
-    idx_rawilluminainput = ss[pd.notnull(ss['Lane'])].index
-    for f in ['Sample_ID', 'Sample_Name', 'Sample_Project']:
-        ss.loc[idx_rawilluminainput, f] = ss.loc[idx_rawilluminainput, f].apply(lambda x: x.replace('-', '_') if type(x) != float else x)
+    #idx_rawilluminainput = ss[pd.notnull(ss['Lane'])].index
+    #for f in ['Sample_ID', 'Sample_Name', 'Sample_Project']:
+        #ss.loc[idx_rawilluminainput, f] = ss.loc[idx_rawilluminainput, f].apply(lambda x: x.replace('-', '_') if type(x) != float else x)
 
     # bcl2fastq uses a S%03i index to address samples.
     # They are numbered as occuring in the samplesheet order starting with 1.
@@ -113,7 +113,7 @@ def validate_samplesheet(ss: pd.DataFrame, config, line_offset: int=22, err=sys.
     warnings = []
 
     # ensure all needed columns are in the table
-    exp_columns = {'Lane', 'Sample_ID', 'Sample_Name', 'I7_Index_ID', 'index',
+    exp_columns = {'Sample_ID', 'Sample_Name', 'I7_Index_ID', 'index',
                    'Sample_Project', 'spike_entity_id', 'spike_entity_role'}
     if len(exp_columns - set(ss.columns)) > 0:
         errors.append(
@@ -194,14 +194,15 @@ def validate_samplesheet(ss: pd.DataFrame, config, line_offset: int=22, err=sys.
     # check assumptions about barcodes used by specific wet lab members:
     exp_barcodes = {
         'Keimbahn': {
-            'A01': 'ATGCCTAA',
-            'B01': 'GAATCTGA',
-            'C01': 'AACGTGAT',
-            'D01': 'CACTTCGA',
-            'E01': 'GCCAAGAC',
-            'F01': 'GACTAGTA',
-            'G01': 'ATTGGCTC',
-            'H01': 'GATGAATC'},
+            'G01': 'ATTGGCTCA',
+            'H01': 'GATGAATCA',
+            'D01': 'CACTTCGAA',
+            'A01': 'ATGCCTAAA',
+            'B01': 'GAATCTGAA',
+            'C01': 'AACGTGATA',
+            'E01': 'GCCAAGACA',
+            'B02': 'GAGCTGAAA'
+            'H02': 'GACAGTGCA',},
         'Alps': {
             'A01': 'ATGCCTAA',
             'B01': 'GAATCTGA',
@@ -254,8 +255,7 @@ def get_global_samplesheets(dir_samplesheets, config):
 def write_samplesheet(fp_output, samplesheet):
     with open(fp_output, 'w') as f:
         # obtain number of data colums, which dictates number of "," in each line
-        data_cols = ['Lane',
-                     'Sample_ID',
+        data_cols = ['Sample_ID',
                      'Sample_Name',
                      'Sample_Plate',
                      'Sample_Well',
@@ -308,7 +308,7 @@ def write_samplesheet(fp_output, samplesheet):
         f.write('\n')
         f.write(samplesheet[data_cols].sort_values('Lane').fillna('').to_csv(index=False, float_format='%i'))
 
-
+'''
 def split_samplesheets(samples, config, dry=False):
     """Creates (multiple) samplesheets for bcl2fastq according to barcode length.
 
@@ -347,7 +347,7 @@ def split_samplesheets(samples, config, dry=False):
         return len(results)
     else:
         return results
-
+'''
 
 def get_role(spike_project, spike_entity_id, spike_entity_role, samplesheets):
     """Returns file path for bam, given project, entity and role (for trio).
