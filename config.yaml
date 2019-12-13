@@ -27,7 +27,7 @@ dirs:
   inputs: "Inputs/"
   references: "References/"
 
-  samplesheets: "SampleSheets/"
+  samplesheets: "SampleSheets_Nextseq/"
   rawillumina: "Raw_Illumina/"
   persamplefastq: "PerSampleFastq/"
   genepanels: "Genepanels/"
