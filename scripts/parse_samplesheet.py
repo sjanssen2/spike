@@ -201,8 +201,8 @@ def validate_samplesheet(ss: pd.DataFrame, config, line_offset: int=22, err=sys.
             'B01': 'GAATCTGAA',
             'C01': 'AACGTGATA',
             'E01': 'GCCAAGACA',
-            'B02': 'GAGCTGAAA'
-            'H02': 'GACAGTGCA',},
+            'B02': 'GAGCTGAAA',
+            'H02': 'GACAGTGCA'},
         'Alps': {
             'A01': 'ATGCCTAA',
             'B01': 'GAATCTGA',
