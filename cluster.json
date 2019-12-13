@@ -11,8 +11,8 @@
 
     "demultiplex" :
     {
-      "mem" : "16GB",
-      "ppn" : "4",
+      "mem" : "64GB",
+      "ppn" : "12",
       "time" : "01:59:59",
     },
 
