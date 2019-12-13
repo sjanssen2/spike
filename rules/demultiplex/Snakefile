@@ -31,7 +31,7 @@ rule split_demultiplex:
 rule demultiplex:
     input:
         #dir_samplesheets=directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex'])),
-        dir_samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
+        dir_samplesheets=directory("{prefix}%s%s" % (config['dirs']['inputs'], config['dirs']['samplesheets'])),
         raw=directory("{prefix}%s%s{run}" % (config['dirs']['inputs'], config['dirs']['rawillumina'])),
         status="{prefix}%s%s/{run}.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete']),
     output:
@@ -47,8 +47,8 @@ rule demultiplex:
         8
     conda:
         "envs/spike_demux.yaml"
-    #params:
-        #samplesheet="{prefix}%s%s/{run}/samplesheet_{part}.csv" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex']),
+    params:
+        samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
     shell:
         # A little bit of magic is necessary to deal with colliding barcodes.
         # During sample sheet splitting, separat sheets are generated for samples that are marked in column "spike_notes" with "colliding barcode".
@@ -59,7 +59,7 @@ rule demultiplex:
         " --runfolder-dir {input.raw}/"
         " --output-dir {output}/"
         " --ignore-missing-bcls"
-        " --sample-sheet {dir_samplesheet}"
+        " --sample-sheet {params.samplesheet}"
         " --loading-threads {threads}"
         " --processing-threads {threads}"
         " --writing-threads {threads}"
