@@ -15,7 +15,7 @@ rule check_complete:
 rule split_demultiplex:
     input:
         fp_samplesheet="{prefix}%s%s{run}_spike.csv" % (config['dirs']['inputs'], config['dirs']['samplesheets']),
-        status="{prefix}%s%s/{run}.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete']),
+        status="{prefix}%s%s/{run}/.complete.txt" % (config['dirs']['intermediate'], config['stepnames']['check_complete']),
     output:
         directory("{prefix}%s%s/{run}" % (config['dirs']['intermediate'], config['stepnames']['split_demultiplex']))
     log:
