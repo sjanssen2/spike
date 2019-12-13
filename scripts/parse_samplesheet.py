@@ -551,7 +551,7 @@ def get_demux_samples(samplesheets, config):
     samples = samplesheets[samplesheets['is_alias'] != True]
 
     # remove samples that stem from per sample fastq sources, like Macrogen sequencing
-    samples = samples[pd.notnull(samples['Lane'])]
+    #samples = samples[pd.notnull(samples['Lane'])]
 
     return list(samples['run'].unique())
 
@@ -657,11 +657,11 @@ def add_aliassamples(samplesheets, config):
                     role['run'] = '+'.join(samplesheets[(samplesheets['Sample_Project'] == alias['real_id']['Sample_Project']) &
                                                         (samplesheets['Sample_ID'] == alias['real_id']['Sample_ID'])]['run'].unique())
                 role['is_alias'] = True
-                lanes = samplesheets[(samplesheets['Sample_Project'] == alias['real_id']['Sample_Project']) &
-                                     (samplesheets['Sample_ID'] == alias['real_id']['Sample_ID'])]['Lane']
-                if lanes.shape[0] > 0:
-                    role['Lane'] = lanes.iloc[0]
-                aliases.append(role)
+                #lanes = samplesheets[(samplesheets['Sample_Project'] == alias['real_id']['Sample_Project']) &
+                 #                    (samplesheets['Sample_ID'] == alias['real_id']['Sample_ID'])]['Lane']
+                #if lanes.shape[0] > 0:
+                #    role['Lane'] = lanes.iloc[0]
+                #aliases.append(role)
     if len(aliases) > 0:
         return pd.concat([samplesheets, pd.DataFrame(aliases)], sort=False)
     else:
