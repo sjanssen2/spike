@@ -52,7 +52,7 @@ rule all:
     input:
         # demultiplex all samples for projects that ONLY need to demultiplex, e.g. AG_Remke and create yield reports
         demux=[res for run in get_demux_samples(SAMPLESHEETS, config) for res in [
-               '%s%s%s/%s' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['join_demultiplex'], run),
+               '%s%s%s/%s' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['demultiplex'], run),
                '%s%s%s/%s.yield_report.pdf' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['convert_illumina_report'], run)]],
 
         # STATISTICS ON BAM FILES of "PrintReads"
