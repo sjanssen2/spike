@@ -1,4 +1,4 @@
 channels:
-  - freenome
+  - dranew
 dependencies:
   - bcl2fastq
