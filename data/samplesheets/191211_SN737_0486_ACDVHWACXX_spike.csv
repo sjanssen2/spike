@@ -33,7 +33,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 2,mRJ_318_T,,,,D02,GAGTTAGC,Maus_Hauer,,MRJ_318,tumor,
 3,mRJ_319_N,,,,A02,AGCAGGAA,Maus_Hauer,,MRJ_319,healthy,
 3,mRJ_319_T1,,,,B02,GAGCTGAA,Maus_Hauer,,MRJ_319,tumor,
-3,mRJ_319_T2,,,,C02,AAACATCG,Maus_Hauer,,MRJ_319,tumor,
+3,mRJ_319_T2,,,,C02,AAACATCG,Maus_Hauer,,MRJ_319_C2,,
 3,mNU_329_N,,,,D02,GAGTTAGC,Maus_Hauer,,MNU_329,healthy,
 4,mNU_329_T,,,,A02,AGCAGGAA,Maus_Hauer,,MNU_329,tumor,
 4,mAB_333_N,,,,B02,GAGCTGAA,Maus_Hauer,,MAB_333,healthy,
