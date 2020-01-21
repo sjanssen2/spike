@@ -568,6 +568,14 @@ def get_samples(samplesheets, config):
 
     return samples
 
+def get_samples_all(samplesheets, config):
+    # only consider samples that have some spike_entity_role defined (this did not work for AG_remke projest)
+    samples_with_role = samplesheets[pd.notnull(samplesheets['Sample_ID'])]
+    samples = []
+    for sample, g in samples_with_role.groupby(['Sample_Project', 'fastq-prefix']):
+        samples.append({'Sample_Project': sample[0],
+                        'sample': sample[1]})
+    return samples
 
 def get_tumorNormalPairs(samplesheets, config, species=None):
     # only consider samples that have some spike_entity_role defined
