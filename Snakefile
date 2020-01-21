@@ -76,7 +76,11 @@ rule all:
         # STATISTICS ON BACKGROUND GATK
         biom_background=['%s%s%s/%s.gatk.snp_indel.biom' % (config['dirs']['prefix'], config['dirs']['intermediate'], config['stepnames']['biom_gatkbackground'], sample)
                          for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
-
+        
+        #A quality control tool for high throughput sequence data.
+        #determined reads
+        Fastqc_determined=['%s%s%s/%s/determined/multiqc/multiqc_report.html' % (config['dirs']['prefix'],config['dirs']['intermediate'], config['stepnames']['Fastqc'], run)
+                for run in set(SAMPLESHEETS['run'].unique()) - set(SAMPLESHEETS[pd.isnull(SAMPLESHEETS['Lane'])]['run'].unique())],
 rule backup:
     input:
         # create backup for each run
