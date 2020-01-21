@@ -1,0 +1,44 @@
+rule fastqc:
+    input:
+        forward="%s%s%s/{sample}_R1.fastq.gz" % (config['dirs']['prefix'],config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
+        reverse="%s%s%s/{sample}_R2.fastq.gz" % (config['dirs']['prefix'],config['dirs']['intermediate'], config['stepnames']['rejoin_samples']),
+    output:
+        "{prefix}%s%s/{run}/determined/fastqc/{sample}_R1_fastqc.zip" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        "{prefix}%s%s/{run}/determined/fastqc/{sample}_R2_fastqc.zip" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        "{prefix}%s%s/{run}/determined/fastqc/{sample}_R1_fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        "{prefix}%s%s/{run}/determined/fastqc/{sample}_R2_fastqc.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+    log:
+        "{prefix}%s%s/{run}/{sample}.log" % (config['dirs']['logs'], config['stepnames']['Fastqc'])
+    conda:
+        "envs/qc.yaml"
+    threads:
+         4
+    params:
+        directory("{prefix}%s%s/{run}/determined/fastqc/Keimbahn/" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']))
+        #undeterminedforward="{prefix}%s%s/Undetermined/fastqc/{sample, .*?}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+        #undeterminedreverse="{prefix}%s%s/Undetermined/fastqc/{sample, .*?}_R2.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['Fastqc'])
+    #script:
+        #"fastqc -q {input.forward} {input.reverse} -t {threads}"
+    shell:
+        "fastqc -o {params} {input.forward} {input.reverse} -t {threads}"
+        " 2> {log}"
+
+rule multiqc:
+    input:
+        forward1=["%s%s%s/{run}/determined/fastqc/%s_R1_fastqc.html" % (config['dirs']['prefix'],config['dirs']['intermediate'], config['stepnames']['Fastqc'], sample)
+                for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
+        reverse1=["%s%s%s/{run}/determined/fastqc/%s_R2_fastqc.html" % (config['dirs']['prefix'],config['dirs']['intermediate'], config['stepnames']['Fastqc'], sample)
+                for sample in set(map(lambda x: x['sample'], get_samples(SAMPLESHEETS, config)))],
+    output:
+        "%s%s%s/{run}/determined/multiqc/multiqc_report.html" % (config['dirs']['prefix'],config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+    log:
+        "%s%s%s/multiqc/{run}.log" % (config['dirs']['prefix'],config['dirs']['logs'], config['stepnames']['Fastqc']),
+    conda:
+        "envs/qc.yaml"
+    params:
+        out=directory("%s%s%s/{run}/determined/multiqc/" % (config['dirs']['prefix'],config['dirs']['intermediate'], config['stepnames']['Fastqc'])),
+        inp=directory("%s%s%s/{run}/determined/fastqc/Keimbahn/" % (config['dirs']['prefix'],config['dirs']['intermediate'], config['stepnames']['Fastqc'])),
+       # undeterminedMulti="{prefix}%s%s/Undetermined/multiqc/{sample}_multiqc_report.html" % (config['dirs']['intermediate'], config['stepnames']['Fastqc']),
+    shell:
+        "multiqc  -o {params.out} {params.inp}  "
+        " 2> {log}"
