@@ -53,9 +53,9 @@
 
     "bwa":
     {
-      "ppn" : "12",
+      "ppn" : "3",
       "mem" : "20GB",
-      "time" : "06:59:59",
+      "time" : "25:59:59",
     },
 
     "remove_pcr_duplicates":
