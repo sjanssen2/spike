@@ -67,7 +67,7 @@
 
     "gatk_IndelRealigner":
     {
-      "mem" : "5GB",
+      "mem" : "25GB",
       "ppn" : "1",
       "time" : "03:59:59",
     },
