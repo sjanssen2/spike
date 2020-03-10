@@ -15,7 +15,7 @@ if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith
     # I now prefer to use the bcl2fastq version shipped via conda!
     # this loads a highly parallelized version of bcl2fastq compiled by HHU-HPC's guys
     # shell.prefix("module load bcl2fastq;")
-    shell.prefix("module load R;")
+    shell.prefix("module load R; module load kraken/1.0")
 
 SNUPY_INSTANCE = 'hhu'
 configfile: "config.yaml"
