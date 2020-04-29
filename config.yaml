@@ -365,7 +365,6 @@ references:
       file: "Agilent_SureSelect_V5plusUTR.bed"
       protocol_name: "SureSelectXTV5plusUTRautomated"
       agilent_coverage_file: "S04380219_Covered.bed"
-      default_for_species: "homo sapiens"
     SureSelect Human All Exon V6 r2:
       file: "Agilent_SureSelect_Human_AllExon_V6_r2.hGRC37.Covered.bed"
       protocol_name: "SureSelectHumanAllExonV6r2"
@@ -374,6 +373,7 @@ references:
       file: "Agilent_SureSelect_Human_AllExon_V7.hGRC37.Covered.bed"
       protocol_name: "SureSelectHumanAllExonV7"
       agilent_coverage_file: "S31285117_Covered.bed"
+       default_for_species: "homo sapiens"
     SureSelect Mouse All Exon V1:
       file: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
       protocol_name: "SureSelectXTmouse"
