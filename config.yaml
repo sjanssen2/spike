@@ -373,7 +373,7 @@ references:
       file: "Agilent_SureSelect_Human_AllExon_V7.hGRC37.Covered.bed"
       protocol_name: "SureSelectHumanAllExonV7"
       agilent_coverage_file: "S31285117_Covered.bed"
-       default_for_species: "homo sapiens"
+      default_for_species: "homo sapiens"
     SureSelect Mouse All Exon V1:
       file: "Agilent_mouseexome_S0276129_Regions_mm10_modified_merged.bed"
       protocol_name: "SureSelectXTmouse"
