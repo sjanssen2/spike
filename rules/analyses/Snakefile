@@ -81,7 +81,7 @@ rule bamstat:
 rule genepanel_coverage:
     input:
         agilent=lambda wildcards: '%s%s%s' % (wildcards.prefix, config['dirs']['references'], get_reference_exometrack(wildcards.sample, SAMPLESHEETS, config, returnfield="agilent_coverage_file")),
-        panelconfig="{prefix}%s%s{panel}.yaml" % (config['dirs'], config['dirs']['genepanels']),
+        panelconfig="{prefix}%s%s{panel}.yaml" % (config['dirs']['input'], config['dirs']['genepanels']),
         bamstat="{prefix}%s%s/{sample}.bamstat.tsv" % (config['dirs']['intermediate'], config['stepnames']['bamstat'])
     output:
         "{prefix}%s%s/{panel}.yaml/{sample}.tsv" % (config['dirs']['intermediate'], config['stepnames']['genepanel_coverage'])
