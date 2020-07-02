@@ -38,7 +38,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 5,KB0091_m,,,,H01,GATGAATC,Keimbahn,,KB0091,mother,,ALPS_41_c
 6,KB0046_f_t,,,,A01,ATGCCTAA,Keimbahn,,KB0046,tumor_father,,
 6,KB0046_f,,,,B01,GAATCTGA,Keimbahn,,KB0046,father,,
-7,KB0036_m,,,,E01,GCCAAGAC,Keimbahn,,KB0036,mother,,
+7,KB0036_f,,,,E01,GCCAAGAC,Keimbahn,,KB0036,father,,
 7,KB0018_c_t,,,,F01,GACTAGTA,Keimbahn,,KB0018,tumor_patient,,
 8,KB0049_c_t_osteo,,,,G01,ATTGGCTC,Keimbahn,"sample with very low cell material, high yield (i.e. reads) but poor coverage. Data do not show relatedness to child. Thus, I decided to exclude this sample.",KB0049,tumor_patient,yes,
 8,KB0049_c_t_rhabdo,,,,H01,GATGAATC,Keimbahn,,KB0049,tumor_patient,,
