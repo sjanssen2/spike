@@ -35,6 +35,6 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 6,KB0128_f,,,,C01,AACGTGAT,Keimbahn,,KB0128,father,
 6,KB0128_m,,,,D01,CACTTCGA,Keimbahn,,KB0128,mother,
 7,KB0140_c,,,,F01,GACTAGTA,Keimbahn,,KB0140,patient,
-7,KB0140_f,,,,G01,ATTGGCTC,Keimbahn,,KB0140,father,
+7,KB0140_m,,,,G01,ATTGGCTC,Keimbahn,,KB0140,mother,
 8,KB0065_c_t,,,,E01,GCCAAGAC,Keimbahn,,KB0065,tumor_patient,
 8,KB0116_c,,,,F01,GACTAGTA,Keimbahn,,KB0116,patient,
