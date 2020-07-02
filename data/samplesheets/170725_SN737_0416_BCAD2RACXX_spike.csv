@@ -39,7 +39,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 3,End_Pat_Pl13_C9,,,,H01,GATGAATC,Single_Cell,,,,
 4,KB0163_c,,,,B01,GAATCTGA,Keimbahn,,KB0163,patient,
 4,KB0163_f,,,,C01,AACGTGAT,Keimbahn,,KB0163,father,
-5,KB0140_m,,,,H01,GATGAATC,Keimbahn,,KB0140,mother,
+5,KB0140_f,,,,H01,GATGAATC,Keimbahn,,KB0140,father,
 5,KB0163_m,,,,D01,CACTTCGA,Keimbahn,,KB0163,mother,
 6,KB0123_m,,,,A01,ATGCCTAA,Keimbahn,,KB0123,mother,
 6,KB0128_f,,,,C01,AACGTGAT,Keimbahn,,KB0128,father,
