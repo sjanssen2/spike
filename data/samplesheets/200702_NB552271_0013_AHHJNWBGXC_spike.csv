@@ -1,6 +1,6 @@
 [Header],,,,,,,,,,,
 IEMFileVersion,5,,,,,,,,,,
-Date,06/22/20,,,,,,,,,,
+Date,07/02/20,,,,,,,,,,
 Workflow,GenerateFASTQ,,,,,,,,,,
 Application,Nextseq FASTQ,,,,,,,,,,
 Instrument Type,Nextseq 500/550,,,,,,,,,,
