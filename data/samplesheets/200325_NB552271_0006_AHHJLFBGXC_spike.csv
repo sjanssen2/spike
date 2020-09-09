@@ -31,7 +31,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 1,KB0312_c,,,,G01,ATTGAGGA ,Keimbahn,set1,KB0312,patient,,SureSelect Human All Exon V7 
 1,KB0312_f,,,,H01,ACACAGAA,Keimbahn,set1,KB0312,father,,SureSelect Human All Exon V7 
 1,KB0312_m,,,,A02,GCGAGTAA,Keimbahn,set1,KB0312,mother,,SureSelect Human All Exon V7 
-2,KB0278_c,,,,A01,GTCTGTCA,Keimbahn,set1,KB0278,patient,,SureSelect Human All Exon V7 
+2,KB0278_c,,,,A01,GTCTGTCA,Keimbahn,set2,KB0278,patient,,SureSelect Human All Exon V7 
 2,KB0278_f,,,,B01,TGAAGAGA ,Keimbahn,set2,KB0278,father,,SureSelect Human All Exon V7 
 2,KB0278_m,,,,C01,TTCACGCA,Keimbahn,set2,KB0278,mother,,SureSelect Human All Exon V7 
 2,KB0303_c,,,,D01,AACGTGAT,Keimbahn,set2,KB0303,patient,,SureSelect Human All Exon V7 
@@ -40,7 +40,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 2,KB0312_c,,,,G01,ATTGAGGA ,Keimbahn,set2,KB0312,patient,,SureSelect Human All Exon V7 
 2,KB0312_f,,,,H01,ACACAGAA,Keimbahn,set2,KB0312,father,,SureSelect Human All Exon V7 
 2,KB0312_m,,,,A02,GCGAGTAA,Keimbahn,set2,KB0312,mother,,SureSelect Human All Exon V7 
-3,KB0278_c,,,,A01,GTCTGTCA,Keimbahn,set1,KB0278,patient,,SureSelect Human All Exon V7 
+3,KB0278_c,,,,A01,GTCTGTCA,Keimbahn,set3,KB0278,patient,,SureSelect Human All Exon V7 
 3,KB0278_f,,,,B01,TGAAGAGA ,Keimbahn,set3,KB0278,father,,SureSelect Human All Exon V7 
 3,KB0278_m,,,,C01,TTCACGCA,Keimbahn,set3,KB0278,mother,,SureSelect Human All Exon V7 
 3,KB0303_c,,,,D01,AACGTGAT,Keimbahn,set3,KB0303,patient,,SureSelect Human All Exon V7 
@@ -49,7 +49,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,Sample_Pro
 3,KB0312_c,,,,G01,ATTGAGGA ,Keimbahn,set3,KB0312,patient,,SureSelect Human All Exon V7 
 3,KB0312_f,,,,H01,ACACAGAA,Keimbahn,set3,KB0312,father,,SureSelect Human All Exon V7 
 3,KB0312_m,,,,A02,GCGAGTAA,Keimbahn,set3,KB0312,mother,,SureSelect Human All Exon V7 
-4,KB0278_c,,,,A01,GTCTGTCA,Keimbahn,set1,KB0278,patient,,SureSelect Human All Exon V7 
+4,KB0278_c,,,,A01,GTCTGTCA,Keimbahn,set4,KB0278,patient,,SureSelect Human All Exon V7 
 4,KB0278_f,,,,B01,TGAAGAGA ,Keimbahn,set4,KB0278,father,,SureSelect Human All Exon V7 
 4,KB0278_m,,,,C01,TTCACGCA,Keimbahn,set4,KB0278,mother,,SureSelect Human All Exon V7 
 4,KB0303_c,,,,D01,AACGTGAT,Keimbahn,set4,KB0303,patient,,SureSelect Human All Exon V7 
