@@ -6,7 +6,7 @@ rule rejoin_sample:
     input:
         lambda wildcards: get_rejoin_input(wildcards.prefix, wildcards.sample, wildcards.direction, SAMPLESHEETS, config, _type='dirs')
     output:
-        "{prefix}%s%s/{sample, .*?}_{direction,R[1|2]}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
+        "{prefix}%s%s/{sample, .*?}_{direction,R[1|2|3]}.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
     log:
         "{prefix}%s%s/{sample}_{direction}.log" % (config['dirs']['logs'], config['stepnames']['rejoin_samples'])
     benchmark:
