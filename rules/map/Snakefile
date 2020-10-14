@@ -26,7 +26,7 @@ rule bwa:
         '{params.header}'
         ' {input.references[0]}'
         ' {input.forward} {input.reverse} 2> {log.bwa_mem}'
-        ' | samtools view -bSu -F 0x04 - 2> {log.sam_view}'
+        ' | samtools view -bSu -F 0x04 -o 2> {log.sam_view}'
         ' | samtools sort -m 1G -@ {threads} - {output} 2> {log.sam_sort}'
         # samtools appends .bam to given filename, which is different from snakemakes assumption and thus must be fixed here manually
         ' && mv {output}.bam {output}'
