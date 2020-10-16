@@ -58,6 +58,13 @@
       "time" : "25:59:59",
     },
 
+    "sam_cleanup":
+    {
+      "time" : "04:59:59",
+      "ppn" : "1",
+      "mem" : "6GB",
+    },
+    
     "remove_pcr_duplicates":
     {
       "time" : "04:59:59",
