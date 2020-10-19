@@ -1,35 +1,32 @@
 rule bwa:
-    # Do the alignment, read paring, introduction of the read groups, sam-import and sorting on a pipe. Paired-end flavour
+    # Do the alignment
     input:
         forward=lambda wildcards: "%s%s%s/%s/%s_R1.fastq.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['xenograft_check'], get_kind_of_run(wildcards, SAMPLESHEETS, config), wildcards.sample),
         reverse=lambda wildcards: get_reverse_file("%s%s%s/Paired/%s_R2.fastq.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['xenograft_check'], wildcards.sample), wildcards, SAMPLESHEETS, config),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']]
     output:
-        "{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
+        "{prefix}%s%s/{sample}.sam" % (config['dirs']['intermediate'], config['stepnames']['map'])
     log:
         bwa_mem="{prefix}%s%s/{sample}.bwa_mem.log" % (config['dirs']['logs'], config['stepnames']['map']),
-        sam_view="{prefix}%s%s/{sample}.samtools_view.log" % (config['dirs']['logs'], config['stepnames']['map']),
-        sam_sort="{prefix}%s%s/{sample}.samtools_sort.log" % (config['dirs']['logs'], config['stepnames']['map']),
+        #sam_view="{prefix}%s%s/{sample}.samtools_view.log" % (config['dirs']['logs'], config['stepnames']['map']),
+        #sam_sort="{prefix}%s%s/{sample}.samtools_sort.log" % (config['dirs']['logs'], config['stepnames']['map']),
     benchmark:
         "{prefix}%s%s/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['map'])
     conda:
         "envs/spike_map.yaml"
     threads:
-        3
+        6
     params:
         header=lambda wildcards: get_bwa_mem_header(wildcards.sample, SAMPLESHEETS, config)
     shell:
-        # wow: I just saw that the number of threads has an impact on the results!
-        # thus, for the moment, we should use the same number of threads as Michael's
-        # original pipeline, which is 3
         'bwa mem -t {threads} -v 2 -M'
         '{params.header}'
         ' {input.references[0]}'
-        ' {input.forward} {input.reverse} 2> {log.bwa_mem}'
-        ' | samtools view -bSu -F 0x04 -o 2> {log.sam_view}'
-        ' | samtools sort -m 1G -@ {threads} - {output} 2> {log.sam_sort}'
+        ' {input.forward} {input.reverse} 2> {log.bwa_mem} > {output}'
+        #' | samtools view -bSu -F 0x04 -o 2> {log.sam_view}'
+        #' | samtools sort -m 1G -@ {threads} - {output} 2> {log.sam_sort}'
         # samtools appends .bam to given filename, which is different from snakemakes assumption and thus must be fixed here manually
-        ' && mv {output}.bam {output}'
+        #' && mv {output}.bam {output}'
 
         #"@RG\tID:180614_SN737_0438_BCC7MCACXX\tCN:Department_of_Pediatric_Oncology_Dusseldorf\tPU:BCC7MCACXX\tDT:2018/06/14\tPL:ILLUMINA\tLB:SureSelectXTV5plusUTRautomated\tSM:readgroups.info"
         #bwa mem -t $(NT_MINUS_ONE) -v 1 -M $(shell getReadGroupStringFromFilename_2015.pl $*) $(REF) $*_R1.fastq.gz $*_R2.fastq.gz |
@@ -41,6 +38,32 @@ rule bwa:
         #MOUSE: $(SAMTOOLS_PATH_2k15)/samtools view -bSu -F 0x04 - |
         #MOUSE: $(SAMTOOLS_PATH_2k15)/samtools sort -m 1G -@ 1 - $@.tmp     $(STDERR_TO_LOG) \
 
+rule sam_cleanup:
+    input:
+        "{prefix}%s%s/{sample}.sam" % (config['dirs']['intermediate'], config['stepnames']['map'])
+    output:
+        "{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map']),
+        #bai="{prefix}%s%s/{sample}.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+        #metric="{prefix}%s%s/{sample}.nodup.srt.bam.metrics" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+    log:
+        "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['map'])
+    conda:
+        "envs/spike_map.yaml"
+    threads:
+        1  # since this picard tools function doesn't support multithreading :-(
+    shell:
+        "java"
+        " -Xmx4g"
+        " -XX:ParallelGCThreads={threads}"
+        " -jar ${{CONDA_PREFIX}}/share/picard-2.18.7-2/picard.jar"
+        " SortSam"
+        " I={input}"
+        " O={output}"
+        " SORT_ORDER=coordinate"
+        " CREATE_INDEX=true"
+        " VALIDATION_STRINGENCY=LENIENT"
+        " 2> {log}"
+        #" && rm {input}"
 
 rule remove_pcr_duplicates:
     # Remove PCR duplicates from the reads
