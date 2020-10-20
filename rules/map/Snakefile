@@ -54,7 +54,9 @@ rule sam_cleanup:
         " CREATE_INDEX=true"
         " VALIDATION_STRINGENCY=LENIENT"
         " 2> {log}"
-
+        # delete input file after process finished
+        " && rm -v -f {input}"
+        
 rule remove_pcr_duplicates:
     # Remove PCR duplicates from the reads
     input:
