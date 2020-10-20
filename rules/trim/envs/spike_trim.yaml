@@ -1,4 +1,4 @@
 channels:
   - bioconda
 dependencies:
-  - trimmomatic =0.33=1
+  - trimmomatic =0.39
