@@ -2,14 +2,14 @@ directions:
   - 'R1'
   - 'R2'
 endings_bwa:
-  - '.fa'
-  - '.dict'
-  - '.fa.amb'
-  - '.fa.ann'
-  - '.fa.bwt'
-  - '.fa.fai'
-  - '.fa.pac'
-  - '.fa.sa'
+  - '.fna'
+  #- '.dict'
+  - '.fna.amb'
+  - '.fna.ann'
+  - '.fna.bwt'
+  #- '.fa.fai'
+  - '.fna.pac'
+  - '.fna.sa'
 
 mail_attachment_parameter: "-A"
 
@@ -257,9 +257,9 @@ sample_aliases:
 references:
   genomes:
     homo sapiens:
-      file: 'hGRC37'  # without .fa!
-      lengths: 'hGRC37.len'
-      gemMappabilityFile: 'hGRC37.mappability.mappability'
+      file: 'GRCh38'  # without .fa!
+      #lengths: 'hGRC37.len'
+      #gemMappabilityFile: 'hGRC37.mappability.mappability'
       chromosomes:
         - "hGRC37_chromosomes/1.fa"
         - "hGRC37_chromosomes/2.fa"
