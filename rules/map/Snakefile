@@ -23,28 +23,12 @@ rule bwa:
         '{params.header}'
         ' {input.references[0]}'
         ' {input.forward} {input.reverse} 2> {log.bwa_mem} > {output}'
-        #' | samtools view -bSu -F 0x04 -o 2> {log.sam_view}'
-        #' | samtools sort -m 1G -@ {threads} - {output} 2> {log.sam_sort}'
-        # samtools appends .bam to given filename, which is different from snakemakes assumption and thus must be fixed here manually
-        #' && mv {output}.bam {output}'
-
-        #"@RG\tID:180614_SN737_0438_BCC7MCACXX\tCN:Department_of_Pediatric_Oncology_Dusseldorf\tPU:BCC7MCACXX\tDT:2018/06/14\tPL:ILLUMINA\tLB:SureSelectXTV5plusUTRautomated\tSM:readgroups.info"
-        #bwa mem -t $(NT_MINUS_ONE) -v 1 -M $(shell getReadGroupStringFromFilename_2015.pl $*) $(REF) $*_R1.fastq.gz $*_R2.fastq.gz |
-        #$(SAMTOOLS_PATH_2k15)/samtools view -bSu -F 0x04 - |
-        #$(SAMTOOLS_PATH_2k15)/samtools sort -m 1G -@ 1 - $@.tmp     $(STDERR_TO_LOG) \
-	    #&& mv $@.tmp.bam $@
-
-        #MOUSE: $(BWA_PATH_2k15)/bwa mem -t $(NT_MINUS_ONE) -v 1 -M $(shell getReadGroupStringFromFilename_2015.pl $*) $(MOUSE_REF) $*.fastq.gz                   |
-        #MOUSE: $(SAMTOOLS_PATH_2k15)/samtools view -bSu -F 0x04 - |
-        #MOUSE: $(SAMTOOLS_PATH_2k15)/samtools sort -m 1G -@ 1 - $@.tmp     $(STDERR_TO_LOG) \
-
+	
 rule sam_cleanup:
     input:
         "{prefix}%s%s/{sample}.sam" % (config['dirs']['intermediate'], config['stepnames']['map'])
     output:
         "{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map']),
-        #bai="{prefix}%s%s/{sample}.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
-        #metric="{prefix}%s%s/{sample}.nodup.srt.bam.metrics" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
     log:
         "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['map'])
     conda:
@@ -63,7 +47,8 @@ rule sam_cleanup:
         " CREATE_INDEX=true"
         " VALIDATION_STRINGENCY=LENIENT"
         " 2> {log}"
-        #" && rm {input}"
+        # delete input file after process finished
+        " && rm -v -f {input}"
 
 rule remove_pcr_duplicates:
     # Remove PCR duplicates from the reads
