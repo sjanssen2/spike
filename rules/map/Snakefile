@@ -68,11 +68,11 @@ rule sam_cleanup:
 rule remove_pcr_duplicates:
     # Remove PCR duplicates from the reads
     input:
-        "{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
+        "{prefix}%s%s/{sample}.Hg38.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
     output:
-        bam="{prefix}%s%s/{sample}.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
-        bai="{prefix}%s%s/{sample}.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
-        metric="{prefix}%s%s/{sample}.nodup.srt.bam.metrics" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+        bam="{prefix}%s%s/{sample}.Hg38.nodup.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+        bai="{prefix}%s%s/{sample}.Hg38.nodup.srt.bai" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
+        metric="{prefix}%s%s/{sample}.Hg38.nodup.srt.bam.metrics" % (config['dirs']['intermediate'], config['stepnames']['nodup']),
     log:
         "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['nodup'])
     benchmark:
@@ -83,9 +83,9 @@ rule remove_pcr_duplicates:
         1  # since this picard tools function doesn't support multithreading :-(
     shell:
         "java"
-        " -Xmx4g"
+        " -Xmx8G"
         " -XX:ParallelGCThreads={threads}"
-        " -jar ${{CONDA_PREFIX}}/share/picard-2.0.1-1/picard.jar"
+        " -jar ${{CONDA_PREFIX}}/share/picard-2.18.7-2/picard.jar"
         " MarkDuplicates"
         " INPUT={input}"
         " METRICS_FILE={output.metric}"
@@ -95,10 +95,3 @@ rule remove_pcr_duplicates:
         " CREATE_INDEX=true"
         " OUTPUT={output.bam}"
         " > {log} 2>&1"
-
-        # %.nodup.srt.bam: %.srt.bam
-        # 	@echo "$(DATE) ######### Alignment: Removing PCR duplicates in '$<'"
-        #  	picardtools_2015.sh picard.jar MarkDuplicates INPUT=$< METRICS_FILE=$@.metrics REMOVE_DUPLICATES=true ASSUME_SORTED=true  VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=true OUTPUT=$@.tmp  $(BOTH_TO_LOG) \
-        # 	&& mv $@.tmp $@
-        # 	-mv $@.tmp.bai $@.bai
-        #     # The $@.metrics file contains how many reads were processed / duplicate
