@@ -53,6 +53,7 @@ stepnames:
   xenograft_bwa_sampe: "050_xenograft_bwa_sampe"
   xenograft_check: "055_xenograft_check"
   map: "060_map"
+  UMI: "064_UMI_remove_duplicates"
   nodup: "065_remove_pcr_duplicates"
   gatk_RealignerTargetCreator: "070_gatk_RealignerTargetCreator"
   gatk_IndelRealigner: "075_gatk_IndelRealigner"
