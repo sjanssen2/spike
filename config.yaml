@@ -317,33 +317,34 @@ references:
       cosmic:
   knowns:
     homo sapiens:
-      - file: "Mills_and_1000G_gold_standard.indels.b37.vcf"
-        RealignerTargetCreator: "yes"
+      - file: "Mills_and_1000G_gold_standard.indels.hg38.vcf"
+        #RealignerTargetCreator: "yes"
         BaseRecalibrator: 'yes'
-        VariantRecalibrator_SNP: "mills,VCF,known=false,training=true,truth=true,prior=12.0"
-        VariantRecalibrator_INDEL: "mills,known=true,training=true,truth=true,prior=12.0"
+        #VariantRecalibrator_SNP: "mills,VCF,known=false,training=true,truth=true,prior=12.0"
+        #VariantRecalibrator_INDEL: "mills,known=true,training=true,truth=true,prior=12.0"
 
-      - file: "1000G_phase1.indels.b37.vcf"
-        RealignerTargetCreator: "yes"
-        BaseRecalibrator: 'yes'
-        VariantRecalibrator_INDEL: "1000G,known=false,training=true,truth=false,prior=10.0"
+      #- file: "1000G_phase1.indels.b37.vcf"
+        #RealignerTargetCreator: "yes"
+        #BaseRecalibrator: 'yes'
+        #VariantRecalibrator_INDEL: "1000G,known=false,training=true,truth=false,prior=10.0"
 
       - file: "hapmap_3.3.b37.vcf"
         VariantRecalibrator_SNP: "hapmap,VCF,known=false,training=true,truth=true,prior=12.0"
 
-      - file: "1000G_phase1.snps.high_confidence.b37.vcf"
-        VariantRecalibrator_SNP: "omni,VCF,known=false,training=true,truth=false,prior=10.0"
+      - file: "1000G_phase1.snps.high_confidence.hg38.vcf"
+        BaseRecalibrator: 'yes'
+        #VariantRecalibrator_SNP: "omni,VCF,known=false,training=true,truth=false,prior=10.0"
 
       - file: "1000G_omni2.5.b37.vcf"
         VariantRecalibrator_SNP: "omni,VCF,known=false,training=true,truth=false,prior=12.0"
 
-      - file: "dbSNP135_GRCh37.3.vcf"
-        BaseRecalibrator: 'yes'
-        mutect:
+      #- file: "dbSNP135_GRCh37.3.vcf"
+        #BaseRecalibrator: 'yes'
+        #mutect:
 
-      - file: "dbsnp_138.b37.vcf"
+      - file: "Homo_sapiens_assembly38.dbsnp138.vcf"
         BaseRecalibrator: 'yes'
-        VariantRecalibrator_SNP: "dbsnp,VCF,known=true,training=false,truth=false,prior=2.0"
+        #VariantRecalibrator_SNP: "dbsnp,VCF,known=true,training=false,truth=false,prior=2.0"
     mus musculus:
       - file: "C57BL6NJ_CBAJDBA2.indels.vcf.gz"
         RealignerTargetCreator: "yes"
