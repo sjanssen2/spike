@@ -340,7 +340,8 @@ references:
         VariantRecalibrator_SNP: "omni,VCF,known=false,training=true,truth=false,prior=12.0"
 
       #- file: "dbSNP135_GRCh37.3.vcf"
-        #BaseRecalibrator: 'yes'
+       - file: "Homo_sapiens_assembly38.known_indels.vcf"
+         BaseRecalibrator: 'yes'
         #mutect:
 
       - file: "Homo_sapiens_assembly38.dbsnp138.vcf"
