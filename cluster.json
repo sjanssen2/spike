@@ -64,7 +64,14 @@
       "ppn" : "1",
       "mem" : "10GB",
     },
-
+    
+    "MBC_remove_duplicates":
+    {
+      "time" : "04:59:59",
+      "ppn" : "1",
+      "mem" : "12GB",
+    },
+     
     "gatk_IndelRealigner":
     {
       "mem" : "25GB",
