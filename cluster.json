@@ -79,14 +79,14 @@
       "time" : "03:59:59",
     },
 
-    "gatk_BaseRecalibrator":
+    "gatk4_BaseRecalibrator":
     {
       "mem" : "8GB",
       "time" : "12:59:59",
       "ppn" : "3",
     },
 
-    "gatk_PrintReads":
+    "gatk4_ApplyBQSR":
     {
       "time" : "10:59:59",
       "mem" : "24GB",
