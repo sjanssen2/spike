@@ -7,7 +7,7 @@ endings_bwa:
   - '.fna.amb'
   - '.fna.ann'
   - '.fna.bwt'
-  #- '.fa.fai'
+  - '.fna.fai'
   - '.fna.pac'
   - '.fna.sa'
 
