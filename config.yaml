@@ -3,7 +3,7 @@ directions:
   - 'R2'
 endings_bwa:
   - '.fna'
-  #- '.dict'
+  - '.fna.dict'
   - '.fna.amb'
   - '.fna.ann'
   - '.fna.bwt'
