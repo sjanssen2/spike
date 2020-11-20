@@ -56,6 +56,7 @@ rule demultiplex:
         " --ignore-missing-bcls"
         " --mask-short-adapter-reads 0 "
         " --use-bases-mask Y150,I8,Y10,Y150 "
+        " --minimum-trimmed-read-length 10 "
         " --sample-sheet {params.samplesheet}"
         " --loading-threads {threads}"
         " --processing-threads {threads}"
