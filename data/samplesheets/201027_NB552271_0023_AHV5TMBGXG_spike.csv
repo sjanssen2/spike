@@ -28,7 +28,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,I5_Index_I
 1,KB0355_m,,,,D01,AACGTGAT,,,Keimbahn,set1,KB0355,mother,,SureSelect Human All Exon V7
 1,Alps_84,,,,E01,ACCACTGT,,,Alps,set1,ALPS_84,patient,,SureSelect Human All Exon V7
 1,Alps_84_a,,,,F01,ACCTCCAA,,,Alps,set1,ALPS_84,father,,SureSelect Human All Exon V7
-1,Alps_84_b,,,,G01,ATTGAGGA ,,,Alps,set1,ALPS_84,mother,,SureSelect Human All Exon V7
+1,Alps_84_b,,,,G01,ATTGAGGA,,,Alps,set1,ALPS_84,mother,,SureSelect Human All Exon V7
 1,KB0401_c,,,,H01,ACACAGAA,,,Keimbahn,set1,KB0401,patient,,SureSelect Human All Exon V7
 1,KB0401_f,,,,A02,GCGAGTAA,,,Keimbahn,set1,KB0401,father,,SureSelect Human All Exon V7
 2,KB0345_m,,,,A01,GTCTGTCA,,,Keimbahn,set2,KB0345,mother,,SureSelect Human All Exon V7
@@ -37,7 +37,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,I5_Index_I
 2,KB0355_m,,,,D01,AACGTGAT,,,Keimbahn,set2,KB0355,mother,,SureSelect Human All Exon V7
 2,Alps_84,,,,E01,ACCACTGT,,,Alps,set2,ALPS_84,patient,,SureSelect Human All Exon V7
 2,Alps_84_a,,,,F01,ACCTCCAA,,,Alps,set2,ALPS_84,father,,SureSelect Human All Exon V7
-2,Alps_84_b,,,,G01,ATTGAGGA ,,,Alps,set2,ALPS_84,mother,,SureSelect Human All Exon V7
+2,Alps_84_b,,,,G01,ATTGAGGA,,,Alps,set2,ALPS_84,mother,,SureSelect Human All Exon V7
 2,KB0401_c,,,,H01,ACACAGAA,,,Keimbahn,set2,KB0401,patient,,SureSelect Human All Exon V7
 2,KB0401_f,,,,A02,GCGAGTAA,,,Keimbahn,set2,KB0401,father,,SureSelect Human All Exon V7
 3,KB0345_m,,,,A01,GTCTGTCA,,,Keimbahn,set3,KB0345,mother,,SureSelect Human All Exon V7
@@ -46,7 +46,7 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,I5_Index_I
 3,KB0355_m,,,,D01,AACGTGAT,,,Keimbahn,set3,KB0355,mother,,SureSelect Human All Exon V7
 3,Alps_84,,,,E01,ACCACTGT,,,Alps,set3,ALPS_84,patient,,SureSelect Human All Exon V7
 3,Alps_84_a,,,,F01,ACCTCCAA,,,Alps,set3,ALPS_84,father,,SureSelect Human All Exon V7
-3,Alps_84_b,,,,G01,ATTGAGGA ,,,Alps,set3,ALPS_84,mother,,SureSelect Human All Exon V7
+3,Alps_84_b,,,,G01,ATTGAGGA,,,Alps,set3,ALPS_84,mother,,SureSelect Human All Exon V7
 3,KB0401_c,,,,H01,ACACAGAA,,,Keimbahn,set3,KB0401,patient,,SureSelect Human All Exon V7
 3,KB0401_f,,,,A02,GCGAGTAA,,,Keimbahn,set3,KB0401,father,,SureSelect Human All Exon V7
 4,KB0345_m,,,,A01,GTCTGTCA,,,Keimbahn,set4,KB0345,mother,,SureSelect Human All Exon V7
@@ -55,6 +55,6 @@ Lane,Sample_ID,Sample_Name,Sample_Plate,Sample_Well,I7_Index_ID,index,I5_Index_I
 4,KB0355_m,,,,D01,AACGTGAT,,,Keimbahn,set4,KB0355,mother,,SureSelect Human All Exon V7
 4,Alps_84,,,,E01,ACCACTGT,,,Alps,set4,ALPS_84,patient,,SureSelect Human All Exon V7
 4,Alps_84_a,,,,F01,ACCTCCAA,,,Alps,set4,ALPS_84,father,,SureSelect Human All Exon V7
-4,Alps_84_b,,,,G01,ATTGAGGA ,,,Alps,set4,ALPS_84,mother,,SureSelect Human All Exon V7
+4,Alps_84_b,,,,G01,ATTGAGGA,,,Alps,set4,ALPS_84,mother,,SureSelect Human All Exon V7
 4,KB0401_c,,,,H01,ACACAGAA,,,Keimbahn,set4,KB0401,patient,,SureSelect Human All Exon V7
 4,KB0401_f,,,,A02,GCGAGTAA,,,Keimbahn,set4,KB0401,father,,SureSelect Human All Exon V7
