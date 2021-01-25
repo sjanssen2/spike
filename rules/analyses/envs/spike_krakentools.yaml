@@ -1,0 +1,7 @@
+name: spike_krakentools
+
+channels:
+  - bioconda
+
+dependencies:
+  - krakentools
