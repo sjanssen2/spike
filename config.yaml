@@ -99,6 +99,12 @@ stepnames:
   excavator_somatic: "220_excavator_somatic"
   excavator_trio: "225_excavator_trio"
 
+  # microbiome profile
+  kraken_bam2fastq: "401_kraken_bam2fastq"
+  kraken_report: "406_kraken_report"
+  kraken_2mpa: "411_kraken_2mpa"
+  kraken_countrawreads: "402_numreads"
+
   # upload to snupy
   snupy_upload: "500_snupy_upload"
   snupy_extractsamples: "505_snupy_extractsamples"
@@ -211,7 +217,7 @@ projects:
         contact: "Ute Fischer"
         project_id: 8
     min_coverage: 60
-    
+
 sample_aliases:
   - real_id:
       Sample_ID: 'HL_rem'
