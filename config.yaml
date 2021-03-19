@@ -210,6 +210,13 @@ projects:
         contact: "Ute Fischer"
         project_id: 8
     min_coverage: 60
+  Bhatia:
+    species: homo sapiens
+    snupy:
+      hhu:
+        contact: "Sanil Bhatia"
+        project_id: 11
+    min_coverage: 60
     
 sample_aliases:
   - real_id:
