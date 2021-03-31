@@ -5,7 +5,8 @@ rule bwa:
         reverse=lambda wildcards: get_reverse_file("%s%s%s/Paired/%s_R2.fastq.gz" % (wildcards.prefix, config['dirs']['intermediate'], config['stepnames']['xenograft_check'], wildcards.sample), wildcards, SAMPLESHEETS, config),
         references=lambda wildcards: ["%s%s%s%s" % (wildcards.prefix, config['dirs']['references'], get_reference_genome(wildcards.sample, SAMPLESHEETS, config)['file'], ending) for ending in config['endings_bwa']]
     output:
-        "{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map'])
+        human="{prefix}%s%s/{sample}.srt.bam" % (config['dirs']['intermediate'], config['stepnames']['map']),
+        nonhuman="{prefix}%s%s/{sample}.bam" % (config['dirs']['intermediate'], config['stepnames']['nonhuman'])
     log:
         bwa_mem="{prefix}%s%s/{sample}.bwa_mem.log" % (config['dirs']['logs'], config['stepnames']['map']),
         sam_view="{prefix}%s%s/{sample}.samtools_view.log" % (config['dirs']['logs'], config['stepnames']['map']),
@@ -26,10 +27,10 @@ rule bwa:
         '{params.header}'
         ' {input.references[0]}'
         ' {input.forward} {input.reverse} 2> {log.bwa_mem}'
-        ' | samtools view -bSu -F 0x04 - 2> {log.sam_view}'
-        ' | samtools sort -m 1G -@ {threads} - {output} 2> {log.sam_sort}'
+        ' | samtools view -bSu -F 0x04 -U {output.nonhuman} - 2> {log.sam_view}'
+        ' | samtools sort -m 1G -@ {threads} - {output.human} 2> {log.sam_sort}'
         # samtools appends .bam to given filename, which is different from snakemakes assumption and thus must be fixed here manually
-        ' && mv {output}.bam {output}'
+        ' && mv {output.human}.bam {output.human}'
 
         #"@RG\tID:180614_SN737_0438_BCC7MCACXX\tCN:Department_of_Pediatric_Oncology_Dusseldorf\tPU:BCC7MCACXX\tDT:2018/06/14\tPL:ILLUMINA\tLB:SureSelectXTV5plusUTRautomated\tSM:readgroups.info"
         #bwa mem -t $(NT_MINUS_ONE) -v 1 -M $(shell getReadGroupStringFromFilename_2015.pl $*) $(REF) $*_R1.fastq.gz $*_R2.fastq.gz |

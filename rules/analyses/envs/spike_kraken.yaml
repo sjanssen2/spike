@@ -1,0 +1,8 @@
+name: spike_kraken
+
+channels:
+  - bioconda
+
+dependencies:
+  - samtools
+  - bedtools

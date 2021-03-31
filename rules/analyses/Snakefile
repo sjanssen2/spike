@@ -93,3 +93,73 @@ rule genepanel_coverage:
         1
     run:
         get_gene_panel_coverage(input.panelconfig, input.bamstat, input.agilent, output[0])
+
+
+rule kraken_bam2fastq:
+    input:
+        "{prefix}%s%s/{sample}.bam" % (config['dirs']['intermediate'], config['stepnames']['nonhuman'])
+    output:
+        r1="{prefix}%s%s/{sample}_R1.fastq" % (config['dirs']['intermediate'], config['stepnames']['kraken_bam2fastq']),
+        r2="{prefix}%s%s/{sample}_R2.fastq" % (config['dirs']['intermediate'], config['stepnames']['kraken_bam2fastq']),
+    conda:
+        "envs/spike_kraken.yaml"
+    log:
+        sam="{prefix}%s%s/{sample}_samtoolssort.log" % (config['dirs']['logs'], config['stepnames']['kraken_bam2fastq']),
+        bed="{prefix}%s%s/{sample}_bedtools.log" % (config['dirs']['logs'], config['stepnames']['kraken_bam2fastq']),
+    benchmark:
+        "{prefix}%s%s/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['kraken_bam2fastq'])
+    threads:
+        1
+    shell:
+        "samtools sort -n {input} 2> {log.sam} | bedtools bamtofastq -i - -fq {output.r1} -fq2 {output.r2} 2> {log.bed}"
+
+rule kraken_report:
+    input:
+        r1="{prefix}%s%s/{sample}_R1.fastq" % (config['dirs']['intermediate'], config['stepnames']['kraken_bam2fastq']),
+        r2="{prefix}%s%s/{sample}_R2.fastq" % (config['dirs']['intermediate'], config['stepnames']['kraken_bam2fastq']),
+    output:
+        "{prefix}%s%s/{db}_DB/{sample}.k2report" % (config['dirs']['intermediate'], config['stepnames']['kraken_report']),
+    # using HHU-HPC module for kraken2 instead of conda, since memory access is extremely slow with conda or self compiled binary
+    #conda:
+    #    "envs/spike_kraken.yaml"
+    log:
+        "{prefix}%s%s/{db}_DB/{sample}.log" % (config['dirs']['logs'], config['stepnames']['kraken_report']),
+    benchmark:
+        "{prefix}%s%s/{db}_DB/{sample}.benchmark" % (config['dirs']['benchmarks'], config['stepnames']['kraken_report'])
+    threads:
+        4
+    params:
+        fp_db=lambda wildcards: "%s%sKraken/%s_DB" % (config['dirs']['prefix'], config['dirs']['references'], wildcards.db)
+    shell:
+        "kraken2 --db {params} --threads {threads} --report {output} --paired {input} > /dev/null 2> {log}"
+
+
+rule kraken_2mpa:
+    input:
+        "{prefix}%s%s/{db}_DB/{sample}.k2report" % (config['dirs']['intermediate'], config['stepnames']['kraken_report'])
+    output:
+        "{prefix}%s%s/{db}_DB/{sample}.k2mpa" % (config['dirs']['intermediate'], config['stepnames']['kraken_2mpa'])
+    conda:
+        "envs/spike_krakentools.yaml"
+    log:
+        "{prefix}%s%s/{db}_DB/{sample}.log" % (config['dirs']['logs'], config['stepnames']['kraken_2mpa'])
+    benchmark:
+        "{prefix}%s%s/{db}_DB/{sample}.log" % (config['dirs']['logs'], config['stepnames']['kraken_2mpa'])
+    threads:
+        1
+    shell:
+        "kreport2mpa.py -r {input} -o {output} 2> {log}"
+
+rule countreads:
+    input:
+        "{prefix}%s%s/{sample}_R1.fastq.gz" % (config['dirs']['intermediate'], config['stepnames']['rejoin_samples'])
+    output:
+        "{prefix}%s%s/{sample}.readcounts" % (config['dirs']['intermediate'], config['stepnames']['kraken_countrawreads'])
+    log:
+        "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['kraken_countrawreads'])
+    benchmark:
+        "{prefix}%s%s/{sample}.log" % (config['dirs']['logs'], config['stepnames']['kraken_countrawreads'])
+    threads:
+        1
+    shell:
+        "zcat {input} | wc -l > {output} 2> {log}"

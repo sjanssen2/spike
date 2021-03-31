@@ -16,6 +16,7 @@ if socket.gethostname().startswith("hilbert") or socket.gethostname().startswith
     # this loads a highly parallelized version of bcl2fastq compiled by HHU-HPC's guys
     # shell.prefix("module load bcl2fastq;")
     shell.prefix("module load R;")
+    shell.prefix("module load kraken/2.0.7;")
 
 SNUPY_INSTANCE = 'hhu'
 configfile: "config.yaml"

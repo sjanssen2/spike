@@ -55,7 +55,7 @@
     {
       "ppn" : "3",
       "mem" : "20GB",
-      "time" : "18:59:59",
+      "time" : "25:59:59",
     },
 
     "remove_pcr_duplicates":
@@ -326,5 +326,22 @@
     {"mem" : "8GB",
      "ppn" : "1",
      "time" : "00:59:59",
-    }
+    },
+
+    "kraken_bam2fastq":
+    {"mem" : "4GB",
+     "ppn" : "1",
+     "time" : "00:59:59",
+    },
+
+    "kraken_report":
+    {"mem" : "100GB",
+     "ppn" : "4",
+     "time" : "01:59:59",
+    },
+
+    "countreads":
+    {"mem": "2GB",
+     "ppn": "1",
+     "time": "00:59:59",}
 }
